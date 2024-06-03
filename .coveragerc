@@ -1,0 +1,14 @@
+[run]
+omit =
+    */tests/*
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # TYPE_CHECKING and @overload blocks are never executed during pytest run
+    if typing.TYPE_CHECKING:
+    if TYPE_CHECKING:
+    @abc.abstractmethod

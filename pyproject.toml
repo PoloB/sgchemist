@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sgchemist"
+version = "0.0.1"
+dependencies = [
+    'shotgun-api3',
+    'typing-extensions',
+]
+authors = [
+    {name="Paul-Emile Buteau", email="paulemilebuteau@gmail.com"},
+]
+description = "An ORM for Autodesk Shotgrid"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = [
+    "Shotgrid",
+    "Shotgun",
+    "Slow Production Tracker",
+    "ORM"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+]
+
+[project.scripts]
+sg2python = "sgchemist.schema.generate_entities:cli"
+
+[project.optional-dependencies]
+test = [
+    'coverage',
+    'mypy',
+    'pytest',
+    'ruff',
+]
+
+[project.urls]
+Homepage = "https://github.com/PaulEmileB/sgchemist"
+Issues = "https://github.com/PaulEmileB/sgchemist/issues"
+
+[tool.ruff]
+line-length = 88
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.lint]
+select = ["D", "E", "F"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
