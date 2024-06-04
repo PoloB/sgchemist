@@ -1,7 +1,5 @@
 # sgchemist
 
-![Build status](https://github.com/PoloB/sgchemist/actions/workflows/ci.yml/badge.svg)
-
 An Object Relation Mapper for Autodesk Flow Production Tracker (previously Shotgrid and Shotgun) inspired by SQLAlchemy.
 
 
