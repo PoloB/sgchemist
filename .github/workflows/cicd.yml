@@ -1,0 +1,167 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: CI Tests
+
+on: push
+permissions:
+  contents: read
+jobs:
+  test:
+    name: Test python-${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: [
+          "3.7",
+          "3.8",
+          "3.9",
+          "3.10",
+          "3.11",
+#          "3.12" shotgun-api3 is not yet compatible with python 3.12 (see https://community.shotgridsoftware.com/t/modulenotfounderror-no-module-named-shotgun-api3-lib-six-moves/18345/4)
+        ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff pytest shotgun-api3
+    - name: Install sgchemist
+      run: |
+        pip install .
+    - name: Lint with ruff
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        ruff check .
+    - name: Test with pytest
+      run: |
+        pytest tests --junitxml=junit/test-results.xml
+  mypy:
+    name: mypy type check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [
+          "3.7",
+          "3.8",
+          "3.9",
+          "3.10",
+          "3.11",
+          "3.12",
+        ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run mypy
+        uses: jpetrucciani/mypy-check@master
+        with:
+          path: './src'
+          mypy_flags: '--strict'
+  build:
+    name: Build
+    if: startsWith(github.ref, 'refs/tags/')  # only build if there is a tag
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install pypa/build
+        run: >-
+          python3 -m
+          pip install
+          build
+          --user
+      - name: Build a binary wheel and a source tarball
+        run: python3 -m build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+  publish-to-pypi:
+    name: Publish sgchemist to PyPI
+    if: startsWith(github.ref, 'refs/tags/') && github.ref_name == 'main'  # only publish to PyPI on tag pushes on main
+    needs:
+      - build
+      - mypy
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sgchemist  # Replace <package-name> with your PyPI project name
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish sgchemist to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+  github-release:
+    name: Sign sgchemist with Sigstore and upload them to GitHub Release
+    needs:
+      - publish-to-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      id-token: write  # IMPORTANT: mandatory for sigstore
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Sign the dists with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: >-
+            ./dist/*.tar.gz
+            ./dist/*.whl
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create
+          '${{ github.ref_name }}'
+          --repo '${{ github.repository }}'
+          --notes ""
+      - name: Upload artifact signatures to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        # Upload to GitHub Release using the `gh` CLI.
+        # `dist/` contains the built packages, and the
+        # sigstore-produced signatures and certificates.
+        run: >-
+          gh release upload
+          '${{ github.ref_name }}' dist/**
+          --repo '${{ github.repository }}'
+  publish-to-testpypi:
+    name: Publish sgchemist to TestPyPI
+    if: startsWith(github.ref, 'refs/tags/') && github.ref_name != 'main'  # only push to TestPyPi if tagged
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/sgchemist
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish sgchemist to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

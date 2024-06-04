@@ -300,6 +300,6 @@ def main(argv: List[Any]) -> None:
         f.write(python_script)
 
 
-def cli():
+def cli() -> None:
     """Entry point for the console scripts."""
     main(sys.argv[1:])

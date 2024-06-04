@@ -59,7 +59,7 @@ class FieldSchema:
     properties: dict[str, ValueSchema[Any]]
 
     @classmethod
-    def from_schema(cls, field_name: str, schema: FieldSchemaInfo) -> FieldSchema:
+    def from_schema(cls, field_name: str, schema: FieldSchemaInfo[Any]) -> FieldSchema:
         """Instantiate a field from a schema dictionary.
 
         Args:
