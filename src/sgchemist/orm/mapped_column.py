@@ -14,7 +14,9 @@ from typing import Type
 from typing import TypeVar
 
 from sgchemist.orm import error
+from sgchemist.orm.field import AbstractEntityField
 from sgchemist.orm.field import AbstractField
+from sgchemist.orm.field import AbstractValueField
 from sgchemist.orm.field import EntityField
 from sgchemist.orm.field import MultiEntityField
 from sgchemist.orm.instrumentation import InstrumentedAttribute
@@ -158,6 +160,10 @@ class MappedField(MappedColumn):
         Returns:
             InstrumentedField[T]: the instrumented field
         """
+        if not issubclass(field_annotation.field_type, AbstractValueField):
+            raise error.SgInvalidAnnotation(
+                "A MappedField should target an AbstractValueField annotation"
+            )
         return InstrumentedField(
             class_=field_annotation.entity_class,
             field_annotation=field_annotation,
@@ -195,6 +201,10 @@ class Relationship(MappedColumn):
         container_class = field_annotation.container_class
         entity_class = field_annotation.entity_class
         # Make some checks
+        if not issubclass(field_annotation.field_type, AbstractEntityField):
+            raise error.SgInvalidAnnotation(
+                "A Relationship should target an AbstractEntityField annotation"
+            )
         if len(entities) == 0:
             raise error.SgInvalidAnnotation(
                 "An entity field must provide a target entity"

@@ -15,11 +15,12 @@ from classes import Project
 from classes import Shot
 from classes import Task
 from sgchemist.orm import error
-from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.field import EntityField
-from sgchemist.orm.field import MultiEntityField
-from sgchemist.orm.field import NumberField
-from sgchemist.orm.field import TextField
+from sgchemist.orm import mapped_field
+from sgchemist.orm import SgEntity
+from sgchemist.orm import EntityField
+from sgchemist.orm import MultiEntityField
+from sgchemist.orm import NumberField
+from sgchemist.orm import TextField
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedMultiTargetSingleRelationship
 from sgchemist.orm.mapped_column import alias_relationship
@@ -145,6 +146,27 @@ def test_undefined_fields():
         class _TestEntity3(SgEntity):
             __sg_type__ = "test2"
             entity: TestEntity
+
+
+def test_right_mapped_field_per_annotation():
+    """Tests the correct MappedColumn object is used for a given annotation."""
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class _TestEntity1(SgEntity):
+            __sg_type__ = "test"
+            field: TextField = relationship()
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class _TestEntity2(SgEntity):
+            __sg_type__ = "test"
+            field: EntityField[_TestEntity2] = mapped_field()
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class _TestEntity3(SgEntity):
+            __sg_type__ = "test"
+            field: MultiEntityField[_TestEntity2] = mapped_field()
 
 
 def test_union_entity_is_multi_target():

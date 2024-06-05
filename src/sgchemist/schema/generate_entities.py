@@ -80,7 +80,9 @@ def generate_python_script_field(
         default_str = f'"{default}"' if isinstance(default, str) else f"{default}"
         field_args.append(f"default={default_str}")
     field_column_factory = (
-        "relationship" if issubclass(field_type, MultiEntityField) else "mapped_field"
+        "relationship"
+        if issubclass(field_type, AbstractEntityField)
+        else "mapped_field"
     )
     fields_instructions = [
         f"{field_schema.field_name}: {annotation} = "
@@ -260,7 +262,7 @@ You can then pass these files to sg2python to create the python script.
         type=str,
         nargs="+",
         help="skip the field if <EntityType>.<field_name> matches any of the given "
-             "regex",
+        "regex",
     )
     parser.add_argument(
         "--skip-entities",
@@ -273,9 +275,9 @@ You can then pass these files to sg2python to create the python script.
         action="store_true",
         default=False,
         help="do not generate classes for the connection tables. "
-             "Shotgrid uses these tables to create the many to many relationships. "
-             "Because sgchemist can create these relationships without an intermediate "
-             "class, this is disabled by default.",
+        "Shotgrid uses these tables to create the many to many relationships. "
+        "Because sgchemist can create these relationships without an intermediate "
+        "class, this is disabled by default.",
     )
     return parser
 
