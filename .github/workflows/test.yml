@@ -24,6 +24,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install ruff pytest shotgun-api3
+    - name: Install sgchemist
+      run: |
+        pip install .
     - name: Test with pytest
       run: |
         pytest tests --junitxml=junit/test-results.xml
