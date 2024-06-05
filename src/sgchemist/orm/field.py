@@ -64,7 +64,11 @@ class AbstractField(Generic[T]):
             """Return the value of the field."""
 
 
-class NumericField(AbstractField[T]):
+class AbstractValueField(AbstractField[T]):
+    """Definition of an abstract value field."""
+
+
+class NumericField(AbstractValueField[T]):
     """Definition of an abstract numerical field."""
 
     cast_type: Type[T]
@@ -162,7 +166,7 @@ class FloatField(NumericField[Optional[float]]):
     default_value: Optional[float] = None
 
 
-class TextField(AbstractField[Optional[str]]):
+class TextField(AbstractValueField[Optional[str]]):
     """A text field."""
 
     cast_type: Type[str] = str
@@ -352,7 +356,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     default_value: List[T] = []
 
 
-class BooleanField(AbstractField[Optional[bool]]):
+class BooleanField(AbstractValueField[Optional[bool]]):
     """Definition a boolean field."""
 
     __sg_type__: str = "checkbox"
@@ -487,7 +491,7 @@ class DurationField(NumberField):
     __sg_type__: str = "duration"
 
 
-class ImageField(AbstractField[Optional[str]]):
+class ImageField(AbstractValueField[Optional[str]]):
     """Definition of an image field."""
 
     cast_type: Type[str] = str
@@ -515,7 +519,7 @@ class ImageField(AbstractField[Optional[str]]):
             """
 
 
-class ListField(AbstractField[Optional[List[str]]]):
+class ListField(AbstractValueField[Optional[List[str]]]):
     """Definition of a list field."""
 
     cast_type: Type[List[str]] = list
@@ -555,7 +559,7 @@ class PercentField(FloatField):
     __sg_type__: str = "percent"
 
 
-class SerializableField(AbstractField[Optional[Dict[str, Any]]]):
+class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
     """Definition of a serializable field."""
 
     cast_type: Type[Dict[str, Any]] = dict
@@ -563,14 +567,14 @@ class SerializableField(AbstractField[Optional[Dict[str, Any]]]):
     default_value: Optional[Dict[str, Any]] = None
 
 
-class StatusField(AbstractField[str]):
+class StatusField(AbstractValueField[str]):
     """Definition of a status field."""
 
     __sg_type__: str = "status_list"
     default_value: str
 
 
-class UrlField(AbstractField[Optional[str]]):
+class UrlField(AbstractValueField[Optional[str]]):
     """Definition of an url field."""
 
     cast_type: Type[str] = str
