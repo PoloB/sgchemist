@@ -1,5 +1,4 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# This workflow will release sgchemist to PyPI
 
 name: Release
 
@@ -8,24 +7,28 @@ on:
     types: [published]
 
 jobs:
+
   release:
     runs-on: "ubuntu-latest"
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sgchemist
     permissions:
       id-token: write
 
     steps:
       - uses: "actions/checkout@v4"
       - uses: "actions/setup-python@v5"
-        with:
-          python-version: "3.9"
+      - with:
+          python-version: "3.x"
       - name: "Install dependencies"
         run: |
           set -xe
           python3 -VV
           python3 -m site
           python3 -m pip install --upgrade pip build
-      - name: "Build package"
+      - name: Build package
         run: |
           python3 -m build
-      - name: "Publish package to PyPI"
-        uses: "pypa/gh-action-pypi-publish@release/v1"
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
