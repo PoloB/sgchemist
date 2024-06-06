@@ -45,8 +45,8 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/PaulEmileB/sgchemist"
-Issues = "https://github.com/PaulEmileB/sgchemist/issues"
+Homepage = "https://github.com/PoloB/sgchemist"
+Issues = "https://github.com/PoloB/sgchemist/issues"
 
 [tool.ruff]
 line-length = 88
