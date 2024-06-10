@@ -96,7 +96,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = dataclasses.replace(self._data)
         # Concat ordered fields
         new_state.order_fields = (
-            new_state.order_fields,
+            *new_state.order_fields,
             (field, direction),
         )
         return self.__class__(new_state)
@@ -237,7 +237,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         new_state = dataclasses.replace(self._state)
         # Concat ordered fields
         new_state.grouping = (
-            new_state.grouping,
+            *new_state.grouping,
             (field, group_type, direction),
         )
         return self.__class__(new_state)
