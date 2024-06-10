@@ -22,7 +22,7 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Install dependencies
       run: |
-        set -xe
+          set -xe
           python -VV
           python -m site
           python -m pip install --upgrade pip setuptools wheel
