@@ -1,18 +1,19 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
 
 [project]
 name = "sgchemist"
-version = "0.0.3"
-dependencies = [
-    'shotgun-api3',
-    'typing-extensions',
-]
 authors = [
     {name="Paul-Emile Buteau", email="paulemilebuteau@gmail.com"},
 ]
 description = "An ORM for Autodesk Shotgrid"
+dependencies = [
+    'shotgun-api3',
+    'typing-extensions',
+]
 readme = "README.md"
 requires-python = ">=3.7"
 keywords = [
@@ -31,49 +32,74 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
 ]
-
-[project.scripts]
-sg2python = "sgchemist.schema.generate_entities:cli"
-
-[project.optional-dependencies]
-test = [
-    'coverage',
-    'mypy',
-    'pytest',
-    'ruff',
-]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/PoloB/sgchemist"
 Issues = "https://github.com/PoloB/sgchemist/issues"
 
+[project.scripts]
+sg2python = "sgchemist.schema.generate_entities:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "sgchemist.VERSION"}
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = "tests/"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+skip_missing_interpreters = true
+envlist = py37, py38, py39, py310, py311, py312
+
+[gh-actions]
+python =
+    3.7: py37
+    3.8: py38
+    3.9: py39
+    3.10: py310
+    3.11: py311
+    3.12: py312
+
+[testenv]
+deps =
+    -rrequirements.txt
+commands = pytest
+"""
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = false
+pretty = true
+
 [tool.ruff]
 line-length = 88
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
+lint.select = [
+    "E",  # pycodestyle
+    "W",
+    "F",  # PyFlakes
+    "B",  # flake8-bugbear
+    "T20",  # "print" in code
+    "N",  # pep8 naming convention
+    "I",  # isort
+    "RUF",  # Bad unicode characters in code
 ]
+lint.pydocstyle.convention = "google"
+src = ["src", "tests"]
 
-[tool.ruff.lint]
-select = ["D", "E", "F"]
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
+[tool.coverage]
+run.omit = ["test/*"]
+report.exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "@abc.abstractmethod",
+]

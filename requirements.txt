@@ -1,0 +1,6 @@
+shotgun-api3
+ruff
+mypy
+pytest-cov
+pytest
+tox

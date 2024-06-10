@@ -22,14 +22,13 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install ruff pytest shotgun-api3
-    - name: Install sgchemist
-      run: |
-        pip install .
-    - name: Test with pytest
-      run: |
-        pytest tests --junitxml=junit/test-results.xml
+        set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade virtualenv tox tox-gh-actions
+    - name: "Run tox targets for ${{ matrix.python-version }}"
+      run: "python -m tox"
   lint:
     name: "Lint code with ruff"
     runs-on: ubuntu-latest
@@ -37,17 +36,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: chartboost/ruff-action@v1
         with:
-          src: "./src"
-  mypy:
-    name: mypy type check
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run mypy
-        uses: jpetrucciani/mypy-check@master
-        with:
-          path: './src'
-          mypy_flags: '--strict'
+          src: "./src ./tests"
