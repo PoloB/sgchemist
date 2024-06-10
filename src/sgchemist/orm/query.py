@@ -8,22 +8,20 @@ from typing import Dict
 from typing import Generic
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
-from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.constant import GroupingType
-from sgchemist.orm.constant import Order
-from sgchemist.orm.meta import SgEntityMeta
-from sgchemist.orm.queryop import SgFilterObject
-from sgchemist.orm.queryop import SgNullCondition
-
-if TYPE_CHECKING:
-    from sgchemist.orm.typing_alias import OrderField, GroupingField
-    from sgchemist.orm.instrumentation import InstrumentedAttribute
-    from sgchemist.orm.entity import SgEntity
+from .constant import BatchRequestType
+from .constant import GroupingType
+from .constant import Order
+from .entity import SgEntity
+from .instrumentation import InstrumentedAttribute
+from .meta import SgEntityMeta
+from .queryop import SgFilterObject
+from .queryop import SgNullCondition
+from .typing_alias import GroupingField
+from .typing_alias import OrderField
 
 T_meta = TypeVar("T_meta", bound=SgEntityMeta)
 

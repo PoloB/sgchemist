@@ -20,13 +20,13 @@ from typing import TypeVar
 import shotgun_api3  # type: ignore
 from typing_extensions import TypedDict
 
-from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.query import SgBatchQuery
-from sgchemist.orm.query import SgFindQueryData
-from sgchemist.orm.row import SgRow
-from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
-from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
+from .constant import BatchRequestType
+from .entity import SgEntity
+from .query import SgBatchQuery
+from .query import SgFindQueryData
+from .row import SgRow
+from .serializer import ShotgunAPIBatchQuerySerializer
+from .serializer import ShotgunAPIObjectSerializer
 
 T = TypeVar("T", bound=SgEntity)
 SgRecord = TypedDict("SgRecord", {"type": str, "id": int}, total=False)

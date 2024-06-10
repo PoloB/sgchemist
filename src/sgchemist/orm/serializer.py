@@ -5,22 +5,18 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import TYPE_CHECKING
 from typing import Union
 
 from typing_extensions import TypedDict
 
-from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.query import SgBatchQuery
-from sgchemist.orm.queryop import SgFieldCondition
-from sgchemist.orm.queryop import SgFilterObject
-from sgchemist.orm.queryop import SgFilterOperation
-from sgchemist.orm.queryop import SgNullCondition
-
-if TYPE_CHECKING:
-    from sgchemist.orm.instrumentation import InstrumentedAttribute
-
+from .constant import BatchRequestType
+from .entity import SgEntity
+from .instrumentation import InstrumentedAttribute
+from .query import SgBatchQuery
+from .queryop import SgFieldCondition
+from .queryop import SgFilterObject
+from .queryop import SgFilterOperation
+from .queryop import SgNullCondition
 
 SerializedEntity = TypedDict("SerializedEntity", {"id": int, "type": str})
 SerializedOperator = TypedDict(

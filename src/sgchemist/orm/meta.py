@@ -18,23 +18,23 @@ from typing import TypeVar
 
 from typing_extensions import get_origin
 
-from sgchemist.orm import error
-from sgchemist.orm.field import AbstractEntityField
-from sgchemist.orm.field import AbstractField
-from sgchemist.orm.instrumentation import InstrumentedAttribute
-from sgchemist.orm.mapped_column import FieldAnnotation
-from sgchemist.orm.mapped_column import MappedColumn
-from sgchemist.orm.mapped_column import MappedField
-from sgchemist.orm.mapped_column import Relationship
-from sgchemist.orm.mapped_column import extract_annotation_info
-from sgchemist.orm.typing_util import de_stringify_annotation
-from sgchemist.orm.typing_util import get_annotations
+from . import error
+from .field import AbstractEntityField
+from .field import AbstractField
+from .instrumentation import InstrumentedAttribute
+from .mapped_column import FieldAnnotation
+from .mapped_column import MappedColumn
+from .mapped_column import MappedField
+from .mapped_column import Relationship
+from .mapped_column import extract_annotation_info
+from .typing_util import de_stringify_annotation
+from .typing_util import get_annotations
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from sgchemist.orm.entity import SgEntity
-    from sgchemist.orm.session import Session
+    from .session import Session
+    from .entity import SgEntity
 
 
 class FieldDescriptor(Generic[T]):

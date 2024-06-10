@@ -6,22 +6,18 @@ from typing import Any
 from typing import ClassVar
 from typing import Dict
 from typing import Set
-from typing import TYPE_CHECKING
 from typing import Type
 from typing import TypeVar
 
 from typing_extensions import dataclass_transform
 
-from sgchemist.orm import error
-from sgchemist.orm.field import NumberField
-from sgchemist.orm.instrumentation import InstrumentedAttribute
-from sgchemist.orm.mapped_column import MappedField
-from sgchemist.orm.mapped_column import mapped_field
-from sgchemist.orm.meta import EntityState
-from sgchemist.orm.meta import SgEntityMeta
-
-if TYPE_CHECKING:
-    pass
+from . import error
+from .field import NumberField
+from .instrumentation import InstrumentedAttribute
+from .mapped_column import MappedField
+from .mapped_column import mapped_field
+from .meta import EntityState
+from .meta import SgEntityMeta
 
 T = TypeVar("T")
 
@@ -58,7 +54,7 @@ class SgEntity(object, metaclass=SgEntityMeta):
             kwargs: Keyword arguments.
 
         Raises:
-            error.SgInvalidAttributeError: raised when a keyword argument is not a 
+            error.SgInvalidAttributeError: raised when a keyword argument is not a
                 field of the entity.
         """
         cls_ = type(self)
@@ -79,7 +75,7 @@ class SgEntity(object, metaclass=SgEntityMeta):
 
     def __repr__(self) -> str:
         """Returns a string representation of the entity.
-        
+
         Returns:
             str: representation of the entity.
         """

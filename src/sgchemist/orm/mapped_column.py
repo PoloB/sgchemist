@@ -13,25 +13,25 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
-from sgchemist.orm import error
-from sgchemist.orm.field import AbstractEntityField
-from sgchemist.orm.field import AbstractField
-from sgchemist.orm.field import AbstractValueField
-from sgchemist.orm.field import EntityField
-from sgchemist.orm.field import MultiEntityField
-from sgchemist.orm.instrumentation import InstrumentedAttribute
-from sgchemist.orm.instrumentation import InstrumentedField
-from sgchemist.orm.instrumentation import InstrumentedMultiRelationship
-from sgchemist.orm.instrumentation import InstrumentedMultiTargetSingleRelationship
-from sgchemist.orm.instrumentation import InstrumentedRelationship
-from sgchemist.orm.instrumentation import LazyEntityClassEval
-from sgchemist.orm.instrumentation import LazyEntityCollectionClassEval
-from sgchemist.orm.typing_util import AnnotationScanType
-from sgchemist.orm.typing_util import de_optionalize_union_types
-from sgchemist.orm.typing_util import expand_unions
+from . import error
+from .field import AbstractEntityField
+from .field import AbstractField
+from .field import AbstractValueField
+from .field import EntityField
+from .field import MultiEntityField
+from .instrumentation import InstrumentedAttribute
+from .instrumentation import InstrumentedField
+from .instrumentation import InstrumentedMultiRelationship
+from .instrumentation import InstrumentedMultiTargetSingleRelationship
+from .instrumentation import InstrumentedRelationship
+from .instrumentation import LazyEntityClassEval
+from .instrumentation import LazyEntityCollectionClassEval
+from .typing_util import AnnotationScanType
+from .typing_util import de_optionalize_union_types
+from .typing_util import expand_unions
 
 if TYPE_CHECKING:
-    from sgchemist.orm.meta import SgEntityMeta
+    from .meta import SgEntityMeta
 
 
 T = TypeVar("T")

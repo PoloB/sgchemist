@@ -290,6 +290,12 @@ def test_various_annotations():
             __sg_type__ = "test"
             test: EntityField
 
+    with pytest.raises(error.SgEntityClassDefinitionError):
+        
+        class _(SgEntity):
+            __sg_type__ = "test"
+            test: "weird[UnknownField]"  # noqa: F821
+
 
 def test_default_init(shot_entity):
     """Tests the initialization of an entity."""

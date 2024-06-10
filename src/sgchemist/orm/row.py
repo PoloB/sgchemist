@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from typing import TypeVar
 
 if TYPE_CHECKING:
-    from sgchemist.orm.typing_alias import EntityHash
+    from .typing_alias import EntityHash
 
 T = TypeVar("T")
 

@@ -17,12 +17,12 @@ from typing import TYPE_CHECKING
 from typing import Type
 from typing import TypeVar
 
-from sgchemist.orm.constant import DateType
-from sgchemist.orm.queryop import SgFieldCondition
+from .constant import DateType
+from .queryop import SgFieldCondition
 
 if TYPE_CHECKING:
-    from sgchemist.orm.meta import SgEntityMeta
-    from sgchemist.orm.entity import SgEntity
+    from .entity import SgEntity
+    from .meta import SgEntityMeta
 
 T = TypeVar("T")
 

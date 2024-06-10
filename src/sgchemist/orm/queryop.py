@@ -8,11 +8,11 @@ from typing import List
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
-from sgchemist.orm.constant import LogicalOperator
-from sgchemist.orm.constant import Operator
+from .constant import LogicalOperator
+from .constant import Operator
 
 if TYPE_CHECKING:
-    from sgchemist.orm.instrumentation import InstrumentedAttribute
+    from .instrumentation import InstrumentedAttribute
 
 T = TypeVar("T")
 

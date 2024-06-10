@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import builtins
-import inspect
 import re
 import sys
 from re import Match
@@ -17,6 +16,7 @@ from typing import Tuple
 from typing import Type
 from typing import TypeVar
 from typing import Union
+from typing import _SpecialForm
 from typing import cast
 
 from typing_extensions import Literal
@@ -33,25 +33,21 @@ AnnotationScanType = Union[Type[Any], str, ForwardRef, NewType, TypeAliasType]
 NoneFwd = ForwardRef("None")
 
 
-if sys.version_info >= (3, 10):
+def get_annotations(obj: Any) -> Mapping[str, Any]:
+    """Return the annotations of the given object.
 
-    def get_annotations(obj: Any) -> Mapping[str, Any]:
-        """Return the annotations of the given object."""
-        return inspect.get_annotations(obj)
-
-else:
-
-    def get_annotations(obj: Any) -> Mapping[str, Any]:
-        """Return the annotations of the given object."""
-        # https://docs.python.org/3/howto/annotations.html#annotations-howto
-        if isinstance(obj, type):
-            ann = obj.__dict__.get("__annotations__", None)
-        else:
-            ann = getattr(obj, "__annotations__", None)
-        if ann is None:
-            return {}
-        else:
-            return cast("Mapping[str, Any]", ann)
+    Compatibility function to `inspect.get_annotations`.
+    """
+    # https://docs.python.org/3/howto/annotations.html#annotations-howto
+    ann = (
+        obj.__dict__.get("__annotations__", None)
+        if isinstance(obj, type)
+        else getattr(obj, "__annotations__", None)
+    )
+    if ann is None:
+        return {}
+    else:
+        return cast("Mapping[str, Any]", ann)
 
 
 class ArgsTypeProtocol(Protocol):
@@ -263,12 +259,14 @@ def make_union_type(*types: AnnotationScanType) -> Type[Any]:
     return cast(Any, Union).__getitem__(types)  # type: ignore
 
 
-def is_origin_of(type_: Any, *names: str, module: Optional[str] = None) -> bool:
+def is_origin_of(
+    type_: Any, *types: _SpecialForm, module: Optional[str] = None
+) -> bool:
     """Return True if the given type has an __origin__ with the given names.
 
     Args:
         type_: The type to check.
-        names: The names of the types to check.
+        types: The types to check.
         module: The module where the type is located.
 
     Returns:
@@ -278,13 +276,7 @@ def is_origin_of(type_: Any, *names: str, module: Optional[str] = None) -> bool:
     if origin is None:
         return False
 
-    typ_name = getattr(origin, "__name__", None)
-    if typ_name is None:
-        typ_name = getattr(origin, "_name", None)
-
-    return typ_name in names and (
-        module is None or origin.__module__.startswith(module)
-    )
+    return origin in types and (module is None or origin.__module__.startswith(module))
 
 
 def is_optional(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
@@ -298,9 +290,8 @@ def is_optional(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
     """
     return is_origin_of(
         type_,
-        "Optional",
-        "Union",
-        "UnionType",
+        Optional,
+        Union,
     )
 
 
@@ -313,7 +304,7 @@ def is_union(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
     Returns:
         bool: True if the type is union.
     """
-    return is_origin_of(type_, "Union")
+    return is_origin_of(type_, Union)
 
 
 def expand_unions(type_: str) -> Tuple[str, ...]:
