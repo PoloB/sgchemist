@@ -5,7 +5,6 @@ import re
 import sys
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
-from collections.abc import Collection
 from typing import Any
 from typing import Iterable
 from typing import List
@@ -26,11 +25,7 @@ logger = logging.getLogger("model_generate")
 def _generate_python_script_field(
     entity_schema: EntitySchema,
     field_schema: FieldSchema,
-    skip_entities: Collection[str] = (
-        "AppWelcome",
-        "Banner",
-        "Contract",
-    ),
+    skip_entities: List[str] = None,
     create_aliases: bool = False,
 ) -> List[str]:
     """Generate python script for a given field for the given entity schema.
@@ -44,6 +39,10 @@ def _generate_python_script_field(
     Returns:
         list[str]: list of generated python scripts, one for each field.
     """
+
+    if skip_entities is None:
+        skip_entities = []
+
     field_args = []
     field_data_type = field_schema.data_type.value
     field_type = field_by_sg_type.get(field_data_type)
@@ -73,7 +72,7 @@ def _generate_python_script_field(
 
     if valid_types:
         annotation_format = (
-            "[list[{}]]" if issubclass(field_type, MultiEntityField) else "[{}]"
+            "[List[{}]]" if issubclass(field_type, MultiEntityField) else "[{}]"
         )
         annotation += annotation_format.format(" | ".join(valid_types))
 
@@ -159,6 +158,7 @@ Any changes made to this file may be lost.
     # Add the minimal required imports
     imports = [
         "from __future__ import annotations",
+        "from typing import List",
         "from sgchemist.orm import mapped_field",
         "from sgchemist.orm import relationship",
         "from sgchemist.orm import SgEntity",
