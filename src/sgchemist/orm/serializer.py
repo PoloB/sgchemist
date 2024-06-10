@@ -93,9 +93,9 @@ class ShotgunAPIObjectSerializer:
             return serialize_entity(sg_object)
         elif isinstance(sg_object, SgFilterOperation):
             return self.serialize_operation(sg_object)
-        assert (
-            False
-        ), f"Cannot serialize object of type {type(sg_object)}"  # pragma: no cover
+        raise AssertionError(
+            f"Cannot serialize object of type {type(sg_object)}"
+        )  # pragma: no cover
 
     def serialize_operation(
         self, filter_operator: SgFilterOperation
@@ -185,8 +185,8 @@ class ShotgunAPIBatchQuerySerializer:
             elif request_type == BatchRequestType.DELETE:
                 batch_data["entity_id"] = entity.id
             else:
-                assert (
-                    False
-                ), f"Request type {request_type} is not supported"  # pragma: no cover
+                raise AssertionError(
+                    f"Request type {request_type} is not supported"
+                )  # pragma: no cover
             serialized_batch_queries.append(batch_data)
         return serialized_batch_queries

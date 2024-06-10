@@ -25,7 +25,7 @@ logger = logging.getLogger("model_generate")
 def _generate_python_script_field(
     entity_schema: EntitySchema,
     field_schema: FieldSchema,
-    skip_entities: List[str] = None,
+    skip_entities: Optional[List[str]] = None,
     create_aliases: bool = False,
 ) -> List[str]:
     """Generate python script for a given field for the given entity schema.

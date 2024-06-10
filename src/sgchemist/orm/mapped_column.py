@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Collection
 from typing import Generic
 from typing import Iterable
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -161,7 +161,7 @@ class MappedField(MappedColumn):
             InstrumentedField[T]: the instrumented field
         """
         if not issubclass(field_annotation.field_type, AbstractValueField):
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "A MappedField should target an AbstractValueField annotation"
             )
         return InstrumentedField(
@@ -202,19 +202,19 @@ class Relationship(MappedColumn):
         entity_class = field_annotation.entity_class
         # Make some checks
         if not issubclass(field_annotation.field_type, AbstractEntityField):
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "A Relationship should target an AbstractEntityField annotation"
             )
         if len(entities) == 0:
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "An entity field must provide a target entity"
             )
         if field_type is MultiEntityField and container_class is not list:
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "A multi entity field requires a list annotation"
             )
         if field_type is EntityField and container_class:
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "An entity field shall not have a container annotation"
             )
         # Construct a multi target entity
@@ -284,11 +284,11 @@ class AliasRelationship(Relationship):
         """
         # Check the annotation
         if field_annotation.field_type is not EntityField:
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "An alias field requires must be an EntityField"
             )
         if len(field_annotation.entities) != 1:
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "A alias field shall target a single entity"
             )
         # Make sure the entity type in annotation is in the target annotation
@@ -300,7 +300,7 @@ class AliasRelationship(Relationship):
         ]
         target_annotation = target_instrumentation.get_field_annotation()
         if target_entity not in target_annotation.entities:
-            raise error.SgInvalidAnnotation(
+            raise error.SgInvalidAnnotationError(
                 "An alias field must target a multi target field containing its entity"
             )
         return super().get_instrumented(field_annotation)

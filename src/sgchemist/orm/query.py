@@ -34,7 +34,7 @@ class SgFindQueryData(Generic[T_meta]):
     """
 
     model: T_meta
-    condition: SgFilterObject = SgNullCondition()
+    condition: SgFilterObject = dataclasses.field(default_factory=SgNullCondition)
     order_fields: Tuple[OrderField, ...] = tuple()
     limit: int = 0
     retired_only: bool = False
@@ -95,7 +95,10 @@ class SgFindQuery(Generic[T_meta]):
             direction = Order(direction)
         new_state = dataclasses.replace(self._data)
         # Concat ordered fields
-        new_state.order_fields = new_state.order_fields + ((field, direction),)
+        new_state.order_fields = (
+            new_state.order_fields,
+            (field, direction),
+        )
         return self.__class__(new_state)
 
     def limit(self, limit: int) -> SgFindQuery[T_meta]:
@@ -233,7 +236,10 @@ class SgSummarizeQuery(Generic[T_meta]):
             direction = Order(direction)
         new_state = dataclasses.replace(self._state)
         # Concat ordered fields
-        new_state.grouping = new_state.grouping + ((field, group_type, direction),)
+        new_state.grouping = (
+            new_state.grouping,
+            (field, group_type, direction),
+        )
         return self.__class__(new_state)
 
     def reject_archived_projects(self) -> SgSummarizeQuery[T_meta]:

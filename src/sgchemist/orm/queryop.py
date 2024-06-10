@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import List
-from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from .constant import LogicalOperator
@@ -103,7 +103,7 @@ class SgFilterOperation(SgFilterObject):
             if other.operator == self.operator == operator:
                 objects = self.sg_objects + other.sg_objects
         elif self.operator == operator:
-            objects = self.sg_objects + [other]
+            objects = [*self.sg_objects, other]
 
         return self.__class__(operator, objects)
 

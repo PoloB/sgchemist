@@ -6,8 +6,6 @@ the queries given by the Session object.
 The engine ShotgunAPIEngine uses the python shotgun-api3 package.
 You can reimplement a new engine using, for example, the REST api by subclassing the
 SgEngine abstract class.
-
-
 """
 
 from __future__ import annotations
@@ -40,7 +38,7 @@ class SgEngine:
     @abc.abstractmethod
     def find(self, query: SgFindQueryData[Type[T]]) -> List[SgRow[T]]:
         """Execute a find query and return the rows.
-        
+
         Each row is referring to a single Shotgrid entity.
         If an entity is referencing other nested entities, these entities are also
         returned as rows.
@@ -83,10 +81,10 @@ class ShotgunAPIEngine(SgEngine):
 
     def find(self, query: SgFindQueryData[Type[T]]) -> List[SgRow[T]]:
         """Execute a find query and return the rows.
-        
+
         Args:
             query (SgFindQueryData): query state to execute.
-        
+
         Returns:
             list[SgRow]: rows returned by the query.
         """
@@ -131,10 +129,10 @@ class ShotgunAPIEngine(SgEngine):
 
     def batch(self, batch_queries: List[SgBatchQuery]) -> List[SgRow[SgEntity]]:
         """Execute a batch query and return the rows.
-        
+
         Args:
             batch_queries (SgFindQueryData): query state to execute.
-        
+
         Returns:
             list[SgRow]: rows returned by the query.
         """

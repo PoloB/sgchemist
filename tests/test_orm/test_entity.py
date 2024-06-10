@@ -8,19 +8,19 @@ from typing import Type
 from typing import Union
 
 import pytest
-from typing_extensions import List
-
 from classes import Asset
 from classes import Project
 from classes import Shot
 from classes import Task
-from sgchemist.orm import error
-from sgchemist.orm import mapped_field
-from sgchemist.orm import SgEntity
+from typing_extensions import List
+
 from sgchemist.orm import EntityField
 from sgchemist.orm import MultiEntityField
 from sgchemist.orm import NumberField
+from sgchemist.orm import SgEntity
 from sgchemist.orm import TextField
+from sgchemist.orm import error
+from sgchemist.orm import mapped_field
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedMultiTargetSingleRelationship
 from sgchemist.orm.mapped_column import alias_relationship
@@ -75,7 +75,7 @@ def test_model_creation_missing_sg_type():
     """Tests a missing __sg_type__ attribute raises an error."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             pass
 
 
@@ -84,7 +84,7 @@ def test_model_creation_reserved_attributes():
     # No reserved attributes
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             __sg_type__ = "test"
             __fields__ = "test"
 
@@ -115,7 +115,7 @@ def test_model_entity_field_has_no_container():
     """Tests it is not possible to create an entity field with a container."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             __sg_type__ = "test"
             entity_with_container: EntityField[list[SgEntity]]
 
@@ -124,7 +124,7 @@ def test_model_multi_entity_field_has_container():
     """Tests it is not possible to create a multi-entity field without a container."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             __sg_type__ = "test"
             multi_entity_with_no_container: MultiEntityField[SgEntity]
 
@@ -184,11 +184,11 @@ def test_union_entity_is_multi_target():
     # Multi entity must be a list
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             __sg_type__ = "test"
             entity: MultiEntityField[Union[SgEntity, TestEntity]]
 
-    class _(SgEntity):
+    class TestEntity2(SgEntity):
         __sg_type__ = "test"
         entity: MultiEntityField[List[Union[SgEntity, TestEntity]]]
 
@@ -210,10 +210,12 @@ def test_alias_field_construction():
     # An alias relationship cannot target multiple entities
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[_, TestEntity]] = relationship()
-            alias: EntityField[Union[TestEntity, _]] = alias_relationship(entity)
+            entity: EntityField[Union[TestEntity1, TestEntity]] = relationship()
+            alias: EntityField[Union[TestEntity, TestEntity1]] = alias_relationship(
+                entity
+            )
 
     class OutsideEntity(SgEntity):
         __sg_type__ = "outside"
@@ -232,67 +234,67 @@ def test_various_annotations():
     """Tests various annotations."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity1(SgEntity):
             __sg_type__ = "test"
             test: Optional[EntityField]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity2(SgEntity):
             __sg_type__ = "test"
             test: List[EntityField]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity3(SgEntity):
             __sg_type__ = "test"
             test: List = relationship()
 
-    class _(SgEntity):
+    class TestEntity4(SgEntity):
         __sg_type__ = "test"
         test: ClassVar[List]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity5(SgEntity):
             __sg_type__ = "test"
             test: List[str]
 
     class Other:
         pass
 
-    class _(SgEntity):
+    class TestEntity6(SgEntity):
         __sg_type__ = "test"
         test: ClassVar[List[Other]]
 
     # String annotation
-    class _(SgEntity):
+    class TestEntity7(SgEntity):
         __sg_type__ = "test"
         test: "TextField"
 
-    class _(SgEntity):
+    class TestEntity8(SgEntity):
         __sg_type__ = "test"
         test: EntityField["SgEntity"]
 
-    class _(SgEntity):
+    class TestEntity9(SgEntity):
         __sg_type__ = "test"
         test: "EntityField[SgEntity]"
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity10(SgEntity):
             __sg_type__ = "test"
             test: TextField = 5
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class _(SgEntity):
+        class TestEntity11(SgEntity):
             __sg_type__ = "test"
             test: EntityField
 
     with pytest.raises(error.SgEntityClassDefinitionError):
-        
-        class _(SgEntity):
+
+        class TestEntity12(SgEntity):
             __sg_type__ = "test"
             test: "weird[UnknownField]"  # noqa: F821
 

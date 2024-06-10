@@ -92,6 +92,6 @@ def test_main(cli_args: List[str], output_script_path: str) -> None:
 
 def test_cli(cli_args: List[str], output_script_path: str) -> None:
     """Test the cli function of the module."""
-    cli_args = ["testProg"] + cli_args
+    cli_args = ["testProg", *cli_args]
     with mock.patch("sys.argv", cli_args):
         generate.cli()

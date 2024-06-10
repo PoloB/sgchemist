@@ -27,5 +27,5 @@ class SgDeleteEntityError(SgError):
     """Raised when an entity cannot be deleted in the session."""
 
 
-class SgInvalidAnnotation(SgError):
+class SgInvalidAnnotationError(SgError):
     """Raised when an annotation is invalid."""

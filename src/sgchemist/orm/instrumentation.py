@@ -8,6 +8,7 @@ from __future__ import absolute_import
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Collection
@@ -17,7 +18,6 @@ from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -33,9 +33,9 @@ T_entity = TypeVar("T_entity")
 T2 = TypeVar("T2")
 
 if TYPE_CHECKING:
-    from .meta import SgEntityMeta
     from .entity import SgEntity
     from .mapped_column import FieldAnnotation
+    from .meta import SgEntityMeta
 
 
 class LazyEntityClassEval:
@@ -982,13 +982,13 @@ class TargetSelector:
         """Returns the field of the targeted entity."""
         try:
             target_field = self._target_entity.__fields__[item]
-        except KeyError:
+        except KeyError as e:
             raise AttributeError(
                 f"{item} is not a valid target for field "
                 f"{self._instru.get_parent_class().__name__}."
                 f"{self._instru.get_name()}."
                 f"{self._target_entity.__name__}"
-            )
+            ) from e
         return target_field.build_relative_to(self._instru, self._target_entity)
 
 
@@ -1060,12 +1060,12 @@ class InstrumentedMultiTargetRelationship(InstrumentedAttribute[T], abc.ABC):
 
     def __getattr__(self, item: str) -> Any:
         """Returns the field of the target entity or a target selector.
-        
+
         A target selector is returned if there are multiple possible target types.
-        
+
         Args:
             item (str): the name of the attribute
-        
+
         Returns:
             Any: the field of the target entity or a target selector.\
         """

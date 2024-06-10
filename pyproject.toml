@@ -92,6 +92,7 @@ lint.select = [
     "I",  # isort
     "RUF",  # Bad unicode characters in code
 ]
+lint.isort.force-single-line = true
 lint.pydocstyle.convention = "google"
 src = ["src", "tests"]
 
