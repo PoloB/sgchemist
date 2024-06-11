@@ -1,28 +1,29 @@
 """Definition of all the fields used by Shotgrid entities.
 
 The main function of these fields is to provide the correct type annotations.
-Internally, only the classes inheriting from InstrumentedAttribute are used.  
+Internally, only the classes inheriting from InstrumentedAttribute are used.
 """
 
 from __future__ import annotations
 
 from datetime import date
 from datetime import datetime
+from typing import TYPE_CHECKING
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import Generic
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Type
 from typing import TypeVar
 
-from sgchemist.orm.constant import DateType
-from sgchemist.orm.queryop import SgFieldCondition
+from .constant import DateType
+from .queryop import SgFieldCondition
 
 if TYPE_CHECKING:
-    from sgchemist.orm.meta import SgEntityMeta
-    from sgchemist.orm.entity import SgEntity
+    from .entity import SgEntity
+    from .meta import SgEntityMeta
 
 T = TypeVar("T")
 
@@ -353,7 +354,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
-    default_value: List[T] = []
+    default_value: ClassVar[List[T]] = []
 
 
 class BooleanField(AbstractValueField[Optional[bool]]):

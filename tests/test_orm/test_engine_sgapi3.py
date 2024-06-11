@@ -1,10 +1,10 @@
 """Tests for the shotgun-api3 engine."""
 
 import pytest
-
 from classes import Project
 from classes import Shot
 from classes import Task
+
 from sgchemist.orm import Session
 from sgchemist.orm import ShotgunAPIEngine
 from sgchemist.orm import select

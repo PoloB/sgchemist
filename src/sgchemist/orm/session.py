@@ -12,20 +12,17 @@ from typing import Generic
 from typing import Iterator
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Type
 from typing import TypeVar
 
-from sgchemist.orm import error
-from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.query import SgBatchQuery
-from sgchemist.orm.query import SgFindQuery
-from sgchemist.orm.row import SgRow
-
-if TYPE_CHECKING:
-    from sgchemist.orm.engine import SgEngine
-    from sgchemist.orm.typing_alias import EntityHash
+from . import error
+from .constant import BatchRequestType
+from .engine import SgEngine
+from .entity import SgEntity
+from .query import SgBatchQuery
+from .query import SgFindQuery
+from .row import SgRow
+from .typing_alias import EntityHash
 
 T = TypeVar("T", bound=SgEntity)
 

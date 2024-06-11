@@ -2,12 +2,12 @@
 from typing import List
 
 import pytest
-
-import sgchemist
 from classes import Asset
 from classes import Project
 from classes import Shot
 from classes import Task
+
+import sgchemist
 from sgchemist.orm import SgEntity
 from sgchemist.orm import ShotgunAPIEngine
 from sgchemist.orm import error

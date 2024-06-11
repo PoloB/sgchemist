@@ -1,5 +1,10 @@
 # sgchemist
 
+[![Tests](https://github.com/PoloB/sgchemist/actions/workflows/test.yml/badge.svg)](https://github.com/PoloB/sgchemist/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/PoloB/sgchemist/graph/badge.svg?token=KNWN8UT6OK)](https://codecov.io/gh/PoloB/sgchemist)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+
 An Object Relation Mapper for Autodesk Flow Production Tracker (previously Shotgrid and Shotgun) inspired by SQLAlchemy.
 
 

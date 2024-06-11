@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import sys
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
 from typing import Dict
@@ -11,30 +12,29 @@ from typing import Generic
 from typing import List
 from typing import Optional
 from typing import Set
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
 from typing_extensions import get_origin
 
-from sgchemist.orm import error
-from sgchemist.orm.field import AbstractEntityField
-from sgchemist.orm.field import AbstractField
-from sgchemist.orm.instrumentation import InstrumentedAttribute
-from sgchemist.orm.mapped_column import FieldAnnotation
-from sgchemist.orm.mapped_column import MappedColumn
-from sgchemist.orm.mapped_column import MappedField
-from sgchemist.orm.mapped_column import Relationship
-from sgchemist.orm.mapped_column import extract_annotation_info
-from sgchemist.orm.typing_util import de_stringify_annotation
-from sgchemist.orm.typing_util import get_annotations
+from . import error
+from .field import AbstractEntityField
+from .field import AbstractField
+from .instrumentation import InstrumentedAttribute
+from .mapped_column import FieldAnnotation
+from .mapped_column import MappedColumn
+from .mapped_column import MappedField
+from .mapped_column import Relationship
+from .mapped_column import extract_annotation_info
+from .typing_util import de_stringify_annotation
+from .typing_util import get_annotations
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from sgchemist.orm.entity import SgEntity
-    from sgchemist.orm.session import Session
+    from .entity import SgEntity
+    from .session import Session
 
 
 class FieldDescriptor(Generic[T]):
@@ -277,7 +277,7 @@ class SgEntityMeta(type):
         cls.__fields__: Dict[str, InstrumentedAttribute[Any]] = {}
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
         cls.__abstract__ = dict_.get("__abstract__", False)
-        cls.__instance_state__: EntityState
+        cls.__instance_state__: EntityState  # noqa: B032
         cls.__attr_per_field_name__ = {}
         # Get the registry back from parent class
         cls.__registry__ = {}
@@ -298,10 +298,10 @@ class SgEntityMeta(type):
         all_primaries: Set[str] = set()
         for base in bases:
             base_fields = (
-                getattr(base, "__fields__") if hasattr(base, "__fields__") else {}
+                base.__fields__ if hasattr(base, "__fields__") else {}
             )
             all_primaries.update(
-                getattr(base, "__primaries__") if hasattr(base, "__primaries__") else {}
+                base.__primaries__ if hasattr(base, "__primaries__") else {}
             )
             all_fields.update(base_fields)
         cls.__fields__ = all_fields
@@ -358,7 +358,7 @@ class SgEntityMeta(type):
             # Build the instrumented attribute
             try:
                 field = map_field.get_instrumented(entity_annot)
-            except error.SgInvalidAnnotation as e:
+            except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"
                 ) from e

@@ -1,18 +1,20 @@
 """Tests for entity schema."""
 
-from sgchemist.schema import entity
+from sgchemist.schema.parse import FieldSchema
+from sgchemist.schema.parse import ValueSchema
+from sgchemist.schema.parse import load_entities
 
 
 def test_value_schema():
     """Tests the ValueSchema class."""
-    value_schema = entity.ValueSchema.from_schema({"value": "test", "editable": True})
+    value_schema = ValueSchema.from_schema({"value": "test", "editable": True})
     assert value_schema.value == "test"
     assert value_schema.editable is True
 
 
 def test_field_schema():
     """Tests the FieldSchema class."""
-    field_schema = entity.FieldSchema.from_schema(
+    field_schema = FieldSchema.from_schema(
         "field",
         {
             "name": {"value": "test", "editable": True},
@@ -32,4 +34,4 @@ def test_field_schema():
 
 def test_load_entities(schema_paths):
     """Tests the load_entities function."""
-    entity.load_entities(*schema_paths)
+    load_entities(*schema_paths)

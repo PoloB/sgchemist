@@ -6,6 +6,7 @@ import sys
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from typing import Any
+from typing import Iterable
 from typing import List
 from typing import Optional
 
@@ -13,14 +14,17 @@ from sgchemist.orm.field import AbstractEntityField
 from sgchemist.orm.field import EntityField
 from sgchemist.orm.field import MultiEntityField
 from sgchemist.orm.field import field_by_sg_type
-from sgchemist.schema import entity as schema_entity
+from sgchemist.schema.parse import EntitySchema
+from sgchemist.schema.parse import FieldSchema
+from sgchemist.schema.parse import ValueSchema
+from sgchemist.schema.parse import load_entities
 
 logger = logging.getLogger("model_generate")
 
 
-def generate_python_script_field(
-    entity_schema: schema_entity.EntitySchema,
-    field_schema: schema_entity.FieldSchema,
+def _generate_python_script_field(
+    entity_schema: EntitySchema,
+    field_schema: FieldSchema,
     skip_entities: Optional[List[str]] = None,
     create_aliases: bool = False,
 ) -> List[str]:
@@ -35,6 +39,7 @@ def generate_python_script_field(
     Returns:
         list[str]: list of generated python scripts, one for each field.
     """
+
     if skip_entities is None:
         skip_entities = []
 
@@ -51,7 +56,7 @@ def generate_python_script_field(
         return []
 
     valid_types = field_schema.properties.get(
-        "valid_types", schema_entity.ValueSchema([], False)
+        "valid_types", ValueSchema([], False)
     ).value
 
     if issubclass(field_type, AbstractEntityField):
@@ -67,13 +72,13 @@ def generate_python_script_field(
 
     if valid_types:
         annotation_format = (
-            "[list[{}]]" if issubclass(field_type, MultiEntityField) else "[{}]"
+            "[List[{}]]" if issubclass(field_type, MultiEntityField) else "[{}]"
         )
         annotation += annotation_format.format(" | ".join(valid_types))
 
     field_args.append(f'name="{field_schema.field_name}"')
     default = field_schema.properties.get(
-        "default_value", schema_entity.ValueSchema(None, False)
+        "default_value", ValueSchema(None, False)
     ).value
 
     if default is not None:
@@ -101,7 +106,7 @@ def generate_python_script_field(
     return fields_instructions
 
 
-def generate_entity_script_from_schema(schema: schema_entity.EntitySchema) -> str:
+def _generate_entity_script_from_schema(schema: EntitySchema) -> str:
     """Generates the script for the given entity schema.
 
     Args:
@@ -116,7 +121,7 @@ def generate_entity_script_from_schema(schema: schema_entity.EntitySchema) -> st
 
 
 def generate_python_script_models(
-    entity_schemas: List[schema_entity.EntitySchema],
+    entity_schemas: Iterable[EntitySchema],
     skip_entities: Optional[List[str]] = None,
     skip_field_patterns: Optional[List[str]] = None,
     include_connections: bool = False,
@@ -153,6 +158,7 @@ Any changes made to this file may be lost.
     # Add the minimal required imports
     imports = [
         "from __future__ import annotations",
+        "from typing import List",
         "from sgchemist.orm import mapped_field",
         "from sgchemist.orm import relationship",
         "from sgchemist.orm import SgEntity",
@@ -189,17 +195,19 @@ Any changes made to this file may be lost.
         if entity_schema.entity_type.endswith("Connection") and not include_connections:
             continue
 
-        entity_script = generate_entity_script_from_schema(entity_schema)
+        entity_script = _generate_entity_script_from_schema(entity_schema)
         entity_script += "\n\n"
         # Add a fields
         field_defs = []
         for field in sorted(entity_schema.fields, key=lambda x: x.field_name):
+            if field.field_name == "id":
+                continue
             field_pattern_test = f"{entity_schema.entity_type}.{field.field_name}"
             if any(
                 re.match(pattern, field_pattern_test) for pattern in skip_field_patterns
             ):
                 continue
-            for field_def in generate_python_script_field(
+            for field_def in _generate_python_script_field(
                 entity_schema, field, skip_entities, create_field_aliases
             ):
                 field_defs.append("\t" + field_def)
@@ -269,6 +277,7 @@ You can then pass these files to sg2python to create the python script.
         type=str,
         nargs="+",
         help="skip the given entities (and any field referencing it)",
+        default=("AppWelcome", "Banner", "Contract"),
     )
     parser.add_argument(
         "--include-connections",
@@ -291,7 +300,7 @@ def main(argv: List[Any]) -> None:
     parser = get_cli_parser()
     args = parser.parse_args(argv)
     # Load the entities
-    entities = schema_entity.load_entities(args.in_schema, args.in_schema_entity)
+    entities = load_entities(args.in_schema, args.in_schema_entity)
     python_script = generate_python_script_models(
         entities,
         skip_entities=args.skip_entities,

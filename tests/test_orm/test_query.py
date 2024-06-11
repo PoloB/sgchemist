@@ -3,8 +3,8 @@
 from typing import Type
 
 import pytest
-
 from classes import Shot
+
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.constant import GroupingType
 from sgchemist.orm.constant import Order

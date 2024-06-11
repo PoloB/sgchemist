@@ -4,11 +4,11 @@ from typing import Callable
 from typing import Type
 
 import pytest
-
 from classes import Asset
 from classes import Project
 from classes import Shot
 from classes import Task
+
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import SgEntity

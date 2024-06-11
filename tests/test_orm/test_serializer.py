@@ -3,10 +3,10 @@
 from typing import Type
 
 import pytest
-
-import sgchemist.orm.constant
 from classes import Project
 from classes import Shot
+
+import sgchemist.orm.constant
 from sgchemist.orm import query
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedRelationship
