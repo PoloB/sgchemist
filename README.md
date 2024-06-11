@@ -1,7 +1,7 @@
 # sgchemist
 
 [![Tests](https://github.com/PoloB/sgchemist/actions/workflows/test.yml/badge.svg)](https://github.com/PoloB/sgchemist/actions/workflows/test.yml)
-[![coverage](https://img.shields.io/badge/%20coverage-99%25-%231674b1?style=flat&color=darkgreen)](https://github.com/PoloB/sgchemist/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/codecov/Python-Standard/branch/main/graph/badge.svg)](https://codecov.io/gh/codecov/Python-Standard)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 
