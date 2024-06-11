@@ -31,12 +31,18 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Install dependencies
       run: |
-        python -VV
-        python -m site
-        python -m pip install --upgrade pip setuptools wheel
-        python -m pip install --upgrade virtualenv tox tox-gh-actions
-    - name: "Run tox targets for ${{ matrix.python-version }}"
-      run: "python -m tox"
+        python -m pip install --upgrade pip
+        pip install -r requirements_test.txt
+    - name: "Run pytest for python${{ matrix.python-version }}"
+      run: |
+        pytest --cov=./ --cov-report=xml
+    - name: Collect coverage
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
+        files: ./coverage.xml
+        verbose: true
   lint:
     name: "Lint code with ruff"
     runs-on: ubuntu-latest
