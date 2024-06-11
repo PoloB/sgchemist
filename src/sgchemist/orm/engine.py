@@ -15,7 +15,7 @@ from typing import List
 from typing import Type
 from typing import TypeVar
 
-import shotgun_api3  # type: ignore
+import shotgun_api3
 from typing_extensions import TypedDict
 
 from .constant import BatchRequestType

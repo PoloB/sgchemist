@@ -383,7 +383,7 @@ def test_cannot_set_primary_key(shot_not_commited: Shot):
         shot_not_commited.id = 1
 
 
-def test_alias_field_descriptor():
+def test_alias_field_descriptor() -> None:
     """Tests alias field descriptor behavior."""
     task = Task(name="test")
     assert task.entity is None

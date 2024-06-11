@@ -32,7 +32,7 @@ class AbstractField(Generic[T]):
     """Definition of an abstract field."""
 
     cast_type: Type[T]
-    default_value: T
+    default_value: ClassVar
     __sg_type__: str = ""
 
     if TYPE_CHECKING:
@@ -156,7 +156,7 @@ class NumberField(NumericField[Optional[int]]):
 
     cast_type: Type[int] = int
     __sg_type__: str = "number"
-    default_value: Optional[int] = None
+    default_value: ClassVar[Optional[int]] = None
 
 
 class FloatField(NumericField[Optional[float]]):
@@ -164,7 +164,7 @@ class FloatField(NumericField[Optional[float]]):
 
     cast_type: Type[float] = float
     __sg_type__: str = "float"
-    default_value: Optional[float] = None
+    default_value: ClassVar[Optional[float]] = None
 
 
 class TextField(AbstractValueField[Optional[str]]):
@@ -172,7 +172,7 @@ class TextField(AbstractValueField[Optional[str]]):
 
     cast_type: Type[str] = str
     __sg_type__: str = "text"
-    default_value: Optional[str] = None
+    default_value: ClassVar[Optional[str]] = None
 
     if TYPE_CHECKING:
 
@@ -346,7 +346,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
     """Definition a field targeting a single entity."""
 
     __sg_type__: str = "entity"
-    default_value: Optional[T] = None
+    default_value: ClassVar[Optional[T]] = None
     cast_type: Type[T]
 
 
@@ -361,7 +361,7 @@ class BooleanField(AbstractValueField[Optional[bool]]):
     """Definition a boolean field."""
 
     __sg_type__: str = "checkbox"
-    default_value: Optional[bool] = None
+    default_value: ClassVar[Optional[bool]] = None
 
 
 class AbstractDateField(NumericField[T]):
@@ -475,7 +475,7 @@ class DateField(AbstractDateField[Optional[date]]):
 
     cast_type: Type[date] = date
     __sg_type__: str = "date"
-    default_value: Optional[date] = None
+    default_value: ClassVar[Optional[date]] = None
 
 
 class DateTimeField(AbstractDateField[Optional[datetime]]):
@@ -483,7 +483,7 @@ class DateTimeField(AbstractDateField[Optional[datetime]]):
 
     cast_type: Type[datetime] = datetime
     __sg_type__: str = "date_time"
-    default_value: Optional[datetime] = None
+    default_value: ClassVar[Optional[datetime]] = None
 
 
 class DurationField(NumberField):
@@ -497,7 +497,7 @@ class ImageField(AbstractValueField[Optional[str]]):
 
     cast_type: Type[str] = str
     __sg_type__: str = "image"
-    default_value: Optional[str] = None
+    default_value: ClassVar[Optional[str]] = None
 
     if TYPE_CHECKING:
 
@@ -525,7 +525,7 @@ class ListField(AbstractValueField[Optional[List[str]]]):
 
     cast_type: Type[List[str]] = list
     __sg_type__: str = "list"
-    default_value: Optional[List[str]] = None
+    default_value: ClassVar[Optional[List[str]]] = None
 
     if TYPE_CHECKING:
 
@@ -565,14 +565,14 @@ class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
 
     cast_type: Type[Dict[str, Any]] = dict
     __sg_type__: str = "serializable"
-    default_value: Optional[Dict[str, Any]] = None
+    default_value: ClassVar[Optional[Dict[str, Any]]] = None
 
 
 class StatusField(AbstractValueField[str]):
     """Definition of a status field."""
 
     __sg_type__: str = "status_list"
-    default_value: str
+    default_value: ClassVar[str]
 
 
 class UrlField(AbstractValueField[Optional[str]]):
@@ -580,7 +580,7 @@ class UrlField(AbstractValueField[Optional[str]]):
 
     cast_type: Type[str] = str
     __sg_type__: str = "url"
-    default_value: Optional[str] = None
+    default_value: ClassVar[Optional[str]] = None
 
 
 # Expose all the available fields (intended for model generation)

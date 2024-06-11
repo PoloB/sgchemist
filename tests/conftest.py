@@ -1,6 +1,9 @@
 """Configuration for pytest."""
 
 import os
+from typing import Any
+from typing import Callable
+from typing import List
 from typing import Tuple
 
 import pytest
@@ -20,7 +23,7 @@ def schema_paths() -> Tuple[str, str]:
 
 
 @pytest.fixture
-def engine(schema_paths) -> ShotgunAPIEngine:
+def engine(schema_paths: List[str]) -> ShotgunAPIEngine:
     """Returns a ShotgunAPIEngine instance."""
     # Create a mockgun Shotgun instance
     mockgun.Shotgun.set_schema_paths(*schema_paths)
@@ -30,7 +33,7 @@ def engine(schema_paths) -> ShotgunAPIEngine:
 
     # We need to mock the find method of mockgun which does not supports all the
     # arguments of the original shotgrid object.
-    def patch_find(func):
+    def patch_find(func: Callable[[Any, ...], Any]) -> Callable[[Any, ...], Any]:
         def mock_find(*args, **kwargs):
             kwargs.pop("include_archived_projects")
             kwargs.pop("additional_filter_presets")
