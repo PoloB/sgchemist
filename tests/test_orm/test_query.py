@@ -5,6 +5,7 @@ from typing import Type
 
 import pytest
 from classes import Shot
+from sgchemist.orm import error
 
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.constant import GroupingType
@@ -203,3 +204,13 @@ def test_summarize(shot_entity: Type[Shot]) -> None:
     """Tests the summarize method."""
     query = summarize(shot_entity)
     assert isinstance(query, SgSummarizeQuery)
+
+
+def test_select_any_field(shot_entity, project_entity):
+    """Tests select of any fields."""
+    query = select(shot_entity, shot_entity.id, shot_entity.name)
+    assert isinstance(query, SgFindQuery)
+    assert query.get_data().queried_fields == [shot_entity.id, shot_entity.name]
+    # Query a field which is not the base entity must raise an error
+    with pytest.raises(error.SgQueryError):
+        select(shot_entity, shot_entity.id, project_entity.name)
