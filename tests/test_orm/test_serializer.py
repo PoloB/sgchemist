@@ -6,9 +6,9 @@ from typing import List
 from typing import Type
 
 import pytest
-
 from classes import Project
 from classes import Shot
+
 from sgchemist.orm import EntityField
 from sgchemist.orm import TextField
 from sgchemist.orm.constant import BatchRequestType
@@ -47,13 +47,13 @@ def batch_serialize() -> ShotgunAPIBatchQuerySerializer:
 
 
 @pytest.fixture
-def simple_field(shot_entity: Type[Shot]) -> TextField:
+def simple_field(shot_entity: Type[Shot]) -> InstrumentedField[Any]:
     """Returns a simple test field."""
     return shot_entity.name
 
 
 @pytest.fixture
-def relation_field(shot_entity: Type[Shot]) -> EntityField[Project]:
+def relation_field(shot_entity: Type[Shot]) -> InstrumentedRelationship[Any]:
     """Returns a relation field."""
     return shot_entity.project
 
@@ -186,7 +186,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
 def test_batch_serializer(
     batch_serialize: ShotgunAPIBatchQuerySerializer,
     batch_queries: List[SgBatchQuery],
-    expected_serialization: Dict[str, Any],
-):
+    expected_serialization: List[Dict[str, Any]],
+) -> None:
     """Tests different batch serialization cases."""
     assert batch_serialize.serialize(batch_queries) == expected_serialization

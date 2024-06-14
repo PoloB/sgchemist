@@ -9,12 +9,9 @@ from typing import Set
 from typing import Type
 from typing import TypeVar
 
-from typing_extensions import dataclass_transform
-
 from . import error
 from .field import NumberField
 from .instrumentation import InstrumentedAttribute
-from .mapped_column import MappedField
 from .mapped_column import mapped_field
 from .meta import EntityState
 from .meta import SgEntityMeta
@@ -22,7 +19,6 @@ from .meta import SgEntityMeta
 T = TypeVar("T")
 
 
-@dataclass_transform(kw_only_default=True, field_specifiers=(mapped_field, MappedField))
 class SgEntity(object, metaclass=SgEntityMeta):
     """Base class for any Shotgrid entity.
 

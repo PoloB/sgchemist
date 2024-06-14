@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from typing import ClassVar
 from typing import Optional
 from typing import Type
@@ -35,18 +36,18 @@ def shot_entity() -> Type[Shot]:
 
 
 @pytest.fixture
-def shot_not_commited(shot_entity) -> Shot:
+def shot_not_commited(shot_entity: Type[Shot]) -> Shot:
     """Returns a non commited TestShot instance."""
     return shot_entity(name="foo")
 
 
 @pytest.fixture
-def shot_commited(shot_entity) -> Shot:
+def shot_commited(shot_entity: Type[Shot]) -> Shot:
     """Returns a commited TestShot instance."""
     return shot_entity(name="foo", id=42)
 
 
-def test_entity_values(shot_entity):
+def test_entity_values(shot_entity: Type[Shot]) -> None:
     """Tests the values of the fields."""
     assert shot_entity.__sg_type__ == "Shot"
     assert list(shot_entity.__fields__.values()) == [
@@ -71,7 +72,7 @@ def test_entity_values(shot_entity):
     assert isinstance(shot_entity.id, InstrumentedField)
 
 
-def test_model_creation_missing_sg_type():
+def test_model_creation_missing_sg_type() -> None:
     """Tests a missing __sg_type__ attribute raises an error."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -79,17 +80,17 @@ def test_model_creation_missing_sg_type():
             pass
 
 
-def test_model_creation_reserved_attributes():
+def test_model_creation_reserved_attributes() -> None:
     """Tests reserved attributes are protected against modifications."""
     # No reserved attributes
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            __fields__ = "test"
+            __fields__ = "test"  # type: ignore
 
 
-def test_model_attribute_overlap():
+def test_model_attribute_overlap() -> None:
     """Tests relationship attributes are protected against overlapping.
 
     Because we use a getattr to reference a relationship field, the field python
@@ -102,7 +103,7 @@ def test_model_attribute_overlap():
             get_name: TextField
 
 
-def test_model_duplicate_field():
+def test_model_duplicate_field() -> None:
     """Tests it is not possible to duplicate a field."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -111,7 +112,7 @@ def test_model_duplicate_field():
             id: NumberField
 
 
-def test_model_entity_field_has_no_container():
+def test_model_entity_field_has_no_container() -> None:
     """Tests it is not possible to create an entity field with a container."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -120,7 +121,7 @@ def test_model_entity_field_has_no_container():
             entity_with_container: EntityField[list[SgEntity]]
 
 
-def test_model_multi_entity_field_has_container():
+def test_model_multi_entity_field_has_container() -> None:
     """Tests it is not possible to create a multi-entity field without a container."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -129,7 +130,7 @@ def test_model_multi_entity_field_has_container():
             multi_entity_with_no_container: MultiEntityField[SgEntity]
 
 
-def test_undefined_fields():
+def test_undefined_fields() -> None:
     """Tests undefined fields raises an error."""
 
     class TestEntity(SgEntity):
@@ -148,7 +149,7 @@ def test_undefined_fields():
             entity: TestEntity
 
 
-def test_right_mapped_field_per_annotation():
+def test_right_mapped_field_per_annotation() -> None:
     """Tests the correct MappedColumn object is used for a given annotation."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -169,7 +170,7 @@ def test_right_mapped_field_per_annotation():
             field: MultiEntityField[_TestEntity2] = mapped_field()
 
 
-def test_union_entity_is_multi_target():
+def test_union_entity_is_multi_target() -> None:
     """Tests a multi target entity always uses unions."""
 
     class TestEntity(SgEntity):
@@ -193,7 +194,7 @@ def test_union_entity_is_multi_target():
         entity: MultiEntityField[List[Union[SgEntity, TestEntity]]]
 
 
-def test_alias_field_construction():
+def test_alias_field_construction() -> None:
     """Tests the construction of an alias field."""
 
     class TestEntity(SgEntity):
@@ -230,29 +231,29 @@ def test_alias_field_construction():
             alias: EntityField[OutsideEntity] = alias_relationship(entity)
 
 
-def test_various_annotations():
+def test_various_annotations() -> None:
     """Tests various annotations."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            test: Optional[EntityField]
+            test: Optional[EntityField[Any]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity2(SgEntity):
             __sg_type__ = "test"
-            test: List[EntityField]
+            test: List[EntityField[Any]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity3(SgEntity):
             __sg_type__ = "test"
-            test: List = relationship()
+            test: List[Any] = relationship()
 
     class TestEntity4(SgEntity):
         __sg_type__ = "test"
-        test: ClassVar[List]
+        test: ClassVar[List[Any]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -284,22 +285,22 @@ def test_various_annotations():
 
         class TestEntity10(SgEntity):
             __sg_type__ = "test"
-            test: TextField = 5
+            test: TextField = 5  # type: ignore
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity11(SgEntity):
             __sg_type__ = "test"
-            test: EntityField
+            test: EntityField[Any]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity12(SgEntity):
             __sg_type__ = "test"
-            test: "weird[UnknownField]"  # noqa: F821
+            test: "weird[UnknownField]"  # type: ignore # noqa: F821
 
 
-def test_default_init(shot_entity):
+def test_default_init(shot_entity: Type[Shot]) -> None:
     """Tests the initialization of an entity."""
     inst = shot_entity(name="test")
     assert inst.name == "test"
@@ -310,16 +311,17 @@ def test_default_init(shot_entity):
         shot_entity(foo="test")
 
 
-def test_get_fields(shot_not_commited):
+def test_get_fields(shot_entity: Type[Shot], shot_not_commited: Shot) -> None:
     """Tests field getter method."""
-    model = shot_not_commited.__class__
     assert (
-        shot_not_commited.__state__.get_current_value(model.name.get_attribute_name())
+        shot_not_commited.__state__.get_current_value(
+            shot_entity.name.get_attribute_name()
+        )
         == "foo"
     )
 
 
-def test_set_fields(shot_not_commited):
+def test_set_fields(shot_not_commited: Shot) -> None:
     """Tests field setter method."""
     model = shot_not_commited.__class__
     shot_not_commited.__state__.set_current_value(
@@ -328,12 +330,12 @@ def test_set_fields(shot_not_commited):
     assert shot_not_commited.name == "test"
 
 
-def test_repr(shot_not_commited):
+def test_repr(shot_not_commited: Shot) -> None:
     """Tests repr method."""
     assert isinstance(repr(shot_not_commited), str)
 
 
-def test_state_init(shot_not_commited):
+def test_state_init(shot_not_commited: Shot) -> None:
     """Tests the initialized entity has the expected state."""
     state = shot_not_commited.__state__
     model = shot_not_commited.__class__
@@ -345,7 +347,7 @@ def test_state_init(shot_not_commited):
     assert state.is_modified() is True
 
 
-def test_instance_with_primary_key_is_committed(shot_commited):
+def test_instance_with_primary_key_is_committed(shot_commited: Shot) -> None:
     """Tests a shot with a None id is considered commited."""
     state = shot_commited.__state__
     assert state.is_commited()
@@ -359,12 +361,14 @@ def test_instance_with_primary_key_is_committed(shot_commited):
         (Project(id=1), []),
     ],
 )
-def test_entity_modified_fields(entity, expected_modified_fields):
+def test_entity_modified_fields(
+    entity: SgEntity, expected_modified_fields: list[InstrumentedField[Any]]
+) -> None:
     """Tests that initialized fields are considered modified expect id."""
     assert entity.__state__.modified_fields == expected_modified_fields
 
 
-def test_field_descriptor(shot_not_commited: Shot):
+def test_field_descriptor(shot_not_commited: Shot) -> None:
     """Tests field descriptor behavior."""
     model = shot_not_commited.__class__
     state = shot_not_commited.__state__
@@ -377,7 +381,7 @@ def test_field_descriptor(shot_not_commited: Shot):
     assert state.is_modified() is False
 
 
-def test_cannot_set_primary_key(shot_not_commited: Shot):
+def test_cannot_set_primary_key(shot_not_commited: Shot) -> None:
     """Tests the id cannot be modified."""
     with pytest.raises(ValueError):
         shot_not_commited.id = 1

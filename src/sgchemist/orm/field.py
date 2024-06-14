@@ -17,8 +17,12 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import TypeVar
+from typing import Union
+from typing import overload
 
 from .constant import DateType
+from .instrumentation import InstrumentedField
+from .instrumentation import InstrumentedMultiTargetRelationship
 from .queryop import SgFieldCondition
 
 if TYPE_CHECKING:
@@ -61,12 +65,24 @@ class AbstractField(Generic[T]):
                 SgFieldCondition: The field condition
             """
 
-        def __get__(self, instance: Any, owner: Any) -> Optional[T]:
-            """Return the value of the field."""
-
 
 class AbstractValueField(AbstractField[T]):
     """Definition of an abstract value field."""
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __get__(self, instance: None, owner: Any) -> InstrumentedField[T]:
+            """Return the value of the field."""
+
+        @overload
+        def __get__(self, instance: Any, owner: Any) -> Optional[T]:
+            """Return the value of the field."""
+
+        def __get__(
+            self, instance: Optional[Any], owner: Any
+        ) -> Union[Optional[T], InstrumentedField[T]]:
+            """Return the value of the field."""
 
 
 class NumericField(AbstractValueField[T]):
@@ -349,12 +365,44 @@ class EntityField(AbstractEntityField[Optional[T]]):
     default_value: ClassVar[Optional[T]] = None
     cast_type: Type[T]
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __get__(self, instance: None, owner: Any) -> Type[T]:
+            """Return the value of the field."""
+
+        @overload
+        def __get__(self, instance: Any, owner: Any) -> Optional[T]:
+            """Return the value of the field."""
+
+        def __get__(
+            self, instance: Optional[Any], owner: Any
+        ) -> Union[Optional[T], Type[T]]:
+            """Return the value of the field."""
+
 
 class MultiEntityField(AbstractEntityField[List[T]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
     default_value: ClassVar[List[T]] = []
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __get__(
+            self, instance: None, owner: Any
+        ) -> InstrumentedMultiTargetRelationship[T]:
+            """Return the value of the field."""
+
+        @overload
+        def __get__(self, instance: Any, owner: Any) -> Optional[T]:
+            """Return the value of the field."""
+
+        def __get__(
+            self, instance: Optional[Any], owner: Any
+        ) -> Union[Optional[T], InstrumentedMultiTargetRelationship[T]]:
+            """Return the value of the field."""
 
 
 class BooleanField(AbstractValueField[Optional[bool]]):

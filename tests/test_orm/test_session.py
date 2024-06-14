@@ -12,11 +12,9 @@ from classes import Task
 import sgchemist
 from sgchemist.orm import Session
 from sgchemist.orm import SgEntity
-from sgchemist.orm import ShotgunAPIEngine
 from sgchemist.orm import error
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
-from sgchemist.orm.row import SgRow
 from sgchemist.orm.session import SgFindResult
 
 
@@ -79,14 +77,14 @@ def filled_engine(
     return engine
 
 
-def test_find_result(session: Session, test_shot: Shot) -> None:
+def test_find_result(session: Session, shot_entity: Type[Shot]) -> None:
     """Tests the find result object."""
-    test_row1 = SgRow("test", 1, True, {})
-    test_row2 = SgRow("test", 2, True, {})
-    result = SgFindResult([test_row1, test_row2])
-    assert list(result) == [test_row1, test_row2]
-    assert result.first() is test_row1
-    assert result.all() == [test_row1, test_row2]
+    test_shot1 = shot_entity()
+    test_shot2 = shot_entity()
+    result = SgFindResult([test_shot1, test_shot2])
+    assert list(result) == [test_shot1, test_shot2]
+    assert result.first() is test_shot1
+    assert result.all() == [test_shot1, test_shot2]
 
 
 def test_session_init(session: Session) -> None:
@@ -230,6 +228,7 @@ def test_execute_query_find_shot_entity(
     task = session.exec(
         sgchemist.orm.select(task_entity).where(task_entity.id.eq(test_task_shot.id))
     ).first()
+    assert task.entity is not None
     assert task.entity.id == test_shot.id
     assert task.entity.__sg_type__ == test_shot.__sg_type__
     assert task.asset is None

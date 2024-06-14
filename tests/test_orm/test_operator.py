@@ -1,20 +1,22 @@
 """Tests query operators."""
+from typing import Any
 
 import pytest
 
-import sgchemist.orm.instrumentation
 from sgchemist.orm import SgEntity
 from sgchemist.orm.constant import LogicalOperator
 from sgchemist.orm.constant import Operator
 from sgchemist.orm.field import TextField
+from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.queryop import SgFilterOperation
 from sgchemist.orm.queryop import SgNullCondition
 
 
 @pytest.fixture
-def field() -> sgchemist.orm.instrumentation.InstrumentedField:
+def field() -> InstrumentedField[Any]:
     """Returns the test field."""
+
     class _TestModel(SgEntity):
         __sg_type__ = "test"
         test: TextField
@@ -22,7 +24,7 @@ def field() -> sgchemist.orm.instrumentation.InstrumentedField:
     return _TestModel.test
 
 
-def test_field_condition(field):
+def test_field_condition(field: InstrumentedField[Any]) -> None:
     """Tests field condition."""
     cond1 = SgFieldCondition(field, Operator.IS, "foo")
     cond2 = SgFieldCondition(field, Operator.IS, "name")
@@ -36,7 +38,7 @@ def test_field_condition(field):
     assert or_cond.sg_objects == [cond1, cond2]
 
 
-def test_filter_operator(field):
+def test_filter_operator(field: InstrumentedField[Any]) -> None:
     """Tests filter operator."""
     cond1 = SgFieldCondition(field, Operator.IS, "foo")
     cond2 = SgFieldCondition(field, Operator.IS, "name")
@@ -70,7 +72,7 @@ def test_filter_operator(field):
     assert or_concat_or.sg_objects == [cond1, cond2, cond1, cond2]
 
 
-def test_null_condition(field):
+def test_null_condition(field: InstrumentedField[Any]) -> None:
     """Tests null condition."""
     null_cond = SgNullCondition()
     self_null = null_cond & SgNullCondition()

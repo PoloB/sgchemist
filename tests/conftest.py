@@ -33,13 +33,13 @@ def engine(schema_paths: List[str]) -> ShotgunAPIEngine:
 
     # We need to mock the find method of mockgun which does not supports all the
     # arguments of the original shotgrid object.
-    def patch_find(func: Callable[[Any, ...], Any]) -> Callable[[Any, ...], Any]:
-        def mock_find(*args, **kwargs):
+    def patch_find(func: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+        def mock_find(*args: Any, **kwargs: Any) -> Any:
             kwargs.pop("include_archived_projects")
             kwargs.pop("additional_filter_presets")
             return func(*args, **kwargs)
 
         return mock_find
 
-    sg.find = patch_find(sg.find)  # type: ignore
+    sg.find = patch_find(sg.find)
     return ShotgunAPIEngine(sg)
