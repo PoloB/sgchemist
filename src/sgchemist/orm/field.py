@@ -362,7 +362,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
     """Definition a field targeting a single entity."""
 
     __sg_type__: str = "entity"
-    default_value: ClassVar[Optional[T]] = None
+    default_value = None
     cast_type: Type[T]
 
     if TYPE_CHECKING:
@@ -385,7 +385,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
-    default_value: ClassVar[List[T]] = []
+    default_value: ClassVar[List[Any]] = []
 
     if TYPE_CHECKING:
 

@@ -19,7 +19,7 @@ from .meta import SgEntityMeta
 T = TypeVar("T")
 
 
-class SgEntity(object, metaclass=SgEntityMeta):
+class SgEntity(metaclass=SgEntityMeta):
     """Base class for any Shotgrid entity.
 
     When implementing a new model, you shall subclass this class.

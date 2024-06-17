@@ -306,7 +306,7 @@ class AliasRelationship(Relationship):
         return super().get_instrumented(field_annotation)
 
 
-def relationship(name: str = "") -> Any:
+def relationship(name: str = "") -> Relationship:
     """Defines a field as a relationship.
 
     Use this field specifier if you want to use a different attribute name to target

@@ -291,7 +291,7 @@ def test_various_annotations() -> None:
 
         class TestEntity11(SgEntity):
             __sg_type__ = "test"
-            test: EntityField[Any]
+            test: EntityField  # type: ignore
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 

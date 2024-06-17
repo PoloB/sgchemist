@@ -115,6 +115,10 @@ def test_build_relative_to(field: InstrumentedAttribute[Any], exp_field_name: st
     assert field.get_name() == exp_field_name
 
 
+t = Task
+reveal_type(t)
+
+
 def test_missing_attribute_on_target_selector() -> None:
     """Tests that getting a non-existing field raises an error."""
     with pytest.raises(AttributeError):

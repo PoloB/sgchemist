@@ -19,6 +19,11 @@ from sgchemist.orm.session import SgFindResult
 
 
 @pytest.fixture
+def shot_entity() -> Type[Shot]:
+    """Returns the Shot entity."""
+    return Shot
+
+@pytest.fixture
 def session(engine: SgEngine) -> sgchemist.orm.Session:
     """Returns a session object."""
     return sgchemist.orm.Session(engine)
