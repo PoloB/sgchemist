@@ -23,6 +23,7 @@ from typing import overload
 from .constant import DateType
 from .instrumentation import InstrumentedField
 from .instrumentation import InstrumentedMultiTargetRelationship
+from .instrumentation import InstrumentedRelationship
 from .queryop import SgFieldCondition
 
 if TYPE_CHECKING:
@@ -358,7 +359,7 @@ class AbstractEntityField(AbstractField[T]):
             """
 
 
-class EntityField(AbstractEntityField[Optional[T]]):
+class EntityField(AbstractEntityField[T]):
     """Definition a field targeting a single entity."""
 
     __sg_type__: str = "entity"
@@ -368,7 +369,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> Type[T]:
+        def __get__(self, instance: None, owner: Any) -> InstrumentedRelationship[T]:
             """Return the value of the field."""
 
         @overload
@@ -377,11 +378,11 @@ class EntityField(AbstractEntityField[Optional[T]]):
 
         def __get__(
             self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[T], Type[T]]:
+        ) -> Union[Optional[T], InstrumentedRelationship[T]]:
             """Return the value of the field."""
 
 
-class MultiEntityField(AbstractEntityField[List[T]]):
+class MultiEntityField(AbstractEntityField[T]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
@@ -396,12 +397,12 @@ class MultiEntityField(AbstractEntityField[List[T]]):
             """Return the value of the field."""
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[T]:
+        def __get__(self, instance: Any, owner: Any) -> T:
             """Return the value of the field."""
 
         def __get__(
             self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[T], InstrumentedMultiTargetRelationship[T]]:
+        ) -> Union[T, InstrumentedMultiTargetRelationship[T]]:
             """Return the value of the field."""
 
 

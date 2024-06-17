@@ -55,7 +55,7 @@ def simple_field(shot_entity: Type[Shot]) -> InstrumentedField[Any]:
 @pytest.fixture
 def relation_field(shot_entity: Type[Shot]) -> InstrumentedRelationship[Any]:
     """Returns a relation field."""
-    return shot_entity.project  # type: ignore
+    return shot_entity.project
 
 
 @pytest.fixture

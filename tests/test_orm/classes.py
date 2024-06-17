@@ -12,9 +12,9 @@ from sgchemist.orm.field import DateTimeField
 from sgchemist.orm.field import EntityField
 from sgchemist.orm.field import MultiEntityField
 from sgchemist.orm.field import TextField
-from sgchemist.orm.mapped_column import alias_relationship
-from sgchemist.orm.mapped_column import mapped_field
-from sgchemist.orm.mapped_column import relationship
+from sgchemist.orm.field_descriptor import alias_relationship
+from sgchemist.orm.field_descriptor import mapped_field
+from sgchemist.orm.field_descriptor import relationship
 
 
 class Project(SgEntity):

@@ -22,10 +22,10 @@ from sgchemist.orm import SgEntity
 from sgchemist.orm import TextField
 from sgchemist.orm import error
 from sgchemist.orm import mapped_field
+from sgchemist.orm.field_descriptor import alias_relationship
+from sgchemist.orm.field_descriptor import relationship
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedMultiTargetSingleRelationship
-from sgchemist.orm.mapped_column import alias_relationship
-from sgchemist.orm.mapped_column import relationship
 from sgchemist.orm.meta import EntityState
 
 
@@ -118,7 +118,7 @@ def test_model_entity_field_has_no_container() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[list[SgEntity]]
+            entity_with_container: EntityField[List[SgEntity]]
 
 
 def test_model_multi_entity_field_has_container() -> None:

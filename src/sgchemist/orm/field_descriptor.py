@@ -201,7 +201,7 @@ class Relationship(MappedColumn):
         container_class = field_annotation.container_class
         entity_class = field_annotation.entity_class
         # Make some checks
-        if not issubclass(field_annotation.field_type, AbstractEntityField):
+        if not issubclass(field_type, AbstractEntityField):
             raise error.SgInvalidAnnotationError(
                 "A Relationship should target an AbstractEntityField annotation"
             )
@@ -306,7 +306,7 @@ class AliasRelationship(Relationship):
         return super().get_instrumented(field_annotation)
 
 
-def relationship(name: str = "") -> Relationship:
+def relationship(name: str = "") -> Any:
     """Defines a field as a relationship.
 
     Use this field specifier if you want to use a different attribute name to target
@@ -321,7 +321,7 @@ def relationship(name: str = "") -> Relationship:
     return Relationship(name)
 
 
-def alias_relationship(target_relationship: Relationship) -> Any:
+def alias_relationship(target_relationship: Any) -> Any:
     """Defines a field as an alias relationship.
 
     Use this field specifier to target a specific entity type of the given multi target

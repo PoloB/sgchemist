@@ -21,7 +21,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
-from typing import Union
 
 from .constant import DateType
 from .constant import Operator
@@ -34,7 +33,7 @@ T2 = TypeVar("T2")
 
 if TYPE_CHECKING:
     from .entity import SgEntity
-    from .mapped_column import FieldAnnotation
+    from .field_descriptor import FieldAnnotation
     from .meta import SgEntityMeta
 
 
@@ -208,7 +207,7 @@ class InstrumentedAttribute(Generic[T], metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def build_relative_to(
         self,
-        relative_attribute: InstrumentedAttribute[T],
+        relative_attribute: InstrumentedAttribute[Any],
         through_entity: Type[SgEntity],
     ) -> InstrumentedAttribute[T]:
         """Build a new attribute relative to the given attribute.
@@ -638,6 +637,11 @@ class InstrumentedAttribute(Generic[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.IS, None)
 
+    if TYPE_CHECKING:
+
+        def __getattr__(self, item: str) -> InstrumentedAttribute[T]:
+            ...
+
 
 class InstrumentedField(InstrumentedAttribute[T]):
     """An generic value field."""
@@ -824,7 +828,7 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
         """
         return self._is_alias
 
-    def __getattr__(self, item: str) -> Union[InstrumentedAttribute[Any], Any]:
+    def __getattr__(self, item: str) -> InstrumentedAttribute[T]:
         """Returns a new instrumented attribute of the field target entity class.
 
         Args:
@@ -837,13 +841,15 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
         target_model = self._lazy_entity.get()
         try:
             target_field = target_model.__fields__[item]
-        except KeyError:
-            return self.__getattribute__(item)
+        except KeyError as e:
+            raise AttributeError(
+                f"Target model {target_model} has not field {item}"
+            ) from e
         return target_field.build_relative_to(self, target_model)
 
     def build_relative_to(
         self,
-        relative_attribute: InstrumentedAttribute[T],
+        relative_attribute: InstrumentedAttribute[Any],
         through_entity: Type[SgEntity],
     ) -> InstrumentedRelationship[T]:
         """Build a new instrumented relationship relative to the given attribute.

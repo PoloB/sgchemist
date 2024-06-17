@@ -110,19 +110,17 @@ def test_instrumented_field_attributes(
         (Task.entity.Asset.id, "entity.Asset.id"),
     ],
 )
-def test_build_relative_to(field: InstrumentedAttribute[Any], exp_field_name: str) -> None:
+def test_build_relative_to(
+    field: InstrumentedAttribute[Any], exp_field_name: str
+) -> None:
     """Tests the relative field names."""
     assert field.get_name() == exp_field_name
-
-
-t = Task
-reveal_type(t)
 
 
 def test_missing_attribute_on_target_selector() -> None:
     """Tests that getting a non-existing field raises an error."""
     with pytest.raises(AttributeError):
-        _ = Task.entity.Asset.non_existing_field  # type: ignore
+        _ = Task.entity.Asset.non_existing_field
 
 
 @pytest.mark.parametrize(
@@ -171,7 +169,10 @@ def test_entities_iter_entities_from_field_values(
     ],
 )
 def test_cast_value_over(
-    field: InstrumentedAttribute[Any], func: Callable[[Any], Any], value: Any, exp_value: Any
+    field: InstrumentedAttribute[Any],
+    func: Callable[[Any], Any],
+    value: Any,
+    exp_value: Any,
 ) -> None:
     """Tests the cast value over method."""
     assert field.cast_value_over(func, value) == exp_value

@@ -1,5 +1,6 @@
 """Defines the base entity class."""
 
+from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import Any
@@ -11,8 +12,8 @@ from typing import TypeVar
 
 from . import error
 from .field import NumberField
+from .field_descriptor import mapped_field
 from .instrumentation import InstrumentedAttribute
-from .mapped_column import mapped_field
 from .meta import EntityState
 from .meta import SgEntityMeta
 
