@@ -7,13 +7,13 @@ from classes import Project
 from classes import Shot
 from classes import Task
 
-from sgchemist.orm import Session
-from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.entity import SgEntity
 from sgchemist.orm.query import SgBatchQuery
+from sgchemist.orm.query import select
 from sgchemist.orm.row import SgRow
+from sgchemist.orm.session import Session
 
 
 @pytest.fixture

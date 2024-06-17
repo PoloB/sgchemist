@@ -9,9 +9,9 @@ import pytest
 from classes import Project
 from classes import Shot
 
-from sgchemist.orm import EntityField
-from sgchemist.orm import TextField
 from sgchemist.orm.constant import BatchRequestType
+from sgchemist.orm.field import EntityField
+from sgchemist.orm.field import TextField
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedRelationship
 from sgchemist.orm.query import SgBatchQuery

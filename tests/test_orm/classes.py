@@ -6,10 +6,10 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-from sgchemist.orm import ImageField
-from sgchemist.orm import SgEntity
+from sgchemist.orm.entity import SgEntity
 from sgchemist.orm.field import DateTimeField
 from sgchemist.orm.field import EntityField
+from sgchemist.orm.field import ImageField
 from sgchemist.orm.field import MultiEntityField
 from sgchemist.orm.field import TextField
 from sgchemist.orm.field_descriptor import alias_relationship

@@ -15,14 +15,14 @@ from classes import Shot
 from classes import Task
 from typing_extensions import List
 
-from sgchemist.orm import EntityField
-from sgchemist.orm import MultiEntityField
-from sgchemist.orm import NumberField
-from sgchemist.orm import SgEntity
-from sgchemist.orm import TextField
 from sgchemist.orm import error
-from sgchemist.orm import mapped_field
+from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.field import EntityField
+from sgchemist.orm.field import MultiEntityField
+from sgchemist.orm.field import NumberField
+from sgchemist.orm.field import TextField
 from sgchemist.orm.field_descriptor import alias_relationship
+from sgchemist.orm.field_descriptor import mapped_field
 from sgchemist.orm.field_descriptor import relationship
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedMultiTargetSingleRelationship

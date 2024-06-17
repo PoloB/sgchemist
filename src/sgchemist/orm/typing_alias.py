@@ -6,11 +6,10 @@ from typing import Any
 from typing import Tuple
 from typing import Union
 
-from sgchemist.orm.constant import GroupingType
-from sgchemist.orm.constant import Order
-from sgchemist.orm.instrumentation import InstrumentedAttribute
+from .constant import GroupingType
+from .constant import Order
+from .instrumentation import InstrumentedAttribute
 
 EntityHash = Tuple[str, int]
 OrderField = Tuple[InstrumentedAttribute[Any], Order]
 GroupingField = Tuple[InstrumentedAttribute[Any], GroupingType, Union[Order, str]]
-

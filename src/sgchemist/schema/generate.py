@@ -10,14 +10,14 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 
-from sgchemist.orm.field import AbstractEntityField
-from sgchemist.orm.field import EntityField
-from sgchemist.orm.field import MultiEntityField
-from sgchemist.orm.field import field_by_sg_type
-from sgchemist.schema.parse import EntitySchema
-from sgchemist.schema.parse import FieldSchema
-from sgchemist.schema.parse import ValueSchema
-from sgchemist.schema.parse import load_entities
+from ..orm.field import AbstractEntityField
+from ..orm.field import EntityField
+from ..orm.field import MultiEntityField
+from ..orm.field import field_by_sg_type
+from .parse import EntitySchema
+from .parse import FieldSchema
+from .parse import ValueSchema
+from .parse import load_entities
 
 logger = logging.getLogger("model_generate")
 

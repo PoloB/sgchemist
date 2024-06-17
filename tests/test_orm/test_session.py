@@ -9,10 +9,10 @@ from classes import Project
 from classes import Shot
 from classes import Task
 
-import sgchemist
 from sgchemist.orm import Session
 from sgchemist.orm import SgEntity
 from sgchemist.orm import error
+from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.session import SgFindResult
@@ -24,9 +24,9 @@ def shot_entity() -> Type[Shot]:
     return Shot
 
 @pytest.fixture
-def session(engine: SgEngine) -> sgchemist.orm.Session:
+def session(engine: SgEngine) -> Session:
     """Returns a session object."""
-    return sgchemist.orm.Session(engine)
+    return Session(engine)
 
 
 @pytest.fixture
@@ -221,7 +221,7 @@ def test_execute_query_find(
     expected_count: int,
 ) -> None:
     """Tests query find returns the expected number of results."""
-    result = session.exec(sgchemist.orm.select(model))
+    result = session.exec(select(model))
     assert len(result) == expected_count
 
 
@@ -231,7 +231,7 @@ def test_execute_query_find_shot_entity(
     """Tests that the session fills the multi target objects correctly."""
     task_entity = test_task_shot.__class__
     task = session.exec(
-        sgchemist.orm.select(task_entity).where(task_entity.id.eq(test_task_shot.id))
+        select(task_entity).where(task_entity.id.eq(test_task_shot.id))
     ).first()
     assert task.entity is not None
     assert task.entity.id == test_shot.id
@@ -244,7 +244,7 @@ def test_execute_query_find_shot_entity(
 
 def test_context_manager(engine: SgEngine, test_project: Project) -> None:
     """Tests the context manager behavior."""
-    with sgchemist.orm.Session(engine) as session:
+    with Session(engine) as session:
         session.add(test_project)
 
     assert len(session.pending_queries) == 0
