@@ -1,5 +1,6 @@
 """Defines the base entity class."""
 
+from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import Any
@@ -9,21 +10,17 @@ from typing import Set
 from typing import Type
 from typing import TypeVar
 
-from typing_extensions import dataclass_transform
-
 from . import error
 from .field import NumberField
+from .field_descriptor import mapped_field
 from .instrumentation import InstrumentedAttribute
-from .mapped_column import MappedField
-from .mapped_column import mapped_field
 from .meta import EntityState
 from .meta import SgEntityMeta
 
 T = TypeVar("T")
 
 
-@dataclass_transform(kw_only_default=True, field_specifiers=(mapped_field, MappedField))
-class SgEntity(object, metaclass=SgEntityMeta):
+class SgEntity(metaclass=SgEntityMeta):
     """Base class for any Shotgrid entity.
 
     When implementing a new model, you shall subclass this class.

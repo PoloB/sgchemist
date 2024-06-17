@@ -19,9 +19,9 @@ from .field import SerializableField as SerializableField
 from .field import StatusField as StatusField
 from .field import TextField as TextField
 from .field import UrlField as UrlField
-from .mapped_column import alias_relationship as alias_relationship
-from .mapped_column import mapped_field as mapped_field
-from .mapped_column import relationship as relationship
+from .field_descriptor import alias_relationship as alias_relationship
+from .field_descriptor import mapped_field as mapped_field
+from .field_descriptor import relationship as relationship
 from .query import select as select
 from .query import summarize as summarize
 from .session import Session as Session

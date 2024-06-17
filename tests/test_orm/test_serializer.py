@@ -1,15 +1,20 @@
 """Tests the serializer for the shotgun-api3."""
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Type
 
 import pytest
 from classes import Project
 from classes import Shot
 
-import sgchemist.orm.constant
-from sgchemist.orm import query
+from sgchemist.orm import EntityField
+from sgchemist.orm import TextField
+from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import InstrumentedRelationship
+from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.queryop import SgNullCondition
 from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
 from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
@@ -42,24 +47,26 @@ def batch_serialize() -> ShotgunAPIBatchQuerySerializer:
 
 
 @pytest.fixture
-def simple_field(shot_entity) -> InstrumentedField:
+def simple_field(shot_entity: Type[Shot]) -> InstrumentedField[Any]:
     """Returns a simple test field."""
     return shot_entity.name
 
 
 @pytest.fixture
-def relation_field(shot_entity) -> InstrumentedRelationship:
+def relation_field(shot_entity: Type[Shot]) -> InstrumentedRelationship[Any]:
     """Returns a relation field."""
     return shot_entity.project
 
 
 @pytest.fixture
-def project_inst(project_entity) -> Project:
+def project_inst(project_entity: Type[Project]) -> Project:
     """Returns a project instance."""
     return project_entity(id=101)
 
 
-def test_serialize_entity(find_serialize, shot_entity):
+def test_serialize_entity(
+    find_serialize: ShotgunAPIObjectSerializer, shot_entity: Type[Shot]
+) -> None:
     """Tests the serialization of an entity instance."""
     inst = shot_entity(name="foo", id=42)
     expected_serialize = {"id": 42, "type": "Shot"}
@@ -67,7 +74,12 @@ def test_serialize_entity(find_serialize, shot_entity):
     assert find_serialize.serialize_filter(inst) == [expected_serialize]
 
 
-def test_serialize_operator(find_serialize, simple_field, relation_field, project_inst):
+def test_serialize_operator(
+    find_serialize: ShotgunAPIObjectSerializer,
+    simple_field: TextField,
+    relation_field: EntityField[Project],
+    project_inst: Project,
+) -> None:
     """Tests the serialization of an operator instance."""
     cond1 = simple_field.eq("foo")
     cond2 = relation_field.eq(project_inst)
@@ -82,7 +94,9 @@ def test_serialize_operator(find_serialize, simple_field, relation_field, projec
     assert find_serialize.serialize_filter(cond1 & cond2) == [expected_serialize]
 
 
-def test_serialize_simple_condition(find_serialize, simple_field):
+def test_serialize_simple_condition(
+    find_serialize: ShotgunAPIObjectSerializer, simple_field: TextField
+) -> None:
     """Tests the serialization of a simple condition."""
     condition = simple_field.eq("foo")
     expected_serialize = ["code", "is", "foo"]
@@ -90,7 +104,11 @@ def test_serialize_simple_condition(find_serialize, simple_field):
     assert find_serialize.serialize_filter(condition) == [expected_serialize]
 
 
-def test_serialize_entity_condition(find_serialize, relation_field, project_inst):
+def test_serialize_entity_condition(
+    find_serialize: ShotgunAPIObjectSerializer,
+    relation_field: EntityField[Project],
+    project_inst: Project,
+) -> None:
     """Tests the serialization of a condition over an entity."""
     model_cond = relation_field.eq(project_inst)
     expected_serialize = ["project", "is", {"type": "Project", "id": 101}]
@@ -98,7 +116,7 @@ def test_serialize_entity_condition(find_serialize, relation_field, project_inst
     assert find_serialize.serialize_filter(model_cond) == [expected_serialize]
 
 
-def test_serialize_null_condition(find_serialize):
+def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) -> None:
     """Tests the serialization of a null condition."""
     assert find_serialize.serialize_filter(SgNullCondition()) == []
 
@@ -108,8 +126,8 @@ def test_serialize_null_condition(find_serialize):
     [
         (
             [
-                query.SgBatchQuery(
-                    sgchemist.orm.constant.BatchRequestType.CREATE,
+                SgBatchQuery(
+                    BatchRequestType.CREATE,
                     Shot(name="foo", project=Project(id=2)),
                 )
             ],
@@ -130,8 +148,8 @@ def test_serialize_null_condition(find_serialize):
         ),
         (
             [
-                query.SgBatchQuery(
-                    sgchemist.orm.constant.BatchRequestType.UPDATE,
+                SgBatchQuery(
+                    BatchRequestType.UPDATE,
                     Shot(id=1, name="bar", project=Project(id=3)),
                 )
             ],
@@ -149,8 +167,8 @@ def test_serialize_null_condition(find_serialize):
         ),
         (
             [
-                query.SgBatchQuery(
-                    sgchemist.orm.constant.BatchRequestType.DELETE,
+                SgBatchQuery(
+                    BatchRequestType.DELETE,
                     Shot(id=1, name="foo", project=Project(id=3)),
                 )
             ],
@@ -165,6 +183,10 @@ def test_serialize_null_condition(find_serialize):
     ],
     ids=["Create", "Update", "Delete"],
 )
-def test_batch_serializer(batch_serialize, batch_queries, expected_serialization):
+def test_batch_serializer(
+    batch_serialize: ShotgunAPIBatchQuerySerializer,
+    batch_queries: List[SgBatchQuery],
+    expected_serialization: List[Dict[str, Any]],
+) -> None:
     """Tests different batch serialization cases."""
     assert batch_serialize.serialize(batch_queries) == expected_serialization

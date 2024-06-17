@@ -1,6 +1,8 @@
 """Testing instrumented fields."""
 
+from typing import Any
 from typing import Callable
+from typing import Tuple
 from typing import Type
 
 import pytest
@@ -16,6 +18,7 @@ from sgchemist.orm.instrumentation import InstrumentedAttribute
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.instrumentation import LazyEntityClassEval
 from sgchemist.orm.instrumentation import LazyEntityCollectionClassEval
+from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.row import SgRow
 
 
@@ -26,24 +29,30 @@ def entity_class() -> Type[Shot]:
 
 
 @pytest.fixture
-def lazy_class_eval(entity_class):
+def lazy_class_eval(entity_class: Type[Shot]) -> LazyEntityClassEval:
     """The test lazy entity."""
     return LazyEntityClassEval(entity_class.__name__, entity_class.__registry__)
 
 
 @pytest.fixture
-def lazy_collection_eval(lazy_class_eval):
+def lazy_collection_eval(
+    lazy_class_eval: LazyEntityClassEval,
+) -> LazyEntityCollectionClassEval:
     """The test lazy collection."""
     return LazyEntityCollectionClassEval([lazy_class_eval])
 
 
-def test_lazy_entity_class_eval(lazy_class_eval, entity_class):
+def test_lazy_entity_class_eval(
+    lazy_class_eval: LazyEntityClassEval, entity_class: Type[SgEntity]
+) -> None:
     """Test the lazy entity getter."""
     assert lazy_class_eval.get() is entity_class
     assert lazy_class_eval.class_name == entity_class.__name__
 
 
-def test_lazy_entity_collection_eval(lazy_collection_eval, entity_class):
+def test_lazy_entity_collection_eval(
+    lazy_collection_eval: LazyEntityCollectionClassEval, entity_class: Type[SgEntity]
+) -> None:
     """Test the lazy entity collection getter."""
     assert lazy_collection_eval.get_by_type(entity_class.__sg_type__) is entity_class
 
@@ -69,15 +78,15 @@ def test_lazy_entity_collection_eval(lazy_collection_eval, entity_class):
     ],
 )
 def test_instrumented_field_attributes(
-    field: InstrumentedField,
-    exp_name,
-    exp_attr_name,
-    exp_class,
-    exp_default,
-    exp_primary,
-    exp_name_in_rel,
-    exp_types,
-):
+    field: InstrumentedField[Any],
+    exp_name: str,
+    exp_attr_name: str,
+    exp_class: Type[SgEntity],
+    exp_default: Any,
+    exp_primary: bool,
+    exp_name_in_rel: str,
+    exp_types: Tuple[Type[SgEntity], ...],
+) -> None:
     """Tests the instrumented field attributes."""
     assert isinstance(repr(field), str)
     assert field.get_name() == exp_name
@@ -101,12 +110,14 @@ def test_instrumented_field_attributes(
         (Task.entity.Asset.id, "entity.Asset.id"),
     ],
 )
-def test_build_relative_to(field, exp_field_name):
+def test_build_relative_to(
+    field: InstrumentedAttribute[Any], exp_field_name: str
+) -> None:
     """Tests the relative field names."""
     assert field.get_name() == exp_field_name
 
 
-def test_missing_attribute_on_target_selector():
+def test_missing_attribute_on_target_selector() -> None:
     """Tests that getting a non-existing field raises an error."""
     with pytest.raises(AttributeError):
         _ = Task.entity.Asset.non_existing_field
@@ -121,8 +132,8 @@ def test_missing_attribute_on_target_selector():
     ],
 )
 def test_update_entity_from_row_value(
-    field: InstrumentedAttribute, value_to_set, exp_value
-):
+    field: InstrumentedAttribute[Any], value_to_set: Any, exp_value: Any
+) -> None:
     """Tests the update entity from row attribute."""
     inst = field.get_parent_class()()
     field.update_entity_from_row_value(inst, value_to_set)
@@ -142,8 +153,8 @@ def test_update_entity_from_row_value(
     ],
 )
 def test_entities_iter_entities_from_field_values(
-    field: InstrumentedAttribute, value, exp_value
-):
+    field: InstrumentedAttribute[Any], value: Any, exp_value: Any
+) -> None:
     """Tests the entity iterator."""
     assert list(field.iter_entities_from_field_value(value)) == exp_value
 
@@ -158,8 +169,11 @@ def test_entities_iter_entities_from_field_values(
     ],
 )
 def test_cast_value_over(
-    field: InstrumentedAttribute, func: Callable, value, exp_value
-):
+    field: InstrumentedAttribute[Any],
+    func: Callable[[Any], Any],
+    value: Any,
+    exp_value: Any,
+) -> None:
     """Tests the cast value over method."""
     assert field.cast_value_over(func, value) == exp_value
 
@@ -181,7 +195,12 @@ def test_cast_value_over(
         (Task.entity, lambda x, y: x, SgRow("Shot", 1, True, {}), Shot),
     ],
 )
-def test_cast_column(field: InstrumentedAttribute, func: Callable, value, exp_value):
+def test_cast_column(
+    field: InstrumentedAttribute[Any],
+    func: Callable[[Type[SgEntity], SgRow[Any]], Any],
+    value: Any,
+    exp_value: Any,
+) -> None:
     """Tests the cast column method."""
     assert field.cast_column(value, func) == exp_value
 
@@ -226,7 +245,9 @@ def test_cast_column(field: InstrumentedAttribute, func: Callable, value, exp_va
         (Task.image.not_exists(), Operator.IS, None),
     ],
 )
-def test_condition(field_condition, exp_op, exp_right):
-    """Tests the filter nethods."""
+def test_condition(
+    field_condition: SgFieldCondition, exp_op: Operator, exp_right: Any
+) -> None:
+    """Tests the filter methods."""
     assert field_condition.operator is exp_op
     assert field_condition.right == exp_right

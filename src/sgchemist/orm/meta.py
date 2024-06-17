@@ -21,12 +21,12 @@ from typing_extensions import get_origin
 from . import error
 from .field import AbstractEntityField
 from .field import AbstractField
+from .field_descriptor import FieldAnnotation
+from .field_descriptor import MappedColumn
+from .field_descriptor import MappedField
+from .field_descriptor import Relationship
+from .field_descriptor import extract_annotation_info
 from .instrumentation import InstrumentedAttribute
-from .mapped_column import FieldAnnotation
-from .mapped_column import MappedColumn
-from .mapped_column import MappedField
-from .mapped_column import Relationship
-from .mapped_column import extract_annotation_info
 from .typing_util import de_stringify_annotation
 from .typing_util import get_annotations
 

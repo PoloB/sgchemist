@@ -1,40 +1,43 @@
 """Tests for the shotgun-api3 engine."""
 
+from typing import Type
+
 import pytest
 from classes import Project
 from classes import Shot
 from classes import Task
 
 from sgchemist.orm import Session
-from sgchemist.orm import ShotgunAPIEngine
 from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
+from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.meta import SgEntityMeta
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.row import SgRow
 
 
 @pytest.fixture
-def test_project():
+def test_project() -> Project:
     """Return a TestProject instance."""
     return Project()
 
 
 @pytest.fixture
-def test_shot(test_project):
+def test_shot(test_project: Project) -> Shot:
     """Return a TestShot instance."""
     return Shot(name="shot1")
 
 
 @pytest.fixture
-def test_task(test_shot):
+def test_task(test_shot: Shot) -> Task:
     """Return a TestTask instance."""
     return Task(name="task1")
 
 
 @pytest.fixture
-def filled_engine(engine, test_project, test_shot, test_task) -> ShotgunAPIEngine:
+def filled_engine(
+    engine: SgEngine, test_project: Project, test_shot: Shot, test_task: Task
+) -> SgEngine:
     """Return a ShotgunAPIEngine instance filled with some data."""
     session = Session(engine)
     session.add(test_project)
@@ -56,7 +59,7 @@ def filled_engine(engine, test_project, test_shot, test_task) -> ShotgunAPIEngin
         Task,
     ),
 )
-def test_engine_find(filled_engine, test_model: SgEntityMeta):
+def test_engine_find(filled_engine: SgEngine, test_model: Type[SgEntity]) -> None:
     """Test find queries on a filled engine."""
     find_query_state = select(test_model).get_data()
     rows = filled_engine.find(find_query_state)
@@ -75,7 +78,7 @@ def test_engine_find(filled_engine, test_model: SgEntityMeta):
         Shot(name="test", project=Project(id=1)),
     ),
 )
-def test_engine_create(engine, test_model_inst: SgEntity):
+def test_engine_create(engine: SgEngine, test_model_inst: SgEntity) -> None:
     """Test create queries."""
     batch_query = SgBatchQuery(BatchRequestType.CREATE, test_model_inst)
     rows = engine.batch([batch_query])
@@ -97,7 +100,9 @@ def test_engine_create(engine, test_model_inst: SgEntity):
         (Task(name="task1"), BatchRequestType.DELETE),
     ),
 )
-def test_engine_batch_request(engine, test_model_inst: SgEntity, batch_request_type):
+def test_engine_batch_request(
+    engine: SgEngine, test_model_inst: SgEntity, batch_request_type: BatchRequestType
+) -> None:
     """Test update queries."""
     session = Session(engine)
     session.add(test_model_inst)

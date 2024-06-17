@@ -46,6 +46,9 @@ sg2python = "sgchemist.schema.generate_entities:cli"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"sgchemist" = ["py.typed"]
+
 [tool.setuptools.dynamic]
 version = {attr = "sgchemist.VERSION"}
 
@@ -56,8 +59,12 @@ testpaths = "tests/"
 [tool.mypy]
 python_version = "3.11"
 strict = true
-warn_return_any = false
-pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "shotgun_api3.*",
+]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
