@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 
 from sgchemist.schema import generate
-from sgchemist.schema.parse import load_entities
+from sgchemist.schema import parse
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def cli_args(schema_paths: Tuple[str, str], output_script_path: str) -> List[str
 
 def test_generate_python_script_models(schema_paths: Tuple[str, str]) -> None:
     """Test the python script generation."""
-    entities = load_entities(*schema_paths)
+    entities = parse.load_entities(*schema_paths)
     # Test with standard arguments
     exec(generate.generate_python_script_models(entities), globals())
     # Test skipping entities

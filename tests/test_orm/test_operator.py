@@ -3,9 +3,9 @@ from typing import Any
 
 import pytest
 
-from sgchemist.orm import SgEntity
 from sgchemist.orm.constant import LogicalOperator
 from sgchemist.orm.constant import Operator
+from sgchemist.orm.entity import SgEntity
 from sgchemist.orm.field import TextField
 from sgchemist.orm.instrumentation import InstrumentedField
 from sgchemist.orm.queryop import SgFieldCondition
