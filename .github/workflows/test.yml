@@ -64,3 +64,5 @@ jobs:
         with:
           path: '.'
           mypy_flags: '--config-file pyproject.toml'
+          requirements_file: "requirements_test.txt"
+          python_version: ${{ matrix.python }}
