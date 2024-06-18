@@ -51,3 +51,16 @@ jobs:
       - uses: chartboost/ruff-action@v1
         with:
           src: "./src ./tests"
+  mypy:
+    name: mypy type check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [ "3.7", "3.8", "3.9", "3.10", "3.11", "3.12" ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run mypy
+        uses: jpetrucciani/mypy-check@master
+        with:
+          path: '.'
+          mypy_flags: '--config-file pyproject.toml'
