@@ -137,7 +137,7 @@ def test_update_entity_from_row_value(
     """Tests the update entity from row attribute."""
     inst = field.get_parent_class()()
     field.update_entity_from_row_value(inst, value_to_set)
-    assert inst.__state__.get_current_value(field.get_attribute_name()) == exp_value
+    assert inst.__state__.get_slot(field.get_attribute_name()).value == exp_value
 
 
 @pytest.mark.parametrize(

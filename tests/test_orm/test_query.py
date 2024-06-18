@@ -4,8 +4,10 @@ from typing import Any
 from typing import Type
 
 import pytest
+from classes import Project
 from classes import Shot
 
+from sgchemist.orm import error
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.constant import GroupingType
 from sgchemist.orm.constant import Order
@@ -20,15 +22,21 @@ from sgchemist.orm.queryop import SgNullCondition
 
 
 @pytest.fixture
+def project_entity() -> Type[Project]:
+    """Returns the Project entity."""
+    return Project
+
+
+@pytest.fixture
 def shot_entity() -> Type[Shot]:
-    """Returns the TestShot entity."""
+    """Returns the Shot entity."""
     return Shot
 
 
 @pytest.fixture
 def find_query_data(shot_entity: Type[Shot]) -> SgFindQueryData[Type[Shot]]:
     """Returns the find query state."""
-    return SgFindQueryData(shot_entity)
+    return SgFindQueryData(shot_entity, tuple(shot_entity.__fields__.values()))
 
 
 @pytest.fixture
@@ -203,3 +211,15 @@ def test_summarize(shot_entity: Type[Shot]) -> None:
     """Tests the summarize method."""
     query = summarize(shot_entity)
     assert isinstance(query, SgSummarizeQuery)
+
+
+def test_select_any_field(
+    shot_entity: Type[Shot], project_entity: Type[Project]
+) -> None:
+    """Tests select of any fields."""
+    query = select(shot_entity, shot_entity.id, shot_entity.name)
+    assert isinstance(query, SgFindQuery)
+    assert query.get_data().fields == (shot_entity.id, shot_entity.name)
+    # Query a field which is not the base entity must raise an error
+    with pytest.raises(error.SgQueryError):
+        select(shot_entity, shot_entity.id, project_entity.name)

@@ -39,7 +39,7 @@ class SgFindResult(Generic[T]):
         self._entities = entities
 
     def __iter__(self) -> Iterator[T]:
-        """Returns a iter of the results.
+        """Returns an iter of the results.
 
         Returns:
             Iterator[T]: Iterator of results.
@@ -162,14 +162,25 @@ class Session:
                 for field in entity_cls.__fields__.values()
             }
 
-        for column_name, column_value in row.content.items():
-            attr_name = field_mapper[column_name]
+        column_value_by_attr = {
+            field_mapper[column_name]: column_value
+            for column_name, column_value in row.content.items()
+        }
+        for attr_name, column_value in column_value_by_attr.items():
             field = entity_cls.__fields__[attr_name]
             # Cast column value
             column_value = field.cast_column(column_value, self._get_or_create_instance)
             inst_data[attr_name] = column_value
 
         inst = entity_cls(**inst_data)
+        state = inst.__state__
+        # Mark all the fields that were not queried as not available
+        for attr_name in set(entity_cls.__fields__).difference(
+            set(column_value_by_attr)
+        ):
+            state.get_slot(attr_name).available = False
+
+        inst.__state__.set_as_original()
         self._entity_map[row.entity_hash] = inst
         return inst
 
@@ -191,7 +202,6 @@ class Session:
         for row in rows:
             # Create the instance data
             inst = self._build_instance_from_row(model, row)
-            inst.__state__.revert_changes()
             queried_models.append(inst)
 
         return SgFindResult(queried_models)
@@ -238,7 +248,7 @@ class Session:
 
         # Add modified relationships in cascade
         for attr_name, field in entity.__fields__.items():
-            rel_value = state.get_current_value(attr_name)
+            rel_value = state.get_slot(attr_name).value
             for field_entity in field.iter_entities_from_field_value(rel_value):
                 self._check_relationship_commited(field_entity)
 
@@ -299,7 +309,7 @@ class Session:
                 field = original_model.__fields__[field_mapper[field_name]]
                 field.update_entity_from_row_value(original_model, field_value)
             # The entity has now an unmodified state
-            state.revert_changes()
+            state.set_as_original()
             state.pending_add = False
         self._pending_queries = {}
 

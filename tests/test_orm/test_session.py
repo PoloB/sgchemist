@@ -23,6 +23,7 @@ def shot_entity() -> Type[Shot]:
     """Returns the Shot entity."""
     return Shot
 
+
 @pytest.fixture
 def session(engine: SgEngine) -> Session:
     """Returns a session object."""
@@ -240,6 +241,16 @@ def test_execute_query_find_shot_entity(
     assert task.shot is not None
     assert task.shot.id == test_shot.id
     assert task.shot.__sg_type__ == test_shot.__sg_type__
+
+
+def test_execute_query_select_any_fields(
+    filled_engine: SgEngine, session: Session, shot_entity: Type[Shot], test_shot: Shot
+) -> None:
+    shot = session.exec(select(shot_entity, shot_entity.id, shot_entity.name)).first()
+    assert shot.id == test_shot.id
+    assert shot.name == test_shot.name
+    with pytest.raises(error.SgMissingFieldError):
+        _ = shot.project
 
 
 def test_context_manager(engine: SgEngine, test_project: Project) -> None:

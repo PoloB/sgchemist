@@ -314,9 +314,9 @@ def test_default_init(shot_entity: Type[Shot]) -> None:
 def test_get_fields(shot_entity: Type[Shot], shot_not_commited: Shot) -> None:
     """Tests field getter method."""
     assert (
-        shot_not_commited.__state__.get_current_value(
+        shot_not_commited.__state__.get_slot(
             shot_entity.name.get_attribute_name()
-        )
+        ).value
         == "foo"
     )
 
@@ -324,9 +324,7 @@ def test_get_fields(shot_entity: Type[Shot], shot_not_commited: Shot) -> None:
 def test_set_fields(shot_not_commited: Shot) -> None:
     """Tests field setter method."""
     model = shot_not_commited.__class__
-    shot_not_commited.__state__.set_current_value(
-        model.name.get_attribute_name(), "test"
-    )
+    shot_not_commited.__state__.get_slot(model.name.get_attribute_name()).value = "test"
     assert shot_not_commited.name == "test"
 
 
@@ -372,7 +370,7 @@ def test_field_descriptor(shot_not_commited: Shot) -> None:
     """Tests field descriptor behavior."""
     model = shot_not_commited.__class__
     state = shot_not_commited.__state__
-    state.revert_changes()
+    state.set_as_original()
     assert state.is_modified() is False
     shot_not_commited.name = "test"
     assert state.is_modified() is True
