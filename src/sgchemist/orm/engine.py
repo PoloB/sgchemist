@@ -110,9 +110,11 @@ class ShotgunAPIEngine(SgEngine):
         rows = []
 
         def _cast_record(rec: SgRecord) -> SgRow[T]:
-            entity_name = rec.pop("type")
+            entity_name = rec["type"]
             sanitized_record = {}
             for column_name, column_value in rec.items():
+                if column_name == "type":
+                    continue
                 field = field_by_name[column_name]
                 column_value = (
                     field.cast_value_over(_cast_record, column_value)
