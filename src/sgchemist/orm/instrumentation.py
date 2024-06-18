@@ -735,7 +735,7 @@ class InstrumentedField(InstrumentedAttribute[T]):
             entity (SgEntity): the entity to update
             field_value: the row value
         """
-        entity.__state__.set_current_value(self.get_attribute_name(), field_value)
+        entity.__state__.get_slot(self.get_attribute_name()).value = field_value
 
     def iter_entities_from_field_value(self, field_value: Any) -> Iterator[SgEntity]:
         """Iterate entities from a field value.

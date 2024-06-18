@@ -89,8 +89,7 @@ class ShotgunAPIEngine(SgEngine):
             list[SgRow]: rows returned by the query.
         """
         model = query.model
-        model_fields = [field.get_name() for field in model.__fields__.values()]
-        field_by_name = {field.get_name(): field for field in model.__fields__.values()}
+        field_by_name = {field.get_name(): field for field in query.fields}
         orders = [
             {"field_name": field.get_name(), "direction": direction.value}
             for field, direction in query.order_fields
@@ -100,7 +99,7 @@ class ShotgunAPIEngine(SgEngine):
         records: List[SgRecord] = self._sg.find(
             entity_type=model.__sg_type__,
             filters=filters,
-            fields=model_fields,
+            fields=list(field_by_name),
             order=orders,
             limit=query.limit,
             retired_only=query.retired_only,

@@ -33,6 +33,7 @@ class SgEntity(metaclass=SgEntityMeta):
     __fields__: ClassVar[Dict[str, InstrumentedAttribute[Any]]]
     __primaries__: ClassVar[Set[str]]
     __attr_per_field_name__: ClassVar[Dict[str, str]]
+    __state__: ClassVar[EntityState]
 
     id: NumberField = mapped_field(primary=True)
 
@@ -58,7 +59,7 @@ class SgEntity(metaclass=SgEntityMeta):
         self.__state__ = EntityState(self)
         # Init with field default value by setting its state
         for attr_name, field in self.__fields__.items():
-            self.__state__.set_current_value(attr_name, field.get_default_value())
+            self.__state__.get_slot(attr_name).value = field.get_default_value()
         # Set with keyword arguments
         for k, v in kwargs.items():
             if not hasattr(cls_, k):
@@ -66,7 +67,7 @@ class SgEntity(metaclass=SgEntityMeta):
                     "%r is an invalid keyword argument for %s" % (k, cls_.__name__)
                 )
             if k in self.__primaries__:
-                self.__state__.set_current_value(k, v)
+                self.__state__.get_slot(k).value = v
                 continue
             setattr(self, k, v)
 

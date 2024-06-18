@@ -29,3 +29,11 @@ class SgDeleteEntityError(SgError):
 
 class SgInvalidAnnotationError(SgError):
     """Raised when an annotation is invalid."""
+
+
+class SgQueryError(SgError):
+    """Raised when doing an invalid query."""
+
+
+class SgMissingFieldError(SgError):
+    """Raised when trying to get a field that was not queried."""

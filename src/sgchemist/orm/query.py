@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
+from . import error
 from .constant import BatchRequestType
 from .constant import GroupingType
 from .constant import Order
@@ -34,6 +35,7 @@ class SgFindQueryData(Generic[T_meta]):
     """
 
     model: T_meta
+    fields: Tuple[InstrumentedAttribute[Any], ...]
     condition: SgFilterObject = dataclasses.field(default_factory=SgNullCondition)
     order_fields: Tuple[OrderField, ...] = tuple()
     limit: int = 0
@@ -284,16 +286,27 @@ class SgBatchQuery(object):
         return self._entity
 
 
-def select(model: T_meta) -> SgFindQuery[T_meta]:
+def select(
+    model: T_meta, *fields: InstrumentedAttribute[Any]
+) -> SgFindQuery[T_meta]:
     """Returns a new query for the given entity class.
 
     Args:
         model (T_meta): the entity class.
+        fields (InstrumentedAttribute): fields to query.
+            Query all the fields of the entity by default.
 
     Returns:
         SgFindQuery[T_meta]: the query for the given entity.
     """
-    state = SgFindQueryData[T_meta](model, SgNullCondition())
+    if not fields:
+        fields = tuple(model.__fields__.values())
+    # Checking the given fields belong to the given model
+    model_fields = list(model.__fields__.values())
+    for field in fields:
+        if field not in model_fields:
+            raise error.SgQueryError(f"{field} is not a field of {model}")
+    state = SgFindQueryData[T_meta](model, fields=fields, condition=SgNullCondition())
     return SgFindQuery[T_meta](state)
 
 

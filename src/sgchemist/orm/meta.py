@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import inspect
 import sys
 from typing import TYPE_CHECKING
@@ -35,6 +36,13 @@ T = TypeVar("T")
 if TYPE_CHECKING:
     from .entity import SgEntity
     from .session import Session
+
+
+@dataclasses.dataclass
+class FieldSlot:
+
+    value: Any
+    available: bool
 
 
 class FieldDescriptor(Generic[T]):
@@ -72,7 +80,10 @@ class FieldDescriptor(Generic[T]):
         """
         if instance is None:
             return self._field
-        return instance.__state__.get_current_value(self._attr_name)
+        slot = instance.__state__.get_slot(self._attr_name)
+        if not slot.available:
+            raise error.SgMissingFieldError(f"{self._field} has not been queried")
+        return slot.value
 
     def __set__(self, instance: SgEntity, value: T) -> None:
         """Set the state internal value of the instance.
@@ -95,7 +106,7 @@ class FieldDescriptor(Generic[T]):
         else:
             if self._field in state.modified_fields:
                 state.modified_fields.remove(self._field)
-        instance.__state__.set_current_value(self._attr_name, value)
+        instance.__state__.get_slot(self._attr_name).value = value
 
 
 class AliasFieldDescriptor(FieldDescriptor[T]):
@@ -117,7 +128,7 @@ class AliasFieldDescriptor(FieldDescriptor[T]):
         target_field_name = self._field.get_name()
         class_ = self._field.get_parent_class()
         target_attr_name = class_.__attr_per_field_name__[target_field_name]
-        target_value = instance.__state__.get_current_value(target_attr_name)
+        target_value = instance.__state__.get_slot(target_attr_name).value
         if target_value is None:
             return None
         expected_target_class = self._field.get_types()
@@ -140,7 +151,10 @@ class EntityState(object):
         self.pending_deletion = False
         self.deleted = False
         self._original_values: Dict[str, Any] = {}
-        self._current_values: Dict[str, Any] = {}
+        self._slots: Dict[str, FieldSlot] = {
+            attr_name: FieldSlot(None, available=True)
+            for attr_name in instance.__fields__
+        }
         self.modified_fields: List[InstrumentedAttribute[Any]] = []
         self.session: Optional[Session] = None
 
@@ -174,32 +188,21 @@ class EntityState(object):
         """
         return self._original_values.get(attr_name)
 
-    def set_current_value(self, attr_name: str, value: Any) -> None:
-        """Set the entity value of the given attribute (i.e. the current value).
-
-        Call this method only if you do not want the entity to be tagged as modified
-        when changing the field value.
-
-        Args:
-            attr_name (str): the name of the attribute.
-            value (Any): the value of the attribute.
-        """
-        self._current_values[attr_name] = value
-
-    def get_current_value(self, attr_name: str) -> Any:
+    def get_slot(self, attr_name: str) -> FieldSlot:
         """Return the entity value of the given attribute (i.e. the current value).
 
         Args:
             attr_name (str): the name of the attribute.
 
         Returns:
-            Any: the entity value of the given attribute.
+            FieldSlot: the field slot for the given attribute
         """
-        return self._current_values.get(attr_name)
+        return self._slots[attr_name]
 
-    def revert_changes(self) -> None:
-        """Revert the changes made to the entity and restore its original values."""
-        self._original_values = self._current_values.copy()
+    def set_as_original(self) -> None:
+        """Set the current state of the entity as its original state."""
+        for key, slot in self._slots.items():
+            self._original_values[key] = slot.value
         self.modified_fields = []
 
 
@@ -297,9 +300,7 @@ class SgEntityMeta(type):
         all_fields: Dict[str, InstrumentedAttribute[Any]] = {}
         all_primaries: Set[str] = set()
         for base in bases:
-            base_fields = (
-                base.__fields__ if hasattr(base, "__fields__") else {}
-            )
+            base_fields = base.__fields__ if hasattr(base, "__fields__") else {}
             all_primaries.update(
                 base.__primaries__ if hasattr(base, "__primaries__") else {}
             )

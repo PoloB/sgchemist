@@ -244,12 +244,12 @@ def test_execute_query_find_shot_entity(
 
 
 def test_execute_query_select_any_fields(
-    filled_engine, session, shot_entity, test_shot
-):
+    filled_engine: SgEngine, session: Session, shot_entity: Type[Shot], test_shot: Shot
+) -> None:
     shot = session.exec(select(shot_entity, shot_entity.id, shot_entity.name)).first()
     assert shot.id == test_shot.id
     assert shot.name == test_shot.name
-    with pytest.raises(error.SgFieldMissingError):
+    with pytest.raises(error.SgMissingFieldError):
         _ = shot.project
 
 
