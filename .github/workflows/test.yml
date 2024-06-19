@@ -98,7 +98,7 @@ jobs:
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'pytest'
-          output-file-path: output.json
+          output-file-path: output-python${{ matrix.python }}-${{ matrix.os }}.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmark-data-python${{ matrix.python }}-${{ matrix.os }}.json
           # Workflow will fail when an alert happens
