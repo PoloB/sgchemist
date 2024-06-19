@@ -828,7 +828,7 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
         """
         return self._is_alias
 
-    def __getattr__(self, item: str) -> InstrumentedAttribute[T]:
+    def __getattr__(self, item: str) -> InstrumentedAttribute[Any]:
         """Returns a new instrumented attribute of the field target entity class.
 
         Args:

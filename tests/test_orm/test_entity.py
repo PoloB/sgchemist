@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 from typing import ClassVar
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -13,7 +14,6 @@ from classes import Asset
 from classes import Project
 from classes import Shot
 from classes import Task
-from typing_extensions import List
 
 from sgchemist.orm import error
 from sgchemist.orm.entity import SgEntity
