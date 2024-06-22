@@ -1,6 +1,7 @@
 -r requirements.txt
 ruff
 mypy
-pytest-cov
 pytest
+pytest-benchmark
+pytest-cov
 tox
