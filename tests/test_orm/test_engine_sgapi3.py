@@ -77,7 +77,6 @@ def test_engine_find(filled_engine: SgEngine, test_model: Type[SgEntity]) -> Non
     assert row["id"] == 1
 
 
-
 @pytest.mark.parametrize(
     "test_model_inst",
     (
