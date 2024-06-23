@@ -18,6 +18,7 @@ from .constant import GroupingType
 from .constant import Order
 from .entity import SgEntity
 from .instrumentation import InstrumentedAttribute
+from .instrumentation import InstrumentedRelationship
 from .meta import SgEntityMeta
 from .queryop import SgFilterObject
 from .queryop import SgNullCondition
@@ -45,6 +46,7 @@ class SgFindQueryData(Generic[T_meta]):
     additional_filter_presets: List[Dict[str, Any]] = dataclasses.field(
         default_factory=list
     )
+    loading_fields: Tuple[InstrumentedAttribute[Any], ...] = tuple()
 
 
 class SgFindQuery(Generic[T_meta]):
@@ -169,6 +171,63 @@ class SgFindQuery(Generic[T_meta]):
         new_state.additional_filter_presets = new_preset
         return self.__class__(new_state)
 
+    def load(self, *fields: InstrumentedAttribute[Any]) -> SgFindQuery[T_meta]:
+        """Adds the given fields to the query.
+
+        The results will be nested into the object hierarchy.
+
+        Args:
+            *fields (InstrumentedAttribute[Any]): the fields to load.
+
+        Returns:
+            SgFindQuery[T_meta]: a new query with the loading added.
+        """
+        # Check the given fields are well nested into existing relationships
+        new_state = dataclasses.replace(self._data)
+        queried_relationship_classes = {
+            (f.get_parent_class(), type_)
+            for f in new_state.fields
+            for type_ in f.get_types()
+            if isinstance(f, InstrumentedRelationship)
+        }
+        for field in fields:
+            if field.is_primary_field():
+                continue
+            if (
+                field.get_source_class(),
+                field.get_parent_class(),
+            ) not in queried_relationship_classes:
+                raise error.SgQueryError(
+                    f"Cannot load {field} because its entity is not queried."
+                )
+        new_state.loading_fields = (*self._data.loading_fields, *fields)
+        return self.__class__(new_state)
+
+    def load_all(
+        self, *relationships: InstrumentedRelationship[Any]
+    ) -> SgFindQuery[T_meta]:
+        """Load all the fields of the given relationships.
+
+        Args:
+            *relationships (InstrumentedRelationship[Any]): the relationships to load.
+
+        Returns:
+            SgFindQuery[T_meta]: a new query with the loading added.
+        """
+        if not relationships:
+            relationships = tuple(
+                field
+                for field in self.get_data().fields
+                if isinstance(field, InstrumentedRelationship)
+            )
+        # Construct all the fields for the relationships
+        all_fields = []
+        for relationship in relationships:
+            for target_type in relationship.get_types():
+                for target_field_attr in target_type.__fields__.keys():
+                    all_fields.append(getattr(relationship, target_field_attr))
+        return self.load(*all_fields)
+
 
 @dataclasses.dataclass
 class SgSummarizeQueryData(Generic[T_meta]):
@@ -286,9 +345,7 @@ class SgBatchQuery(object):
         return self._entity
 
 
-def select(
-    model: T_meta, *fields: InstrumentedAttribute[Any]
-) -> SgFindQuery[T_meta]:
+def select(model: T_meta, *fields: InstrumentedAttribute[Any]) -> SgFindQuery[T_meta]:
     """Returns a new query for the given entity class.
 
     Args:

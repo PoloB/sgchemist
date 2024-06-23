@@ -111,26 +111,32 @@ class InstrumentedAttribute(Generic[T], metaclass=abc.ABCMeta):
 
     def __init__(
         self,
+        source_class: SgEntityMeta,
         class_: SgEntityMeta,
         field_annotation: FieldAnnotation[T],
         attr_name: str,
         name: str,
         default_value: T,
+        primary: bool,
     ):
         """Initialize an instrumented attribute.
 
         Args:
-            class_ (Type[SgEntityMeta]): the class the instrumented attribute belongs to
+            source_class (SgEntityMeta): the original class for this attribute
+            class_ (SgEntityMeta): the class the instrumented attribute belongs to
             field_annotation (FieldAnnotation): the field annotation
             attr_name (str): the Python attribute name.
             name (str): the name of the field
             default_value (T): the default value of the attribute
+            primary (bool): whether the attribute is primary or not
         """
         self._attr_name = attr_name
         self._name = name or attr_name
+        self._src_class = source_class
         self._class = class_
         self._field_annotation = field_annotation
         self._default_value = default_value
+        self._primary = primary
 
     def __repr__(self) -> str:
         """Returns a string representation of the instrumented attribute.
@@ -164,6 +170,14 @@ class InstrumentedAttribute(Generic[T], metaclass=abc.ABCMeta):
         """
         return self._attr_name
 
+    def get_source_class(self) -> SgEntityMeta:
+        """Return the source class.
+
+        Returns:
+            SgEntityMeta: the source class
+        """
+        return self._src_class
+
     def get_parent_class(self) -> SgEntityMeta:
         """Return the parent class of the attribute.
 
@@ -179,6 +193,14 @@ class InstrumentedAttribute(Generic[T], metaclass=abc.ABCMeta):
             T: the default value of the attribute
         """
         return self._default_value
+
+    def is_primary_field(self) -> bool:
+        """Return whether the attribute is primary.
+
+        Returns:
+            bool: True if the attribute is primary, False otherwise.
+        """
+        return self._primary
 
     @abc.abstractmethod
     def is_alias(self) -> bool:
@@ -648,24 +670,36 @@ class InstrumentedField(InstrumentedAttribute[T]):
 
     def __init__(
         self,
+        source_class: SgEntityMeta,
         class_: SgEntityMeta,
         field_annotation: FieldAnnotation[T],
         attr_name: str,
         name: str,
         default_value: T,
         name_in_relation: str = "",
+        primary: bool = False,
     ):
         """Initialize an instrumented field.
 
         Args:
-            class_ (Type[SgEntityMeta]): the class the instrumented attribute belongs to
+            source_class (SgEntityMeta): the class of the source entity
+            class_ (SgEntityMeta): the class the instrumented attribute belongs to
             field_annotation (FieldAnnotation): the field annotation
             attr_name (str): the Python attribute name.
             name (str): the name of the field
             default_value (T): the default value of the attribute
             name_in_relation (str): the name of the attribute in the relationship
+            primary (bool): if True the attribute is primary (True) or not (False)
         """
-        super().__init__(class_, field_annotation, attr_name, name, default_value)
+        super().__init__(
+            source_class,
+            class_,
+            field_annotation,
+            attr_name,
+            name,
+            default_value,
+            primary,
+        )
         self._name_in_relation = name_in_relation
 
     def is_alias(self) -> bool:
@@ -718,12 +752,14 @@ class InstrumentedField(InstrumentedAttribute[T]):
             ]
         )
         return self.__class__(
+            relative_attribute.get_source_class(),
             self._class,
             self._field_annotation,
             self.get_attribute_name(),
             new_field_name,
             default_value=self.get_default_value(),
             name_in_relation=self.get_name_in_relation(),
+            primary=self._primary,
         )
 
     def update_entity_from_row_value(self, entity: SgEntity, field_value: T) -> None:
@@ -795,6 +831,7 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
 
     def __init__(
         self,
+        source_class: SgEntityMeta,
         class_: SgEntityMeta,
         field_annotation: FieldAnnotation[T],
         attr_name: str,
@@ -806,7 +843,8 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
         """Initialize an instrumented relationship field.
 
         Args:
-            class_ (Type[SgEntityMeta]): the class the instrumented attribute belongs to
+            source_class (SgEntityMeta): the class of the source entity
+            class_ (SgEntityMeta): the class the instrumented attribute belongs to
             field_annotation (FieldAnnotation): the field annotation
             attr_name (str): the Python attribute name.
             name (str): the name of the field
@@ -816,7 +854,15 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
             is_alias (bool): True if this relationship field is an alias for another
                 relationship field.
         """
-        super().__init__(class_, field_annotation, attr_name, name, default_value)
+        super().__init__(
+            source_class,
+            class_,
+            field_annotation,
+            attr_name,
+            name,
+            default_value,
+            False,
+        )
         self._is_alias = is_alias
         self._lazy_entity = lazy_entity
 
@@ -869,6 +915,7 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
             ]
         )
         return self.__class__(
+            relative_attribute.get_source_class(),
             self._class,
             self._field_annotation,
             new_field_name,
@@ -888,13 +935,13 @@ class InstrumentedRelationship(InstrumentedAttribute[T]):
         """
         return self._name
 
-    def get_types(self) -> Tuple[Type[Any]]:
+    def get_types(self) -> Tuple[Type[SgEntity], ...]:
         """Return the Python type of the attribute.
 
         It always returns a tuple with a single entity type.
 
         Returns:
-            tuple[Type[Any]]: entity class targeted by the relationship
+            tuple[Type[SgEntity]]: entity class targeted by the relationship
         """
         return (self._lazy_entity.get(),)
 
@@ -1003,6 +1050,7 @@ class InstrumentedMultiTargetRelationship(InstrumentedAttribute[T], abc.ABC):
 
     def __init__(
         self,
+        source_class: SgEntityMeta,
         class_: SgEntityMeta,
         field_annotation: FieldAnnotation[T],
         attr_name: str,
@@ -1013,7 +1061,8 @@ class InstrumentedMultiTargetRelationship(InstrumentedAttribute[T], abc.ABC):
         """Initialize an instrumented relationship field.
 
         Args:
-            class_ (Type[SgEntityMeta]): the class the instrumented attribute belongs to
+            source_class (SgEntityMeta): the source class of this attribute
+            class_ (SgEntityMeta): the class the instrumented attribute belongs to
             field_annotation (FieldAnnotation): the field annotation
             attr_name (str): the Python attribute name.
             name (str): the name of the field
@@ -1021,7 +1070,15 @@ class InstrumentedMultiTargetRelationship(InstrumentedAttribute[T], abc.ABC):
             lazy_collection (LazyEntityCollectionClassEval): the lazy entity collection
                 used to get the target entity
         """
-        super().__init__(class_, field_annotation, attr_name, name, default_value)
+        super().__init__(
+            source_class,
+            class_,
+            field_annotation,
+            attr_name,
+            name,
+            default_value,
+            False,
+        )
         self._lazy_collection = lazy_collection
 
     def is_alias(self) -> bool:
@@ -1125,6 +1182,7 @@ class InstrumentedMultiTargetSingleRelationship(InstrumentedMultiTargetRelations
             ]
         )
         return self.__class__(
+            relative_attribute.get_source_class(),
             self._class,
             self._field_annotation,
             new_field_name,
@@ -1229,6 +1287,7 @@ class InstrumentedMultiRelationship(InstrumentedMultiTargetRelationship[T]):
             ]
         )
         return self.__class__(
+            self.get_source_class(),
             self._class,
             self._field_annotation,
             new_field_name,

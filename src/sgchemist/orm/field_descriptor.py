@@ -165,12 +165,14 @@ class MappedField(MappedColumn):
                 "A MappedField should target an AbstractValueField annotation"
             )
         return InstrumentedField(
+            source_class=field_annotation.entity_class,
             class_=field_annotation.entity_class,
             field_annotation=field_annotation,
             attr_name=self.attr_name,
             name=self.name,
             default_value=self.default,
             name_in_relation=self.name_in_relation,
+            primary=self.primary,
         )
 
 
@@ -226,6 +228,7 @@ class Relationship(MappedColumn):
         if multi_target:
             return InstrumentedMultiTargetSingleRelationship(
                 entity_class,
+                entity_class,
                 field_annotation,
                 self.attr_name,
                 self._get_instrumented_attr_name(),
@@ -235,6 +238,7 @@ class Relationship(MappedColumn):
         if container_class is not None:
             return InstrumentedMultiRelationship(
                 entity_class,
+                entity_class,
                 field_annotation,
                 self.attr_name,
                 self._get_instrumented_attr_name(),
@@ -242,6 +246,7 @@ class Relationship(MappedColumn):
                 lazy_collection,
             )
         return InstrumentedRelationship(
+            entity_class,
             entity_class,
             field_annotation,
             self.attr_name,

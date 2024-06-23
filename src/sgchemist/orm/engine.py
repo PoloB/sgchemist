@@ -89,7 +89,9 @@ class ShotgunAPIEngine(SgEngine):
             list[SgRow]: rows returned by the query.
         """
         model = query.model
-        field_by_name = {field.get_name(): field for field in query.fields}
+        field_by_name = {
+            field.get_name(): field for field in query.fields + query.loading_fields
+        }
         orders = [
             {"field_name": field.get_name(), "direction": direction.value}
             for field, direction in query.order_fields
@@ -110,6 +112,7 @@ class ShotgunAPIEngine(SgEngine):
         rows = []
 
         def _cast_record(rec: SgRecord) -> SgRow[T]:
+            # Reorder the dict if requested
             entity_name = rec["type"]
             sanitized_record = {}
             for column_name, column_value in rec.items():
@@ -126,6 +129,12 @@ class ShotgunAPIEngine(SgEngine):
 
         for record in records:
             rows.append(_cast_record(record))
+        # Reorganize the row contents
+        for field in query.loading_fields:
+            key = field.get_name()
+            column_name, entity_type, target_key = key.split(".")
+            for row in rows:
+                row.content[column_name].content[target_key] = row.content.pop(key)
         return rows
 
     def batch(self, batch_queries: List[SgBatchQuery]) -> List[SgRow[SgEntity]]:
