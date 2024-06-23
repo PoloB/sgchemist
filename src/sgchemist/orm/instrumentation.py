@@ -640,7 +640,7 @@ class InstrumentedAttribute(Generic[T], metaclass=abc.ABCMeta):
     if TYPE_CHECKING:
 
         def __getattr__(self, item: str) -> InstrumentedAttribute[T]:
-            ...
+            """Returns an instrumented attribute from attribute name."""
 
 
 class InstrumentedField(InstrumentedAttribute[T]):

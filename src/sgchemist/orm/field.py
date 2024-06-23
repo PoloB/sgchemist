@@ -74,11 +74,11 @@ class AbstractValueField(AbstractField[T]):
 
         @overload
         def __get__(self, instance: None, owner: Any) -> InstrumentedField[T]:
-            """Return the value of the field."""
+            ...
 
         @overload
         def __get__(self, instance: Any, owner: Any) -> Optional[T]:
-            """Return the value of the field."""
+            ...
 
         def __get__(
             self, instance: Optional[Any], owner: Any
@@ -370,11 +370,11 @@ class EntityField(AbstractEntityField[T]):
 
         @overload
         def __get__(self, instance: None, owner: Any) -> InstrumentedRelationship[T]:
-            """Return the value of the field."""
+            ...
 
         @overload
         def __get__(self, instance: Any, owner: Any) -> Optional[T]:
-            """Return the value of the field."""
+            ...
 
         def __get__(
             self, instance: Optional[Any], owner: Any
@@ -394,11 +394,11 @@ class MultiEntityField(AbstractEntityField[T]):
         def __get__(
             self, instance: None, owner: Any
         ) -> InstrumentedMultiTargetRelationship[T]:
-            """Return the value of the field."""
+            ...
 
         @overload
         def __get__(self, instance: Any, owner: Any) -> T:
-            """Return the value of the field."""
+            ...
 
         def __get__(
             self, instance: Optional[Any], owner: Any

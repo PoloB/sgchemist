@@ -69,6 +69,7 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 88
 lint.select = [
+    "D",
     "E",  # pycodestyle
     "W",
     "F",  # PyFlakes
