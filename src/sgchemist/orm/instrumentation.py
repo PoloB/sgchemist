@@ -1287,7 +1287,7 @@ class InstrumentedMultiRelationship(InstrumentedMultiTargetRelationship[T]):
             ]
         )
         return self.__class__(
-            self.get_source_class(),
+            relative_attribute.get_source_class(),
             self._class,
             self._field_annotation,
             new_field_name,

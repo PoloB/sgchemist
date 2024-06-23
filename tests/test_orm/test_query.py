@@ -261,3 +261,5 @@ def test_select_loading_all(
     query = select(shot_entity, *shot_fields).load_all()
     assert isinstance(query, SgFindQuery)
     assert query.get_data().fields == shot_fields
+    # Test with all fields
+    select(shot_entity).load_all()
