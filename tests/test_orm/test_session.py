@@ -241,6 +241,24 @@ def test_execute_query_find_shot_entity(
     assert task.shot is not None
     assert task.shot.id == test_shot.id
     assert task.shot.__sg_type__ == test_shot.__sg_type__
+    # Getting elements nested elements from shot should raise an error
+    with pytest.raises(error.SgMissingFieldError):
+        _ = task.shot.description
+
+
+def test_execute_query_find_loading(
+    filled_engine: SgEngine, session: Session, shot_entity: Type[Shot], test_shot: Shot
+) -> None:
+    """Test querying with loading option."""
+    query = select(shot_entity, shot_entity.id, shot_entity.project).loading(
+        shot_entity.project.name
+    )
+    shot = session.exec(query).first()
+    assert shot.id == test_shot.id
+    assert shot.project is not None
+    assert shot.project.id == test_shot.project.id
+    assert test_shot.project is not None
+    assert shot.project.name == test_shot.project.name
 
 
 def test_execute_query_select_any_fields(

@@ -223,3 +223,18 @@ def test_select_any_field(
     # Query a field which is not the base entity must raise an error
     with pytest.raises(error.SgQueryError):
         select(shot_entity, shot_entity.id, project_entity.name)
+    # It shall also raise an error when field is outside the scope of the entity
+    with pytest.raises(error.SgQueryError):
+        select(shot_entity, shot_entity.id, shot_entity.project.name)
+
+
+def test_select_loading(shot_entity: Type[Shot], project_entity: Type[Project]) -> None:
+    """Test the select loading feature."""
+    shot_fields = (shot_entity.id, shot_entity.project)
+    shot_project_name_field = shot_entity.project.name
+    query = select(shot_entity, *shot_fields).loading(shot_project_name_field)
+    assert isinstance(query, SgFindQuery)
+    assert query.get_data().fields == shot_fields
+    assert query.get_data().loading_fields == (shot_project_name_field,)
+    with pytest.raises(error.SgQueryError):
+        select(shot_entity).loading(project_entity.name)
