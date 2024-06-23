@@ -246,6 +246,7 @@ def test_execute_query_find_shot_entity(
 def test_execute_query_select_any_fields(
     filled_engine: SgEngine, session: Session, shot_entity: Type[Shot], test_shot: Shot
 ) -> None:
+    """Test querying only some fields."""
     shot = session.exec(select(shot_entity, shot_entity.id, shot_entity.name)).first()
     assert shot.id == test_shot.id
     assert shot.name == test_shot.name

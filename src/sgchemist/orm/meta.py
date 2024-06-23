@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 
 @dataclasses.dataclass
 class FieldSlot:
+    """A container for field value."""
 
     value: Any
     available: bool
