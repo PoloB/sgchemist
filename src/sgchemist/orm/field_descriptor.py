@@ -172,6 +172,7 @@ class MappedField(MappedColumn):
             name=self.name,
             default_value=self.default,
             name_in_relation=self.name_in_relation,
+            primary=self.primary,
         )
 
 

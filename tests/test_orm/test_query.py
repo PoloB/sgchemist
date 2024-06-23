@@ -4,6 +4,7 @@ from typing import Any
 from typing import Type
 
 import pytest
+from classes import Asset
 from classes import Project
 from classes import Shot
 
@@ -31,6 +32,12 @@ def project_entity() -> Type[Project]:
 def shot_entity() -> Type[Shot]:
     """Returns the Shot entity."""
     return Shot
+
+
+@pytest.fixture
+def asset_entity() -> Type[Asset]:
+    """Returns the Asset entity."""
+    return Asset
 
 
 @pytest.fixture
@@ -232,9 +239,25 @@ def test_select_loading(shot_entity: Type[Shot], project_entity: Type[Project]) 
     """Test the select loading feature."""
     shot_fields = (shot_entity.id, shot_entity.project)
     shot_project_name_field = shot_entity.project.name
-    query = select(shot_entity, *shot_fields).loading(shot_project_name_field)
+    query = select(shot_entity, *shot_fields).load(shot_project_name_field)
     assert isinstance(query, SgFindQuery)
     assert query.get_data().fields == shot_fields
     assert query.get_data().loading_fields == (shot_project_name_field,)
     with pytest.raises(error.SgQueryError):
-        select(shot_entity).loading(project_entity.name)
+        select(shot_entity).load(project_entity.name)
+
+
+def test_select_loading_all(
+    shot_entity: Type[Shot], asset_entity: Type[Asset]
+) -> None:
+    """Test the select loading all feature."""
+    shot_fields = (shot_entity.id, shot_entity.project)
+    query = select(shot_entity, *shot_fields).load_all(shot_entity.project)
+    assert isinstance(query, SgFindQuery)
+    assert query.get_data().fields == shot_fields
+    with pytest.raises(error.SgQueryError):
+        select(shot_entity).load_all(asset_entity.project)
+    # Test with no arguments
+    query = select(shot_entity, *shot_fields).load_all()
+    assert isinstance(query, SgFindQuery)
+    assert query.get_data().fields == shot_fields
