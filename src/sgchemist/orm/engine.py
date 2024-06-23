@@ -11,6 +11,7 @@ SgEngine abstract class.
 from __future__ import annotations
 
 import abc
+from typing import Any
 from typing import List
 from typing import Type
 from typing import TypeVar
@@ -34,6 +35,17 @@ class SgEngine:
     """Abstract definition of an engine to communicate with Shotgun."""
 
     __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def find_raw(self, query: SgFindQueryData[Any]) -> List[Any]:
+        """Execute the query and return the raw results from the engine.
+
+        Args:
+            query (SgFindQueryData): the query to execute.
+
+        Returns:
+            list[Any]: the raw results from the engine.
+        """
 
     @abc.abstractmethod
     def find(self, query: SgFindQueryData[Type[T]]) -> List[SgRow[T]]:
@@ -79,14 +91,14 @@ class ShotgunAPIEngine(SgEngine):
         self._query_serializer = ShotgunAPIObjectSerializer()
         self._batch_serializer = ShotgunAPIBatchQuerySerializer()
 
-    def find(self, query: SgFindQueryData[Type[T]]) -> List[SgRow[T]]:
-        """Execute a find query and return the rows.
+    def find_raw(self, query: SgFindQueryData[Any]) -> List[SgRecord]:
+        """Execute the query and return the raw results from the engine.
 
         Args:
             query (SgFindQueryData): query state to execute.
 
         Returns:
-            list[SgRow]: rows returned by the query.
+            list[dict]: the raw results from the engine.
         """
         model = query.model
         field_by_name = {
@@ -109,7 +121,21 @@ class ShotgunAPIEngine(SgEngine):
             include_archived_projects=query.include_archived_projects,
             additional_filter_presets=query.additional_filter_presets,
         )
-        rows = []
+        return records
+
+    def find(self, query: SgFindQueryData[Type[T]]) -> List[SgRow[T]]:
+        """Execute a find query and return the rows.
+
+        Args:
+            query (SgFindQueryData): query state to execute.
+
+        Returns:
+            list[SgRow]: rows returned by the query.
+        """
+        field_by_name = {
+            field.get_name(): field for field in query.fields + query.loading_fields
+        }
+        records: List[SgRecord] = self.find_raw(query)
 
         def _cast_record(rec: SgRecord) -> SgRow[T]:
             # Reorder the dict if requested
@@ -127,6 +153,7 @@ class ShotgunAPIEngine(SgEngine):
                 sanitized_record[column_name] = column_value
             return SgRow(entity_name, rec["id"], True, sanitized_record)
 
+        rows = []
         for record in records:
             rows.append(_cast_record(record))
         # Reorganize the row contents

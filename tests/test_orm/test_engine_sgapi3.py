@@ -68,6 +68,14 @@ def test_engine_find(filled_engine: SgEngine, test_model: Type[SgEntity]) -> Non
     assert isinstance(row, SgRow)
     assert row.success
     assert row.entity_hash == (test_model.__sg_type__, 1)
+    # Test find raw
+    rows = filled_engine.find_raw(find_query_state)
+    assert len(rows) == 1
+    row = rows[0]
+    assert isinstance(row, dict)
+    assert row["type"] == test_model.__sg_type__
+    assert row["id"] == 1
+
 
 
 @pytest.mark.parametrize(
