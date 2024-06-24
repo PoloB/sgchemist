@@ -11,7 +11,7 @@ from typing_extensions import TypedDict
 
 from .constant import BatchRequestType
 from .entity import SgEntity
-from .instrumentation import InstrumentedAttribute
+from .fields import AbstractField
 from .query import SgBatchQuery
 from .queryop import SgFieldCondition
 from .queryop import SgFilterObject
@@ -130,7 +130,7 @@ class ShotgunAPIBatchQuerySerializer:
 
     @staticmethod
     def serialize_entity(
-        entity: SgEntity, fields: List[InstrumentedAttribute[Any]]
+        entity: SgEntity, fields: List[AbstractField[Any]]
     ) -> Dict[str, Any]:
         """Serialize the given sgchemist entity to shotgun-api3 batch query.
 

@@ -11,13 +11,12 @@ from classes import Project
 from classes import Shot
 from classes import Task
 
+from sgchemist.orm.annotation import LazyEntityClassEval
+from sgchemist.orm.annotation import LazyEntityCollectionClassEval
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.instrumentation import InstrumentedAttribute
-from sgchemist.orm.instrumentation import InstrumentedField
-from sgchemist.orm.instrumentation import LazyEntityClassEval
-from sgchemist.orm.instrumentation import LazyEntityCollectionClassEval
+from sgchemist.orm.field import AbstractField
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.row import SgRow
 
@@ -78,7 +77,7 @@ def test_lazy_entity_collection_eval(
     ],
 )
 def test_instrumented_field_attributes(
-    field: InstrumentedField[Any],
+    field: AbstractField[Any],
     exp_name: str,
     exp_attr_name: str,
     exp_class: Type[SgEntity],
@@ -101,18 +100,16 @@ def test_instrumented_field_attributes(
 @pytest.mark.parametrize(
     "field, exp_field_name",
     [
-        (Shot.project.id, "project.Project.id"),
-        (Shot.assets.id, "assets.Asset.id"),
-        (Task.asset.id, "entity.Asset.id"),
-        (Task.asset.project.id, "entity.Asset.project.Project.id"),
-        (Shot.tasks.entity, "tasks.Task.entity"),
-        (Asset.shots.tasks.entity, "shots.Shot.tasks.Task.entity"),
-        (Task.entity.Asset.id, "entity.Asset.id"),
+        (Shot.project.f(Project.id), "project.Project.id"),
+        (Shot.assets.f(Asset.id), "assets.Asset.id"),
+        (Task.asset.f(Asset.id), "entity.Asset.id"),
+        (Task.asset.f(Asset.project).f(Project.id), "entity.Asset.project.Project.id"),
+        (Shot.tasks.f(Task.entity), "tasks.Task.entity"),
+        (Asset.shots.f(Shot.tasks).f(Task.entity), "shots.Shot.tasks.Task.entity"),
+        (Task.entity.f(Asset.id), "entity.Asset.id"),
     ],
 )
-def test_build_relative_to(
-    field: InstrumentedAttribute[Any], exp_field_name: str
-) -> None:
+def test_build_relative_to(field: AbstractField[Any], exp_field_name: str) -> None:
     """Tests the relative field names."""
     assert field.get_name() == exp_field_name
 
@@ -120,7 +117,7 @@ def test_build_relative_to(
 def test_missing_attribute_on_target_selector() -> None:
     """Tests that getting a non-existing field raises an error."""
     with pytest.raises(AttributeError):
-        _ = Task.entity.Asset.non_existing_field
+        _ = Task.entity.f(Asset.non_existing_field)  # type: ignore[attr-defined]
 
 
 @pytest.mark.parametrize(
@@ -132,7 +129,7 @@ def test_missing_attribute_on_target_selector() -> None:
     ],
 )
 def test_update_entity_from_row_value(
-    field: InstrumentedAttribute[Any], value_to_set: Any, exp_value: Any
+    field: AbstractField[Any], value_to_set: Any, exp_value: Any
 ) -> None:
     """Tests the update entity from row attribute."""
     inst = field.get_parent_class()()
@@ -153,7 +150,7 @@ def test_update_entity_from_row_value(
     ],
 )
 def test_entities_iter_entities_from_field_values(
-    field: InstrumentedAttribute[Any], value: Any, exp_value: Any
+    field: AbstractField[Any], value: Any, exp_value: Any
 ) -> None:
     """Tests the entity iterator."""
     assert list(field.iter_entities_from_field_value(value)) == exp_value
@@ -169,7 +166,7 @@ def test_entities_iter_entities_from_field_values(
     ],
 )
 def test_cast_value_over(
-    field: InstrumentedAttribute[Any],
+    field: AbstractField[Any],
     func: Callable[[Any], Any],
     value: Any,
     exp_value: Any,
@@ -183,7 +180,7 @@ def test_cast_value_over(
     [
         (Shot.id, lambda x, y: x, 5, 5),
         (Shot.project, lambda x, y: x, None, None),
-        (Shot.project, lambda x, y: (x, y), 5, (Project, 5)),
+        (Shot.project, lambda x, y: x, SgRow("Project", 1, True, {}), Project),
         (
             Shot.parent_shots,
             lambda x, y: (x, y.entity_id),
@@ -196,7 +193,7 @@ def test_cast_value_over(
     ],
 )
 def test_cast_column(
-    field: InstrumentedAttribute[Any],
+    field: AbstractField[Any],
     func: Callable[[Type[SgEntity], SgRow[Any]], Any],
     value: Any,
     exp_value: Any,

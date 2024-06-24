@@ -232,13 +232,13 @@ def test_select_any_field(
         select(shot_entity, shot_entity.id, project_entity.name)
     # It shall also raise an error when field is outside the scope of the entity
     with pytest.raises(error.SgQueryError):
-        select(shot_entity, shot_entity.id, shot_entity.project.name)
+        select(shot_entity, shot_entity.id, shot_entity.project.f(Project.name))
 
 
 def test_select_loading(shot_entity: Type[Shot], project_entity: Type[Project]) -> None:
     """Test the select loading feature."""
     shot_fields = (shot_entity.id, shot_entity.project)
-    shot_project_name_field = shot_entity.project.name
+    shot_project_name_field = shot_entity.project.f(Project.name)
     query = select(shot_entity, *shot_fields).load(shot_project_name_field)
     assert isinstance(query, SgFindQuery)
     assert query.get_data().fields == shot_fields
@@ -247,9 +247,7 @@ def test_select_loading(shot_entity: Type[Shot], project_entity: Type[Project]) 
         select(shot_entity).load(project_entity.name)
 
 
-def test_select_loading_all(
-    shot_entity: Type[Shot], asset_entity: Type[Asset]
-) -> None:
+def test_select_loading_all(shot_entity: Type[Shot], asset_entity: Type[Asset]) -> None:
     """Test the select loading all feature."""
     shot_fields = (shot_entity.id, shot_entity.project)
     query = select(shot_entity, *shot_fields).load_all(shot_entity.project)

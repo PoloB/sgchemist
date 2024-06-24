@@ -10,10 +10,9 @@ from classes import Project
 from classes import Shot
 
 from sgchemist.orm.constant import BatchRequestType
+from sgchemist.orm.field import AbstractValueField
 from sgchemist.orm.field import EntityField
 from sgchemist.orm.field import TextField
-from sgchemist.orm.instrumentation import InstrumentedField
-from sgchemist.orm.instrumentation import InstrumentedRelationship
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.queryop import SgNullCondition
 from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
@@ -47,13 +46,13 @@ def batch_serialize() -> ShotgunAPIBatchQuerySerializer:
 
 
 @pytest.fixture
-def simple_field(shot_entity: Type[Shot]) -> InstrumentedField[Any]:
+def simple_field(shot_entity: Type[Shot]) -> AbstractValueField[Any]:
     """Returns a simple test field."""
     return shot_entity.name
 
 
 @pytest.fixture
-def relation_field(shot_entity: Type[Shot]) -> InstrumentedRelationship[Any]:
+def relation_field(shot_entity: Type[Shot]) -> EntityField[Any]:
     """Returns a relation field."""
     return shot_entity.project
 

@@ -17,6 +17,8 @@ from classes import Task
 
 from sgchemist.orm import error
 from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.field import AbstractField
+from sgchemist.orm.field import AbstractValueField
 from sgchemist.orm.field import EntityField
 from sgchemist.orm.field import MultiEntityField
 from sgchemist.orm.field import NumberField
@@ -24,8 +26,6 @@ from sgchemist.orm.field import TextField
 from sgchemist.orm.field_descriptor import alias_relationship
 from sgchemist.orm.field_descriptor import mapped_field
 from sgchemist.orm.field_descriptor import relationship
-from sgchemist.orm.instrumentation import InstrumentedField
-from sgchemist.orm.instrumentation import InstrumentedMultiTargetSingleRelationship
 from sgchemist.orm.meta import EntityState
 
 
@@ -69,7 +69,7 @@ def test_entity_values(shot_entity: Type[Shot]) -> None:
         "parent_shots": "parent_shots",
         "tasks": "tasks",
     }
-    assert isinstance(shot_entity.id, InstrumentedField)
+    assert isinstance(shot_entity.id, AbstractValueField)
 
 
 def test_model_creation_missing_sg_type() -> None:
@@ -180,7 +180,7 @@ def test_union_entity_is_multi_target() -> None:
         __sg_type__ = "test"
         entity: EntityField[Union[SgEntity, TestEntity]]
 
-    assert isinstance(TestWithUnion.entity, InstrumentedMultiTargetSingleRelationship)
+    assert isinstance(TestWithUnion.entity, EntityField)
 
     # Multi entity must be a list
     with pytest.raises(error.SgEntityClassDefinitionError):
@@ -360,7 +360,7 @@ def test_instance_with_primary_key_is_committed(shot_commited: Shot) -> None:
     ],
 )
 def test_entity_modified_fields(
-    entity: SgEntity, expected_modified_fields: list[InstrumentedField[Any]]
+    entity: SgEntity, expected_modified_fields: list[AbstractField[Any]]
 ) -> None:
     """Tests that initialized fields are considered modified expect id."""
     assert entity.__state__.modified_fields == expected_modified_fields

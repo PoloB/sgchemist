@@ -12,7 +12,6 @@ from typing import Dict
 from typing import Generic
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -20,14 +19,9 @@ from typing import TypeVar
 from typing_extensions import get_origin
 
 from . import error
-from .field import AbstractEntityField
-from .field import AbstractField
-from .field_descriptor import FieldAnnotation
-from .field_descriptor import MappedColumn
-from .field_descriptor import MappedField
-from .field_descriptor import Relationship
-from .field_descriptor import extract_annotation_info
-from .instrumentation import InstrumentedAttribute
+from .annotation import FieldAnnotation
+from .descriptor import extract_annotation_info
+from .fields import AbstractField
 from .typing_util import de_stringify_annotation
 from .typing_util import get_annotations
 
@@ -46,24 +40,24 @@ class FieldSlot:
     available: bool
 
 
-class FieldDescriptor(Generic[T]):
+class FieldProperty(Generic[T]):
     """A field descriptor wrapping the access data of fields."""
 
     def __init__(
         self,
-        instrumented_attribute: InstrumentedAttribute[T],
+        field: AbstractField[T],
         attr_name: str,
         settable: bool = True,
     ) -> None:
         """Initialize the field descriptor.
 
         Args:
-            instrumented_attribute (InstrumentedAttribute[T]): the instrumented
+            field (AbstractField[T]): the instrumented
                 attribute to wrap.
             attr_name (str): the name of the attribute.
             settable (bool): whether the attribute is settable or not.
         """
-        self._field = instrumented_attribute
+        self._field = field
         self._attr_name = attr_name
         self._settable = settable
 
@@ -110,7 +104,7 @@ class FieldDescriptor(Generic[T]):
         instance.__state__.get_slot(self._attr_name).value = value
 
 
-class AliasFieldDescriptor(FieldDescriptor[T]):
+class AliasFieldProperty(FieldProperty[T]):
     """Defines an alias field descriptor."""
 
     def __get__(self, instance: Optional[SgEntity], obj_type: Any = None) -> Any:
@@ -156,7 +150,7 @@ class EntityState(object):
             attr_name: FieldSlot(None, available=True)
             for attr_name in instance.__fields__
         }
-        self.modified_fields: List[InstrumentedAttribute[Any]] = []
+        self.modified_fields: List[AbstractField[Any]] = []
         self.session: Optional[Session] = None
 
     def is_modified(self) -> bool:
@@ -278,7 +272,7 @@ class SgEntityMeta(type):
                 is invalid.
         """
         super().__init__(class_name, bases, dict_)
-        cls.__fields__: Dict[str, InstrumentedAttribute[Any]] = {}
+        cls.__fields__: Dict[str, AbstractField[Any]] = {}
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
         cls.__abstract__ = dict_.get("__abstract__", False)
         cls.__instance_state__: EntityState  # noqa: B032
@@ -297,21 +291,19 @@ class SgEntityMeta(type):
                 f"Missing __sg_type__ attribute in model {class_name}"
             )
 
-        # Get all the fields from the parent classes
-        all_fields: Dict[str, InstrumentedAttribute[Any]] = {}
-        all_primaries: Set[str] = set()
+        # Get all the annotations from the parent classes and create them into the
+        # new class
+        base_fields: Dict[str, AbstractField[Any]] = {}
         for base in bases:
             base_fields = base.__fields__ if hasattr(base, "__fields__") else {}
-            all_primaries.update(
-                base.__primaries__ if hasattr(base, "__primaries__") else {}
-            )
-            all_fields.update(base_fields)
-        cls.__fields__ = all_fields
-        cls.__attr_per_field_name__ = {
-            field.get_name(): attr_name for attr_name, field in all_fields.items()
-        }
-        cls.__primaries__ = all_primaries
-        field_names = set(field.get_name() for field in all_fields.values())
+            base_fields.update(base_fields)
+        cls.__fields__ = {}
+        cls.__attr_per_field_name__ = {}
+        cls.__primaries__ = set()
+        field_names = set()
+
+        for attr_name, field in base_fields.items():
+            field.get_field_annotation()
 
         # Name and store new fields
         for attr_name, annot in get_annotations(cls).items():
@@ -336,37 +328,25 @@ class SgEntityMeta(type):
                     f"{class_name}.{attr_name} is not a field annotation."
                 )
             # Check we are not overlapping attributes over relationship
-            if attr_name in InstrumentedAttribute.__dict__:
+            if attr_name in AbstractField.__dict__:
                 raise error.SgEntityClassDefinitionError(
                     f"Attribute {attr_name} overlap with instrumented attributes. "
                     f"Please use other variable names for your fields"
                 )
-            map_field = dict_.get(attr_name)
-            if not map_field:
-                map_type = (
-                    Relationship
-                    if issubclass(field_type, AbstractEntityField)
-                    else MappedField
-                )
-                map_field = map_type(attr_name)
-            if not isinstance(map_field, MappedColumn):
-                raise error.SgEntityClassDefinitionError(
-                    f"{class_name}.{attr_name} is not a mapped column."
-                )
+            prop = dict_.get(attr_name)
             # Extract entity information from annotation
             entities, container_class = extract_annotation_info(annot)
-            entity_annot = FieldAnnotation(cls, field_type, entities, container_class)
-            map_field.attr_name = attr_name
+            field_annot = FieldAnnotation(cls, attr_name, entities, container_class)
             # Build the instrumented attribute
             try:
-                field = map_field.get_instrumented(entity_annot)
+                field = field_type.create_from_annotation(field_annot, prop)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"
                 ) from e
             field_name = field.get_name()
             # Add attribute to primaries if needed
-            if map_field.primary:
+            if field.is_primary():
                 cls.__primaries__.add(attr_name)
             # Check we are not redefining a field
             if not field.is_alias():
@@ -379,5 +359,5 @@ class SgEntityMeta(type):
                 # Add to the class
                 cls.__fields__[attr_name] = field
             # Create field descriptors
-            descriptor = AliasFieldDescriptor if field.is_alias() else FieldDescriptor
-            setattr(cls, attr_name, descriptor(field, attr_name, not map_field.primary))
+            prop = AliasFieldProperty if field.is_alias() else FieldProperty
+            setattr(cls, attr_name, prop(field, attr_name, not field.is_primary()))

@@ -2,26 +2,26 @@
 
 from __future__ import annotations
 
+from .descriptor import alias_relationship as alias_relationship
+from .descriptor import field as field
+from .descriptor import relationship as relationship
 from .engine import ShotgunAPIEngine as ShotgunAPIEngine
 from .entity import SgEntity as SgEntity
-from .field import BooleanField as BooleanField
-from .field import DateField as DateField
-from .field import DateTimeField as DateTimeField
-from .field import DurationField as DurationField
-from .field import EntityField as EntityField
-from .field import FloatField as FloatField
-from .field import ImageField as ImageField
-from .field import ListField as ListField
-from .field import MultiEntityField as MultiEntityField
-from .field import NumberField as NumberField
-from .field import PercentField as PercentField
-from .field import SerializableField as SerializableField
-from .field import StatusField as StatusField
-from .field import TextField as TextField
-from .field import UrlField as UrlField
-from .field_descriptor import alias_relationship as alias_relationship
-from .field_descriptor import mapped_field as mapped_field
-from .field_descriptor import relationship as relationship
+from .fields import BooleanField as BooleanField
+from .fields import DateField as DateField
+from .fields import DateTimeField as DateTimeField
+from .fields import DurationField as DurationField
+from .fields import EntityField as EntityField
+from .fields import FloatField as FloatField
+from .fields import ImageField as ImageField
+from .fields import ListField as ListField
+from .fields import MultiEntityField as MultiEntityField
+from .fields import NumberField as NumberField
+from .fields import PercentField as PercentField
+from .fields import SerializableField as SerializableField
+from .fields import StatusField as StatusField
+from .fields import TextField as TextField
+from .fields import UrlField as UrlField
 from .query import select as select
 from .query import summarize as summarize
 from .session import Session as Session

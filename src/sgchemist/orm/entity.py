@@ -10,10 +10,10 @@ from typing import Set
 from typing import Type
 from typing import TypeVar
 
+from . import descriptor
 from . import error
-from .field import NumberField
-from .field_descriptor import mapped_field
-from .instrumentation import InstrumentedAttribute
+from .fields import AbstractField
+from .fields import NumberField
 from .meta import EntityState
 from .meta import SgEntityMeta
 
@@ -30,12 +30,12 @@ class SgEntity(metaclass=SgEntityMeta):
     __abstract__: ClassVar[bool] = True
     __sg_type__: ClassVar[str]
     __registry__: ClassVar[Dict[str, Type[SgEntity]]]
-    __fields__: ClassVar[Dict[str, InstrumentedAttribute[Any]]]
+    __fields__: ClassVar[Dict[str, AbstractField[Any]]]
     __primaries__: ClassVar[Set[str]]
     __attr_per_field_name__: ClassVar[Dict[str, str]]
     __state__: ClassVar[EntityState]
 
-    id: NumberField = mapped_field(primary=True)
+    id: NumberField = descriptor.FieldDescriptor(primary=True)
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Adds the subclass to the global entity registry."""
