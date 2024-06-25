@@ -10,7 +10,6 @@ from typing import Set
 from typing import Type
 from typing import TypeVar
 
-from . import descriptor
 from . import error
 from .fields import AbstractField
 from .fields import NumberField
@@ -35,7 +34,8 @@ class SgEntity(metaclass=SgEntityMeta):
     __attr_per_field_name__: ClassVar[Dict[str, str]]
     __state__: ClassVar[EntityState]
 
-    id: NumberField = descriptor.FieldDescriptor(primary=True)
+    id: NumberField = NumberField(name="id")
+    id._primary = True
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Adds the subclass to the global entity registry."""

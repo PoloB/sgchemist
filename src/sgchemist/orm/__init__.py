@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from .descriptor import alias_relationship as alias_relationship
-from .descriptor import field as field
-from .descriptor import relationship as relationship
 from .engine import ShotgunAPIEngine as ShotgunAPIEngine
 from .entity import SgEntity as SgEntity
 from .fields import BooleanField as BooleanField
@@ -22,6 +19,7 @@ from .fields import SerializableField as SerializableField
 from .fields import StatusField as StatusField
 from .fields import TextField as TextField
 from .fields import UrlField as UrlField
+from .fields import alias as alias
 from .query import select as select
 from .query import summarize as summarize
 from .session import Session as Session

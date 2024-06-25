@@ -3,9 +3,11 @@
 from __future__ import absolute_import
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING
+from typing import Any
+from typing import Collection
 from typing import Dict
-from typing import Generic
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -88,25 +90,10 @@ class LazyEntityCollectionClassEval:
         return list(self._resolved_by_name.values())
 
 
-class FieldAnnotation(Generic[T]):
+@dataclasses.dataclass
+class FieldAnnotation:
     """A well-defined field annotation."""
 
-    def __init__(
-        self,
-        entity_class: SgEntityMeta,
-        attribute_name: str,
-        annotated_entities: Tuple[str, ...],
-        container_class: Optional[Type[T]] = None,
-    ):
-        """Initialize a FieldAnnotation.
-
-        Args:
-            entity_class (SgEntityMeta): the class of the entity
-            attribute_name (str): the attribute name of the field
-            annotated_entities (tuple[str, ...]): the annotated entities
-            container_class (Optional[Type[T]], optional): the class of the container
-        """
-        self.entity_class = entity_class
-        self.attribute_name = attribute_name
-        self.entities = annotated_entities
-        self.container_class = container_class
+    entity_class: SgEntityMeta
+    entities: Tuple[str, ...]
+    container_class: Optional[Type[Collection[Any]]]

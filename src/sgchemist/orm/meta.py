@@ -8,6 +8,7 @@ import sys
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
+from typing import Collection
 from typing import Dict
 from typing import Generic
 from typing import List
@@ -20,9 +21,11 @@ from typing_extensions import get_origin
 
 from . import error
 from .annotation import FieldAnnotation
-from .descriptor import extract_annotation_info
 from .fields import AbstractField
+from .typing_util import AnnotationScanType
+from .typing_util import de_optionalize_union_types
 from .typing_util import de_stringify_annotation
+from .typing_util import expand_unions
 from .typing_util import get_annotations
 
 T = TypeVar("T")
@@ -46,7 +49,6 @@ class FieldProperty(Generic[T]):
     def __init__(
         self,
         field: AbstractField[T],
-        attr_name: str,
         settable: bool = True,
     ) -> None:
         """Initialize the field descriptor.
@@ -54,11 +56,9 @@ class FieldProperty(Generic[T]):
         Args:
             field (AbstractField[T]): the instrumented
                 attribute to wrap.
-            attr_name (str): the name of the attribute.
             settable (bool): whether the attribute is settable or not.
         """
         self._field = field
-        self._attr_name = attr_name
         self._settable = settable
 
     def __get__(self, instance: Optional[SgEntity], obj_type: Any = None) -> Any:
@@ -75,7 +75,7 @@ class FieldProperty(Generic[T]):
         """
         if instance is None:
             return self._field
-        slot = instance.__state__.get_slot(self._attr_name)
+        slot = instance.__state__.get_slot(self._field)
         if not slot.available:
             raise error.SgMissingFieldError(f"{self._field} has not been queried")
         return slot.value
@@ -94,14 +94,14 @@ class FieldProperty(Generic[T]):
             raise ValueError(f"Field {self._field} is not settable")
         state = instance.__state__
         # Test against current value
-        old_value = state.get_original_value(self._attr_name)
+        old_value = state.get_original_value(self._field)
         # Register state change
         if value != old_value:
             state.modified_fields.append(self._field)
         else:
             if self._field in state.modified_fields:
                 state.modified_fields.remove(self._field)
-        instance.__state__.get_slot(self._attr_name).value = value
+        instance.__state__.get_slot(self._field).value = value
 
 
 class AliasFieldProperty(FieldProperty[T]):
@@ -120,10 +120,7 @@ class AliasFieldProperty(FieldProperty[T]):
         if instance is None:
             return self._field
         # Get the aliased field
-        target_field_name = self._field.get_name()
-        class_ = self._field.get_parent_class()
-        target_attr_name = class_.__attr_per_field_name__[target_field_name]
-        target_value = instance.__state__.get_slot(target_attr_name).value
+        target_value = instance.__state__.get_slot(self._field).value
         if target_value is None:
             return None
         expected_target_class = self._field.get_types()
@@ -145,10 +142,10 @@ class EntityState(object):
         self.pending_add = False
         self.pending_deletion = False
         self.deleted = False
-        self._original_values: Dict[str, Any] = {}
-        self._slots: Dict[str, FieldSlot] = {
-            attr_name: FieldSlot(None, available=True)
-            for attr_name in instance.__fields__
+        self._original_values: Dict[AbstractField, Any] = {}
+        self._slots: Dict[AbstractField, FieldSlot] = {
+            field: FieldSlot(None, available=True)
+            for field in instance.__fields__.values()
         }
         self.modified_fields: List[AbstractField[Any]] = []
         self.session: Optional[Session] = None
@@ -172,32 +169,32 @@ class EntityState(object):
         """
         return self._model_instance.id is not None
 
-    def get_original_value(self, attr_name: str) -> Any:
+    def get_original_value(self, field: AbstractField) -> Any:
         """Return the entity initial value of the given attribute.
 
         Args:
-            attr_name (str): the name of the attribute.
+            field (AbstractField): the name of the attribute.
 
         Returns:
             Any: the entity initial value of the given attribute.
         """
-        return self._original_values.get(attr_name)
+        return self._original_values.get(field)
 
-    def get_slot(self, attr_name: str) -> FieldSlot:
+    def get_slot(self, field: AbstractField) -> FieldSlot:
         """Return the entity value of the given attribute (i.e. the current value).
 
         Args:
-            attr_name (str): the name of the attribute.
+            field (AbstractField): the name of the attribute.
 
         Returns:
             FieldSlot: the field slot for the given attribute
         """
-        return self._slots[attr_name]
+        return self._slots[field]
 
     def set_as_original(self) -> None:
         """Set the current state of the entity as its original state."""
-        for key, slot in self._slots.items():
-            self._original_values[key] = slot.value
+        for field, slot in self._slots.items():
+            self._original_values[field] = slot.value
         self.modified_fields = []
 
 
@@ -302,7 +299,7 @@ class SgEntityMeta(type):
         cls.__primaries__ = set()
         field_names = set()
 
-        for attr_name, field in base_fields.items():
+        for field in base_fields.values():
             field.get_field_annotation()
 
         # Name and store new fields
@@ -333,13 +330,13 @@ class SgEntityMeta(type):
                     f"Attribute {attr_name} overlap with instrumented attributes. "
                     f"Please use other variable names for your fields"
                 )
-            prop = dict_.get(attr_name)
+            field = dict_.get(attr_name, field_type(name=attr_name))
             # Extract entity information from annotation
             entities, container_class = extract_annotation_info(annot)
-            field_annot = FieldAnnotation(cls, attr_name, entities, container_class)
+            field_annot = FieldAnnotation(cls, entities, container_class)
             # Build the instrumented attribute
             try:
-                field = field_type.create_from_annotation(field_annot, prop)
+                field.initialize_from_annotation(field_annot, attr_name)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"
@@ -360,4 +357,33 @@ class SgEntityMeta(type):
                 cls.__fields__[attr_name] = field
             # Create field descriptors
             prop = AliasFieldProperty if field.is_alias() else FieldProperty
-            setattr(cls, attr_name, prop(field, attr_name, not field.is_primary()))
+            setattr(cls, attr_name, prop(field, not field.is_primary()))
+
+
+def extract_annotation_info(
+    annotation: AnnotationScanType,
+) -> Tuple[Tuple[str, ...], Optional[Type[Collection[Any]]]]:
+    """Returns the information extracted from a given annotation.
+
+    Args:
+        annotation (AnnotationScanType): the annotation
+
+    Returns:
+        tuple[tuple[str, ...], Optional[Type[Collection[Any]]]]:
+            a tuple of extracted entity types,
+            the collection type wrapping the entities
+    """
+    if not hasattr(annotation, "__args__"):
+        return tuple(), None
+    inner_annotation = annotation.__args__[0]
+    inner_annotation = de_optionalize_union_types(inner_annotation)
+    # Get the container type
+    container_class = None
+    if hasattr(inner_annotation, "__origin__"):
+        arg_origin = inner_annotation.__origin__
+        if isinstance(arg_origin, type) and issubclass(arg_origin, Collection):
+            container_class = arg_origin
+            inner_annotation = inner_annotation.__args__[0]
+    # Unpack the unions
+    entities = expand_unions(inner_annotation)
+    return entities, container_class
