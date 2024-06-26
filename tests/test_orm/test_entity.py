@@ -282,6 +282,12 @@ def test_various_annotations() -> None:
             __sg_type__ = "test"
             test: "weird[UnknownField]"  # type: ignore # noqa: F821
 
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity13(SgEntity):
+            __sg_type__ = "test"
+            test: MultiEntityField  # type: ignore
+
 
 def test_default_init(shot_entity: Type[Shot]) -> None:
     """Tests the initialization of an entity."""
