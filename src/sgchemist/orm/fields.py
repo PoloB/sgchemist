@@ -76,7 +76,10 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             str: the instrumented attribute representation
         """
-        return f"<{self.__class__.__name__}({self._field_name})>"
+        return (
+            f"{self.__class__.__name__}"
+            f"({self.get_parent_class().__name__}.{self._field_name})"
+        )
 
     def initialize_from_annotation(
         self,
@@ -650,6 +653,11 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
 
     def f(self, field: T_field) -> T_field:
         """Return the given field in relation to the given field."""
+        if field.get_parent_class() not in self.get_types():
+            raise error.SgFieldConstructionError(
+                f"Cannot cast {self} as {field.get_parent_class()}. "
+                f"Expected types are {self.get_types()}"
+            )
         return field._relative_to(self)
 
     def type_is(self, entity_cls: Type[SgEntity]) -> SgFieldCondition:
