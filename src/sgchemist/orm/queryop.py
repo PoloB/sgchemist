@@ -12,7 +12,7 @@ from .constant import LogicalOperator
 from .constant import Operator
 
 if TYPE_CHECKING:
-    from .field import AbstractField
+    from .fields import AbstractField
 
 T = TypeVar("T")
 
