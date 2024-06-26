@@ -10,9 +10,9 @@ from classes import Project
 from classes import Shot
 
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.field import AbstractValueField
-from sgchemist.orm.field import EntityField
-from sgchemist.orm.field import TextField
+from sgchemist.orm.fields import AbstractValueField
+from sgchemist.orm.fields import EntityField
+from sgchemist.orm.fields import TextField
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.queryop import SgNullCondition
 from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer

@@ -178,7 +178,7 @@ class Session:
         for attr_name in set(entity_cls.__fields__).difference(
             set(column_value_by_attr)
         ):
-            state.get_slot(attr_name).available = False
+            state.get_slot(entity_cls.__fields__[attr_name]).available = False
 
         inst.__state__.set_as_original()
         self._entity_map[row.entity_hash] = inst
@@ -247,8 +247,8 @@ class Session:
             return self._pending_queries[entity]
 
         # Add modified relationships in cascade
-        for attr_name, field in entity.__fields__.items():
-            rel_value = state.get_slot(attr_name).value
+        for field in entity.__fields__.values():
+            rel_value = state.get_slot(field).value
             for field_entity in field.iter_entities_from_field_value(rel_value):
                 self._check_relationship_commited(field_entity)
 

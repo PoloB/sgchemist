@@ -52,12 +52,23 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     __sg_type__: str = ""
     _field_annotation: FieldAnnotation
     _parent_class: SgEntityMeta
+    _primary: bool = False
 
-    @abc.abstractmethod
     def initialize_from_annotation(
-        self, annotation: FieldAnnotation, attribute_name: str
+        self,
+        parent_class: SgEntityMeta,
+        annotation: FieldAnnotation,
+        attribute_name: str,
     ) -> None:
         """Create a field from a descriptor."""
+        if annotation.field_type is not self.__class__:
+            raise error.SgInvalidAnnotationError(
+                f"Cannot initialize field of type {self.__class__.__name__} "
+                f"with a {annotation.field_type.__name__}"
+            )
+        self._parent_class = parent_class
+        self._field_annotation = annotation
+        self._name = self._name or attribute_name
 
     def __init__(self, name: Optional[str] = None, default_value: Any = None) -> None:
         """Initialize an instrumented attribute.
@@ -67,8 +78,8 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
             default_value (Any): the default value of the field
         """
         self._name = name
-        self._primary = False
         self._default_value = default_value
+        self._alias_field: Optional[AbstractEntityField] = None
 
     def __repr__(self) -> str:
         """Returns a string representation of the instrumented attribute.
@@ -78,7 +89,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         """
         return f"<{self.__class__.__name__}({self._name})>"
 
-    def get_field_annotation(self) -> FieldAnnotation:
+    def get_annotation(self) -> FieldAnnotation:
         """Return the field annotation.
 
         Returns:
@@ -118,13 +129,17 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         """
         return self._primary
 
-    @abc.abstractmethod
+    def get_aliased_field(self) -> Optional[AbstractEntityField[Any]]:
+        """Return the field aliased by this field."""
+        return self._alias_field
+
     def is_alias(self) -> bool:
         """Return whether the attribute is an alias.
 
         Returns:
             bool: whether the attribute is an alias
         """
+        return self._alias_field is not None
 
     @abc.abstractmethod
     def get_name_in_relation(self) -> str:
@@ -251,16 +266,6 @@ T_field = TypeVar("T_field", bound=AbstractField[Any])
 
 class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
     """Definition of an abstract value field."""
-
-    def initialize_from_annotation(
-        self,
-        annotation: FieldAnnotation,
-        attribute_name: str,
-    ) -> None:
-        """Create a field from a descriptor."""
-        self._parent_class = annotation.entity_class
-        self._field_annotation = annotation
-        self._name = self._name or attribute_name
 
     def __init__(
         self,
@@ -627,26 +632,6 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
     cast_type: Type[T]
     _lazy_collection: LazyEntityCollectionClassEval
 
-    def __init__(self, name: Optional[str] = None, default_value: T = None):
-        """Initialize an instrumented relationship field.
-
-        Args:
-            name (str): the name of the field
-            default_value: default value of the field
-        """
-        super().__init__(name, default_value=default_value)
-        self._alias_field: Optional[AbstractEntityField] = None
-
-    def is_alias(self) -> bool:
-        """Return whether the attribute is an alias.
-
-        Always return False.
-
-        Returns:
-            bool: always False
-        """
-        return self._alias_field is not None
-
     def get_name_in_relation(self) -> str:
         """Return the name of the field when queried from a relationship.
 
@@ -780,12 +765,15 @@ class EntityField(AbstractEntityField[T]):
     cast_type: Type[T]
 
     def initialize_from_annotation(
-        self, annotation: FieldAnnotation, attribute_name: str
+        self,
+        parent_class: SgEntityMeta,
+        annotation: FieldAnnotation,
+        attribute_name: str,
     ):
         """Creates an entity field from a field annotation."""
+        super().initialize_from_annotation(parent_class, annotation, attribute_name)
         entities = annotation.entities
         container_class = annotation.container_class
-        entity_class = annotation.entity_class
         # Make some checks
         if len(entities) == 0:
             raise error.SgInvalidAnnotationError(
@@ -798,26 +786,24 @@ class EntityField(AbstractEntityField[T]):
                 )
             # Make sure the entity type in annotation is in the target annotation
             target_entity = annotation.entities[0]
-            target_annotation = self._alias_field.get_field_annotation()
+            target_annotation = self._alias_field.get_annotation()
             if target_entity not in target_annotation.entities:
                 raise error.SgInvalidAnnotationError(
                     "An alias field must target a multi target field containing "
                     "its entity"
                 )
+            # An alias field use the same name as its target
+            self._name = self._alias_field.get_name()
         if container_class:
             raise error.SgInvalidAnnotationError(
                 "An entity field shall not have a container annotation"
             )
         # Construct a multi target entity
         lazy_evals = [
-            LazyEntityClassEval(entity, entity_class.__registry__)
+            LazyEntityClassEval(entity, parent_class.__registry__)
             for entity in entities
         ]
-        lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
-        self._lazy_collection = lazy_collection
-        self._parent_class = entity_class
-        self._field_annotation = annotation
-        self._name = self._name or attribute_name
+        self._lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
 
     def _relative_to(self, relative_attribute: AbstractField[Any]) -> EntityField[T]:
         """Build a new instrumented relationship relative to the given attribute.
@@ -938,12 +924,15 @@ class MultiEntityField(AbstractEntityField[T]):
         super().__init__(name, default_value=[])
 
     def initialize_from_annotation(
-        self, annotation: FieldAnnotation, attribute_name: str
+        self,
+        parent_class: SgEntityMeta,
+        annotation: FieldAnnotation,
+        attribute_name: str,
     ) -> None:
         """Create an instance of a field from a field annotation."""
+        super().initialize_from_annotation(parent_class, annotation, attribute_name)
         entities = annotation.entities
         container_class = annotation.container_class
-        entity_class = annotation.entity_class
         # Make some checks
         if len(entities) == 0:
             raise error.SgInvalidAnnotationError(
@@ -955,14 +944,10 @@ class MultiEntityField(AbstractEntityField[T]):
             )
         # Construct a multi target entity
         lazy_evals = [
-            LazyEntityClassEval(entity, entity_class.__registry__)
+            LazyEntityClassEval(entity, parent_class.__registry__)
             for entity in entities
         ]
-        lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
-        self._lazy_collection = lazy_collection
-        self._parent_class = entity_class
-        self._field_annotation = annotation
-        self._name = self._name or attribute_name
+        self._lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
 
     def _relative_to(
         self, relative_attribute: AbstractField[Any]
@@ -1429,7 +1414,7 @@ field_by_sg_type: Dict[str, Type[AbstractField[Any]]] = {
 }
 
 
-def alias(target_relationship: AbstractEntityField) -> EntityField:
+def alias(target_relationship: AbstractEntityField[Any]) -> EntityField[Any]:
     """Defines a field as an alias relationship.
 
     Use this field specifier to target a specific entity type of the given multi target
@@ -1459,6 +1444,6 @@ def alias(target_relationship: AbstractEntityField) -> EntityField:
     filter = Task.shot.id.eq(123)
     ```
     """
-    field = EntityField()
+    field: EntityField[Any] = EntityField(name=target_relationship.get_name())
     field._alias_field = target_relationship
     return field

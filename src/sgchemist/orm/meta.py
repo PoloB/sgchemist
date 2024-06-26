@@ -120,7 +120,9 @@ class AliasFieldProperty(FieldProperty[T]):
         if instance is None:
             return self._field
         # Get the aliased field
-        target_value = instance.__state__.get_slot(self._field).value
+        aliased_field = self._field.get_aliased_field()
+        assert aliased_field is not None
+        target_value = instance.__state__.get_slot(aliased_field).value
         if target_value is None:
             return None
         expected_target_class = self._field.get_types()
@@ -142,8 +144,8 @@ class EntityState(object):
         self.pending_add = False
         self.pending_deletion = False
         self.deleted = False
-        self._original_values: Dict[AbstractField, Any] = {}
-        self._slots: Dict[AbstractField, FieldSlot] = {
+        self._original_values: Dict[AbstractField[Any], Any] = {}
+        self._slots: Dict[AbstractField[Any], FieldSlot] = {
             field: FieldSlot(None, available=True)
             for field in instance.__fields__.values()
         }
@@ -169,7 +171,7 @@ class EntityState(object):
         """
         return self._model_instance.id is not None
 
-    def get_original_value(self, field: AbstractField) -> Any:
+    def get_original_value(self, field: AbstractField[Any]) -> Any:
         """Return the entity initial value of the given attribute.
 
         Args:
@@ -180,7 +182,7 @@ class EntityState(object):
         """
         return self._original_values.get(field)
 
-    def get_slot(self, field: AbstractField) -> FieldSlot:
+    def get_slot(self, field: AbstractField[Any]) -> FieldSlot:
         """Return the entity value of the given attribute (i.e. the current value).
 
         Args:
@@ -288,21 +290,21 @@ class SgEntityMeta(type):
                 f"Missing __sg_type__ attribute in model {class_name}"
             )
 
-        # Get all the annotations from the parent classes and create them into the
-        # new class
+        # Get all the fields of the parent class and create new ones
         base_fields: Dict[str, AbstractField[Any]] = {}
         for base in bases:
             base_fields = base.__fields__ if hasattr(base, "__fields__") else {}
             base_fields.update(base_fields)
-        cls.__fields__ = {}
-        cls.__attr_per_field_name__ = {}
-        cls.__primaries__ = set()
-        field_names = set()
 
-        for field in base_fields.values():
-            field.get_field_annotation()
+        field_args_per_attr = {}
+        for attr_name, field in base_fields.items():
+            new_field = field.__class__(field.get_name(), field.get_default_value())
+            new_field._primary = field.is_primary()
+            new_field._alias_field = field.get_aliased_field()
+            new_field._parent_class = cls
+            field_args_per_attr[attr_name] = (new_field, field.get_annotation())
 
-        # Name and store new fields
+        # Add the field args from the class we are building
         for attr_name, annot in get_annotations(cls).items():
             try:
                 field_type, annot = de_stringify_annotation(
@@ -324,19 +326,23 @@ class SgEntityMeta(type):
                 raise error.SgEntityClassDefinitionError(
                     f"{class_name}.{attr_name} is not a field annotation."
                 )
-            # Check we are not overlapping attributes over relationship
-            if attr_name in AbstractField.__dict__:
-                raise error.SgEntityClassDefinitionError(
-                    f"Attribute {attr_name} overlap with instrumented attributes. "
-                    f"Please use other variable names for your fields"
-                )
             field = dict_.get(attr_name, field_type(name=attr_name))
+            if not isinstance(field, AbstractField):
+                raise error.SgEntityClassDefinitionError(
+                    f"{class_name}.{attr_name} is not initialized with a field."
+                )
             # Extract entity information from annotation
-            entities, container_class = extract_annotation_info(annot)
-            field_annot = FieldAnnotation(cls, entities, container_class)
-            # Build the instrumented attribute
+            field_annot = FieldAnnotation(
+                field_type, *extract_annotation_info(annot)
+            )
+            field_args_per_attr[attr_name] = (field, field_annot)
+
+        cls.__primaries__ = set()
+        field_names = set()
+
+        for attr_name, (field, annotation) in field_args_per_attr.items():
             try:
-                field.initialize_from_annotation(field_annot, attr_name)
+                field.initialize_from_annotation(cls, annotation, attr_name)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"

@@ -144,7 +144,7 @@ class ShotgunAPIBatchQuerySerializer:
         """
         model_data = {}
         for field in fields:
-            value = entity.__state__.get_slot(field.get_attribute_name()).value
+            value = entity.__state__.get_slot(field).value
             if isinstance(value, SgEntity):
                 value = {
                     "type": value.__sg_type__,

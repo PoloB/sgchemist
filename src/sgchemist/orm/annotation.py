@@ -16,7 +16,7 @@ from typing import TypeVar
 
 if TYPE_CHECKING:
     from sgchemist.orm import SgEntity
-    from sgchemist.orm.meta import SgEntityMeta
+    from sgchemist.orm.fields import AbstractField
 
 T = TypeVar("T")
 
@@ -94,6 +94,6 @@ class LazyEntityCollectionClassEval:
 class FieldAnnotation:
     """A well-defined field annotation."""
 
-    entity_class: SgEntityMeta
+    field_type: Type[AbstractField[Any]]
     entities: Tuple[str, ...]
     container_class: Optional[Type[Collection[Any]]]

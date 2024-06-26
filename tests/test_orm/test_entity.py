@@ -17,15 +17,13 @@ from classes import Task
 
 from sgchemist.orm import error
 from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.field import AbstractField
-from sgchemist.orm.field import AbstractValueField
-from sgchemist.orm.field import EntityField
-from sgchemist.orm.field import MultiEntityField
-from sgchemist.orm.field import NumberField
-from sgchemist.orm.field import TextField
-from sgchemist.orm.field_descriptor import alias_relationship
-from sgchemist.orm.field_descriptor import mapped_field
-from sgchemist.orm.field_descriptor import relationship
+from sgchemist.orm.fields import AbstractField
+from sgchemist.orm.fields import AbstractValueField
+from sgchemist.orm.fields import EntityField
+from sgchemist.orm.fields import MultiEntityField
+from sgchemist.orm.fields import NumberField
+from sgchemist.orm.fields import TextField
+from sgchemist.orm.fields import alias
 from sgchemist.orm.meta import EntityState
 
 
@@ -51,7 +49,7 @@ def test_entity_values(shot_entity: Type[Shot]) -> None:
     """Tests the values of the fields."""
     assert shot_entity.__sg_type__ == "Shot"
     assert list(shot_entity.__fields__.values()) == [
-        SgEntity.id,
+        shot_entity.id,
         shot_entity.name,
         shot_entity.description,
         shot_entity.project,
@@ -90,26 +88,13 @@ def test_model_creation_reserved_attributes() -> None:
             __fields__ = "test"  # type: ignore
 
 
-def test_model_attribute_overlap() -> None:
-    """Tests relationship attributes are protected against overlapping.
-
-    Because we use a getattr to reference a relationship field, the field python
-    attribute name cannot be one of the attribute of field of relationship classes.
-    """
-    with pytest.raises(error.SgEntityClassDefinitionError):
-
-        class WeirdEntity(SgEntity):
-            __sg_type__ = "test"
-            get_name: TextField
-
-
 def test_model_duplicate_field() -> None:
     """Tests it is not possible to duplicate a field."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class WeirdEntity(SgEntity):
             __sg_type__ = "test"
-            id: NumberField
+            test: NumberField = NumberField(name="id")
 
 
 def test_model_entity_field_has_no_container() -> None:
@@ -155,19 +140,19 @@ def test_right_mapped_field_per_annotation() -> None:
 
         class _TestEntity1(SgEntity):
             __sg_type__ = "test"
-            field: TextField = relationship()
+            field: TextField = EntityField()  # type: ignore[assignment]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class _TestEntity2(SgEntity):
             __sg_type__ = "test"
-            field: EntityField[_TestEntity2] = mapped_field()
+            field: EntityField[_TestEntity2] = TextField()  # type: ignore[assignment]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class _TestEntity3(SgEntity):
             __sg_type__ = "test"
-            field: MultiEntityField[_TestEntity2] = mapped_field()
+            field: MultiEntityField[_TestEntity2] = TextField()  # type: ignore[assignment]
 
 
 def test_union_entity_is_multi_target() -> None:
@@ -205,18 +190,16 @@ def test_alias_field_construction() -> None:
 
         class TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[TestWithAlias, TestEntity]] = relationship()
-            alias: MultiEntityField[TestEntity] = alias_relationship(entity)
+            entity: EntityField[Union[TestWithAlias, TestEntity]] = EntityField()
+            alias: MultiEntityField[TestEntity] = alias(entity)  # type: ignore[assignment]
 
     # An alias relationship cannot target multiple entities
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[TestEntity1, TestEntity]] = relationship()
-            alias: EntityField[Union[TestEntity, TestEntity1]] = alias_relationship(
-                entity
-            )
+            entity: EntityField[Union[TestEntity1, TestEntity]] = EntityField()
+            alias: EntityField[Union[TestEntity, TestEntity1]] = alias(entity)
 
     class OutsideEntity(SgEntity):
         __sg_type__ = "outside"
@@ -227,8 +210,8 @@ def test_alias_field_construction() -> None:
 
         class _TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[TestWithAlias, TestEntity]] = relationship()
-            alias: EntityField[OutsideEntity] = alias_relationship(entity)
+            entity: EntityField[Union[TestWithAlias, TestEntity]] = EntityField()
+            alias: EntityField[OutsideEntity] = alias(entity)
 
 
 def test_various_annotations() -> None:
@@ -249,7 +232,7 @@ def test_various_annotations() -> None:
 
         class TestEntity3(SgEntity):
             __sg_type__ = "test"
-            test: List[Any] = relationship()
+            test: List[Any] = EntityField()  # type: ignore[assignment]
 
     class TestEntity4(SgEntity):
         __sg_type__ = "test"
@@ -313,18 +296,13 @@ def test_default_init(shot_entity: Type[Shot]) -> None:
 
 def test_get_fields(shot_entity: Type[Shot], shot_not_commited: Shot) -> None:
     """Tests field getter method."""
-    assert (
-        shot_not_commited.__state__.get_slot(
-            shot_entity.name.get_attribute_name()
-        ).value
-        == "foo"
-    )
+    assert shot_not_commited.__state__.get_slot(shot_entity.name).value == "foo"
 
 
 def test_set_fields(shot_not_commited: Shot) -> None:
     """Tests field setter method."""
     model = shot_not_commited.__class__
-    shot_not_commited.__state__.get_slot(model.name.get_attribute_name()).value = "test"
+    shot_not_commited.__state__.get_slot(model.name).value = "test"
     assert shot_not_commited.name == "test"
 
 
@@ -374,7 +352,7 @@ def test_field_descriptor(shot_not_commited: Shot) -> None:
     assert state.is_modified() is False
     shot_not_commited.name = "test"
     assert state.is_modified() is True
-    assert state.get_original_value(model.name.get_attribute_name()) == "foo"
+    assert state.get_original_value(model.name) == "foo"
     shot_not_commited.name = "foo"
     assert state.is_modified() is False
 

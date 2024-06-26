@@ -16,7 +16,7 @@ from sgchemist.orm.annotation import LazyEntityCollectionClassEval
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import SgEntity
-from sgchemist.orm.field import AbstractField
+from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.row import SgRow
 
@@ -57,15 +57,14 @@ def test_lazy_entity_collection_eval(
 
 
 @pytest.mark.parametrize(
-    "field, exp_name, exp_attr_name, exp_class, exp_default, exp_primary, "
+    "field, exp_name, exp_class, exp_default, exp_primary, "
     "exp_name_in_rel, exp_types",
     [
-        (Shot.name, "code", "name", Shot, None, False, "name", (str,)),
-        (Shot.id, "id", "id", SgEntity, None, True, "id", (int,)),
-        (Shot.project, "project", "project", Shot, None, False, "project", (Project,)),
+        (Shot.name, "code", Shot, None, False, "name", (str,)),
+        (Shot.id, "id", Shot, None, True, "id", (int,)),
+        (Shot.project, "project", Shot, None, False, "project", (Project,)),
         (
             Shot.parent_shots,
-            "parent_shots",
             "parent_shots",
             Shot,
             [],
@@ -73,13 +72,12 @@ def test_lazy_entity_collection_eval(
             "parent_shots",
             (Shot,),
         ),
-        (Task.entity, "entity", "entity", Task, None, False, "entity", (Asset, Shot)),
+        (Task.entity, "entity", Task, None, False, "entity", (Asset, Shot)),
     ],
 )
 def test_instrumented_field_attributes(
     field: AbstractField[Any],
     exp_name: str,
-    exp_attr_name: str,
     exp_class: Type[SgEntity],
     exp_default: Any,
     exp_primary: bool,
@@ -89,7 +87,6 @@ def test_instrumented_field_attributes(
     """Tests the instrumented field attributes."""
     assert isinstance(repr(field), str)
     assert field.get_name() == exp_name
-    assert field.get_attribute_name() == exp_attr_name
     assert field.get_parent_class() is exp_class
     assert field.get_default_value() == exp_default
     assert not field.is_alias()
@@ -134,7 +131,7 @@ def test_update_entity_from_row_value(
     """Tests the update entity from row attribute."""
     inst = field.get_parent_class()()
     field.update_entity_from_row_value(inst, value_to_set)
-    assert inst.__state__.get_slot(field.get_attribute_name()).value == exp_value
+    assert inst.__state__.get_slot(field).value == exp_value
 
 
 @pytest.mark.parametrize(
