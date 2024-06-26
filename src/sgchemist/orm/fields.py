@@ -113,9 +113,10 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
                 self.get_name(),
             ]
         )
-        new_field = self.__class__()
+        new_field = self.__class__(
+            name=new_field_name, default_value=self._default_value
+        )
         new_field._field_name = new_field_name
-        new_field._default_value = self._default_value
         new_field._alias_field = self._alias_field
         new_field._parent_class = self._parent_class
         new_field._field_annotation = self._field_annotation
@@ -246,7 +247,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     def cast_column(
         self,
         column_value: Any,
-        model_factory: Callable[[Type[SgEntity], SgRow[T]], T],
+        model_factory: Callable[[Type[SgEntity], SgRow[Any]], Any],
     ) -> Any:
         """Cast the given row value to be used for instancing the entity.
 
@@ -295,7 +296,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
 T_field = TypeVar("T_field", bound=AbstractField[Any])
 
 
-class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
+class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
     """Definition of an abstract value field."""
 
     def __init__(
@@ -383,7 +384,7 @@ class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
     def cast_column(
         self,
         column_value: T,
-        model_factory: Callable[[Type[SgEntity], SgRow[T]], T],
+        model_factory: Callable[[Type[SgEntity], SgRow[T2]], T2],
     ) -> T:
         """Cast the given row value to be used for instancing the entity.
 
@@ -766,11 +767,15 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         return new_field
 
 
-class EntityField(AbstractEntityField[T]):
+class EntityField(AbstractEntityField[Optional[T]]):
     """Definition a field targeting a single entity."""
 
     __sg_type__: str = "entity"
     cast_type: Type[T]
+
+    def __init__(self, name: Optional[str] = None, default_value: Optional[T] = None):
+        """Initialise the field."""
+        super().__init__(name=name, default_value=default_value)
 
     def initialize_from_annotation(
         self,
@@ -886,7 +891,7 @@ class EntityField(AbstractEntityField[T]):
             """Return the value of the field."""
 
 
-class MultiEntityField(AbstractEntityField[T]):
+class MultiEntityField(AbstractEntityField[List[T]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
@@ -956,7 +961,7 @@ class MultiEntityField(AbstractEntityField[T]):
 
     def cast_column(
         self,
-        column_value: Collection[SgRow[T]],
+        column_value: List[SgRow[T]],
         model_factory: Callable[[Type[SgEntity], SgRow[T]], T],
     ) -> List[T]:
         """Cast the given row value to be used for instancing the entity.
