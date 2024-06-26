@@ -106,13 +106,13 @@ def test_model_entity_field_has_no_container() -> None:
             entity_with_container: EntityField[List[SgEntity]]
 
 
-def test_model_multi_entity_field_has_container() -> None:
-    """Tests it is not possible to create a multi-entity field without a container."""
+def test_model_multi_entity_field_has_no_container() -> None:
+    """Tests it is not possible to create a multi-entity field with a container."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            multi_entity_with_no_container: MultiEntityField[SgEntity]
+            multi_entity_container: MultiEntityField[List[SgEntity]]
 
 
 def test_undefined_fields() -> None:
@@ -167,16 +167,16 @@ def test_union_entity_is_multi_target() -> None:
 
     assert isinstance(TestWithUnion.entity, EntityField)
 
-    # Multi entity must be a list
+    # Multi entity must not be a list
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            entity: MultiEntityField[Union[SgEntity, TestEntity]]
+            entity: MultiEntityField[List[Union[SgEntity, TestEntity]]]
 
     class TestEntity2(SgEntity):
         __sg_type__ = "test"
-        entity: MultiEntityField[List[Union[SgEntity, TestEntity]]]
+        entity: MultiEntityField[Union[SgEntity, TestEntity]]
 
 
 def test_alias_field_construction() -> None:

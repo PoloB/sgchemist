@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -29,9 +28,9 @@ class Shot(SgEntity):
     name: TextField = TextField("code", name_in_relation="name")
     description: TextField
     project: EntityField[Project]
-    parent_shots: MultiEntityField[List[Shot]]
-    tasks: MultiEntityField[List[Task]]
-    assets: MultiEntityField[List[Asset]]
+    parent_shots: MultiEntityField[Shot]
+    tasks: MultiEntityField[Task]
+    assets: MultiEntityField[Asset]
 
 
 class Asset(SgEntity):
@@ -40,8 +39,8 @@ class Asset(SgEntity):
     __sg_type__ = "Asset"
     name: TextField = TextField("code", name_in_relation="name")
     project: EntityField[Project]
-    shots: MultiEntityField[List[Shot]]
-    tasks: MultiEntityField[List[Task]]
+    shots: MultiEntityField[Shot]
+    tasks: MultiEntityField[Task]
 
 
 class Task(SgEntity):

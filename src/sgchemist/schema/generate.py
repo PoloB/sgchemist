@@ -12,7 +12,6 @@ from typing import Optional
 
 from ..orm.fields import AbstractEntityField
 from ..orm.fields import EntityField
-from ..orm.fields import MultiEntityField
 from ..orm.fields import field_by_sg_type
 from .parse import EntitySchema
 from .parse import FieldSchema
@@ -67,10 +66,7 @@ def _generate_python_script_field(
     annotation = f"{field_type.__name__}"
 
     if valid_types:
-        annotation_format = (
-            "[List[{}]]" if issubclass(field_type, MultiEntityField) else "[{}]"
-        )
-        annotation += annotation_format.format(" | ".join(valid_types))
+        annotation += f"[{' | '.join(valid_types)}]"
 
     field_args.append(f'name="{field_schema.field_name}"')
     default = field_schema.properties.get(
@@ -149,7 +145,6 @@ Any changes made to this file may be lost.
     # Add the minimal required imports
     imports = [
         "from __future__ import annotations",
-        "from typing import List",
         "from sgchemist.orm import SgEntity",
     ]
     if create_field_aliases:

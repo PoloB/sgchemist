@@ -113,9 +113,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
                 self.get_name(),
             ]
         )
-        new_field = self.__class__(
-            name=new_field_name, default_value=self._default_value
-        )
+        new_field = self.__class__()
         new_field._field_name = new_field_name
         new_field._alias_field = self._alias_field
         new_field._parent_class = self._parent_class
@@ -916,9 +914,9 @@ class MultiEntityField(AbstractEntityField[List[T]]):
             raise error.SgInvalidAnnotationError(
                 "An entity field must provide a target entity"
             )
-        if container_class is not list:
+        if container_class:
             raise error.SgInvalidAnnotationError(
-                "A multi entity field requires a list annotation"
+                "A multi entity field requires no container annotation"
             )
         # Construct a multi target entity
         lazy_evals = [
