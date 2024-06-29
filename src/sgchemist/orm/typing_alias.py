@@ -8,8 +8,8 @@ from typing import Union
 
 from .constant import GroupingType
 from .constant import Order
-from .instrumentation import InstrumentedAttribute
+from .fields import AbstractField
 
 EntityHash = Tuple[str, int]
-OrderField = Tuple[InstrumentedAttribute[Any], Order]
-GroupingField = Tuple[InstrumentedAttribute[Any], GroupingType, Union[Order, str]]
+OrderField = Tuple[AbstractField[Any], Order]
+GroupingField = Tuple[AbstractField[Any], GroupingType, Union[Order, str]]

@@ -35,5 +35,9 @@ class SgQueryError(SgError):
     """Raised when doing an invalid query."""
 
 
+class SgFieldConstructionError(SgError):
+    """Raised when a field cannot be constructed."""
+
+
 class SgMissingFieldError(SgError):
     """Raised when trying to get a field that was not queried."""

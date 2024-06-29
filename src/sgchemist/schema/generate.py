@@ -10,10 +10,9 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 
-from ..orm.field import AbstractEntityField
-from ..orm.field import EntityField
-from ..orm.field import MultiEntityField
-from ..orm.field import field_by_sg_type
+from ..orm.fields import AbstractEntityField
+from ..orm.fields import EntityField
+from ..orm.fields import field_by_sg_type
 from .parse import EntitySchema
 from .parse import FieldSchema
 from .parse import ValueSchema
@@ -67,10 +66,7 @@ def _generate_python_script_field(
     annotation = f"{field_type.__name__}"
 
     if valid_types:
-        annotation_format = (
-            "[List[{}]]" if issubclass(field_type, MultiEntityField) else "[{}]"
-        )
-        annotation += annotation_format.format(" | ".join(valid_types))
+        annotation += f"[{' | '.join(valid_types)}]"
 
     field_args.append(f'name="{field_schema.field_name}"')
     default = field_schema.properties.get(
@@ -79,15 +75,10 @@ def _generate_python_script_field(
 
     if default is not None:
         default_str = f'"{default}"' if isinstance(default, str) else f"{default}"
-        field_args.append(f"default={default_str}")
-    field_column_factory = (
-        "relationship"
-        if issubclass(field_type, AbstractEntityField)
-        else "mapped_field"
-    )
+        field_args.append(f"default_value={default_str}")
     fields_instructions = [
         f"{field_schema.field_name}: {annotation} = "
-        f"{field_column_factory}({', '.join(field_args)})"
+        f"{field_type.__name__}({', '.join(field_args)})"
     ]
 
     # Append alias relationship
@@ -96,7 +87,7 @@ def _generate_python_script_field(
             fields_instructions.append(
                 f"{field_schema.field_name}_{valid_type.lower()}:"
                 f"{EntityField.__name__}[{valid_type}] = "
-                f"alias_relationship({field_schema.field_name})"
+                f"alias({field_schema.field_name})"
             )
 
     return fields_instructions
@@ -154,14 +145,11 @@ Any changes made to this file may be lost.
     # Add the minimal required imports
     imports = [
         "from __future__ import annotations",
-        "from typing import List",
-        "from sgchemist.orm import mapped_field",
-        "from sgchemist.orm import relationship",
         "from sgchemist.orm import SgEntity",
     ]
     if create_field_aliases:
         imports.append(
-            "from sgchemist.orm import alias_relationship",
+            "from sgchemist.orm import alias",
         )
     # Get all the field type used in the schemas to add the import
     field_types = set()

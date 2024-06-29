@@ -251,7 +251,7 @@ def test_execute_query_find_loading(
 ) -> None:
     """Test querying with loading option."""
     shot_fields = (shot_entity.id, shot_entity.project)
-    query = select(shot_entity, *shot_fields).load(shot_entity.project.name)
+    query = select(shot_entity, *shot_fields).load(shot_entity.project.f(Project.name))
     shot = session.exec(query).first()
     assert shot.id == test_shot.id
     assert shot.project is not None

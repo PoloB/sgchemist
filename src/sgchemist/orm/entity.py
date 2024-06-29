@@ -11,9 +11,8 @@ from typing import Type
 from typing import TypeVar
 
 from . import error
-from .field import NumberField
-from .field_descriptor import mapped_field
-from .instrumentation import InstrumentedAttribute
+from .fields import AbstractField
+from .fields import NumberField
 from .meta import EntityState
 from .meta import SgEntityMeta
 
@@ -30,12 +29,13 @@ class SgEntity(metaclass=SgEntityMeta):
     __abstract__: ClassVar[bool] = True
     __sg_type__: ClassVar[str]
     __registry__: ClassVar[Dict[str, Type[SgEntity]]]
-    __fields__: ClassVar[Dict[str, InstrumentedAttribute[Any]]]
+    __fields__: ClassVar[Dict[str, AbstractField[Any]]]
     __primaries__: ClassVar[Set[str]]
     __attr_per_field_name__: ClassVar[Dict[str, str]]
     __state__: ClassVar[EntityState]
 
-    id: NumberField = mapped_field(primary=True)
+    id: NumberField = NumberField(name="id")
+    id._primary = True
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Adds the subclass to the global entity registry."""
@@ -55,21 +55,22 @@ class SgEntity(metaclass=SgEntityMeta):
             error.SgInvalidAttributeError: raised when a keyword argument is not a
                 field of the entity.
         """
-        cls_ = type(self)
         self.__state__ = EntityState(self)
         # Init with field default value by setting its state
-        for attr_name, field in self.__fields__.items():
-            self.__state__.get_slot(attr_name).value = field.get_default_value()
+        for field in self.__fields__.values():
+            self.__state__.get_slot(field).value = field.get_default_value()
         # Set with keyword arguments
         for k, v in kwargs.items():
-            if not hasattr(cls_, k):
+            field = self.__fields__.get(k)
+            if not field:
                 raise error.SgInvalidAttributeError(
-                    "%r is an invalid keyword argument for %s" % (k, cls_.__name__)
+                    f"{self.__class__.__name__} has no field {k}"
                 )
-            if k in self.__primaries__:
-                self.__state__.get_slot(k).value = v
-                continue
-            setattr(self, k, v)
+
+            if field.is_primary():
+                self.__state__.get_slot(field).value = v
+            else:
+                setattr(self, k, v)
 
     def __repr__(self) -> str:
         """Returns a string representation of the entity.

@@ -12,7 +12,7 @@ from .constant import LogicalOperator
 from .constant import Operator
 
 if TYPE_CHECKING:
-    from .instrumentation import InstrumentedAttribute
+    from .fields import AbstractField
 
 T = TypeVar("T")
 
@@ -135,7 +135,7 @@ class SgFieldCondition(SgFilterObject):
 
     def __init__(
         self,
-        field: InstrumentedAttribute[T],
+        field: AbstractField[T],
         operator: Operator,
         right: Any,
     ) -> None:

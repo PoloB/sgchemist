@@ -33,7 +33,7 @@ def test_query_builder(benchmark: Any) -> None:
     """Test performance of query builder."""
 
     def _build_query() -> None:
-        select(Shot).where(Shot.project.name.eq("project"))
+        select(Shot).where(Shot.project.f(Project.name).eq("project"))
 
     benchmark(_build_query)
 
@@ -62,6 +62,6 @@ def test_session_query(engine: SgEngine, benchmark: Any) -> None:
     # Add stuff to session
     session = Session(engine)
     _fill_session(session)
-    query = select(Shot).where(Shot.project.name.eq("project"))
+    query = select(Shot).where(Shot.project.f(Project.name).eq("project"))
     result = benchmark(session.exec, query)
     assert len(result.all()) == 1
