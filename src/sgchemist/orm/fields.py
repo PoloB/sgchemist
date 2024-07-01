@@ -7,7 +7,6 @@ Internally, only the classes inheriting from InstrumentedAttribute are used.
 from __future__ import annotations
 
 import abc
-from collections.abc import Collection
 from datetime import date
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -16,7 +15,6 @@ from typing import Callable
 from typing import ClassVar
 from typing import Dict
 from typing import Generic
-from typing import Iterable
 from typing import Iterator
 from typing import List
 from typing import Optional
@@ -45,41 +43,45 @@ T = TypeVar("T")
 T2 = TypeVar("T2")
 
 
-class AbstractField(Generic[T], metaclass=abc.ABCMeta):
-    """Definition of an abstract field."""
+class FieldInfo(Generic[T]):
+    """Field information."""
 
-    cast_type: Type[T]
-    __sg_type__: str = ""
-    _field_annotation: FieldAnnotation
-    _parent_class: SgEntityMeta
-    _primary: bool = False
-    _field_name: str
+    annotation: FieldAnnotation
+    entity: SgEntityMeta
 
     def __init__(
-        self, name: Optional[str] = None, default_value: Optional[T] = None
+        self,
+        field: AbstractField[T],
+        name: Optional[str] = None,
+        name_in_relation: Optional[str] = None,
+        default_value: Optional[T] = None,
+        alias_field: Optional[AbstractField[Any]] = None,
+        parent_field: Optional[AbstractField[Any]] = None,
+        primary: bool = False,
     ) -> None:
-        """Initialize an instrumented attribute.
+        """Initialize the field info."""
+        self.field = field
+        self.field_name = name or ""
+        self.name_in_relation = name_in_relation or self.field_name
+        self.default_value = default_value
+        self.alias_field = alias_field
+        self.parent_field = parent_field
+        self.primary = primary
 
-        Args:
-            name (str): the name of the field
-            default_value (Any): the default value of the field
-        """
-        self._given_name = name
-        self._name_in_relation: Optional[str] = None
-        self._default_value = default_value
-        self._alias_field: Optional[AbstractEntityField[Any]] = None
-        self._parent_field: Optional[AbstractField[Any]] = None
-
-    def __repr__(self) -> str:
-        """Returns a string representation of the instrumented attribute.
-
-        Returns:
-            str: the instrumented attribute representation
-        """
-        return (
-            f"{self.__class__.__name__}"
-            f"({self.get_parent_class().__name__}.{self._field_name})"
+    def copy(self) -> FieldInfo[T]:
+        """Returns a copy of the info."""
+        new_info = self.__class__(
+            field=self.field,
+            name=self.field_name,
+            name_in_relation=self.name_in_relation,
+            default_value=self.default_value,
+            alias_field=self.alias_field,
+            parent_field=self.parent_field,
+            primary=self.primary,
         )
+        new_info.entity = self.entity
+        new_info.annotation = self.annotation
+        return new_info
 
     def initialize_from_annotation(
         self,
@@ -88,91 +90,30 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         attribute_name: str,
     ) -> None:
         """Create a field from a descriptor."""
-        if annotation.field_type is not self.__class__:
+        if annotation.field_type is not self.field.__class__:
             raise error.SgInvalidAnnotationError(
-                f"Cannot initialize field of type {self.__class__.__name__} "
+                f"Cannot initialize field of type {self.field.__class__.__name__} "
                 f"with a {annotation.field_type.__name__}"
             )
-        self._parent_class = parent_class
-        self._field_annotation = annotation
-        self._field_name = self._given_name or attribute_name
-
-    def _relative_to(self, relative_attribute: AbstractField[Any]) -> Self:
-        """Build a new instrumented field relative to the given attribute.
-
-        Args:
-            relative_attribute (InstrumentedAttribute[T]): the relative attribute
-
-        Returns:
-            InstrumentedField[T]: the attribute relative to the given attribute
-        """
-        new_field_name = ".".join(
-            [
-                relative_attribute.get_name(),
-                self.get_parent_class().__sg_type__,
-                self.get_name(),
-            ]
-        )
-        new_field = self.__class__()
-        new_field._field_name = new_field_name
-        new_field._alias_field = self._alias_field
-        new_field._parent_class = self._parent_class
-        new_field._field_annotation = self._field_annotation
-        new_field._primary = self._primary
-        new_field._parent_field = relative_attribute
-        return new_field
-
-    def get_annotation(self) -> FieldAnnotation:
-        """Return the field annotation.
-
-        Returns:
-            FieldAnnotation[T]: the field annotation
-        """
-        return self._field_annotation
-
-    def get_name(self) -> str:
-        """Return the name of the field.
-
-        Returns:
-            str: the name of the field
-        """
-        return self._field_name
-
-    def get_name_in_relation(self) -> str:
-        """Return the name of the field when queried from a relationship.
-
-        Returns:
-            str: the name of the field when queried from a relationship.
-        """
-        return self._name_in_relation or self._field_name
-
-    def get_parent_class(self) -> SgEntityMeta:
-        """Return the parent class of the attribute.
-
-        Returns:
-            SgEntityMeta: the parent class of the attribute
-        """
-        return self._parent_class
-
-    def get_default_value(self) -> Optional[T]:
-        """Return the default value of the attribute.
-
-        Returns:
-            Optional[T]: the default value of the attribute
-        """
-        return self._default_value
-
-    def is_primary(self) -> bool:
-        """Return whether the attribute is primary.
-
-        Returns:
-            bool: True if the attribute is primary, False otherwise.
-        """
-        return self._primary
-
-    def get_aliased_field(self) -> Optional[AbstractEntityField[Any]]:
-        """Return the field aliased by this field."""
-        return self._alias_field
+        if self.alias_field:
+            if len(annotation.entities) != 1:
+                raise error.SgInvalidAnnotationError(
+                    "A alias field shall target a single entity"
+                )
+            # Make sure the entity type in annotation is in the target annotation
+            target_entity = annotation.entities[0]
+            target_annotation = self.alias_field.__info__.annotation
+            if target_entity not in target_annotation.entities:
+                raise error.SgInvalidAnnotationError(
+                    "An alias field must target a multi target field containing "
+                    "its entity"
+                )
+            # An alias field use the same name as its target
+            self.field_name = self.alias_field.__info__.field_name
+        self.entity = parent_class
+        self.annotation = annotation
+        self.field_name = self.field_name or attribute_name
+        self.name_in_relation = self.name_in_relation or self.field_name
 
     def is_alias(self) -> bool:
         """Return whether the attribute is an alias.
@@ -180,25 +121,69 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             bool: whether the attribute is an alias
         """
-        return self._alias_field is not None
+        return self.alias_field is not None
 
     def get_hash(
         self,
     ) -> Tuple[AbstractField[Any], ...]:
         """Return the hash of the attribute."""
-        parent_hash = self._parent_field.get_hash() if self._parent_field else tuple()
-        field_hash = (*parent_hash, self)
+        parent_hash = (
+            self.parent_field.__info__.get_hash() if self.parent_field else tuple()
+        )
+        field_hash = (*parent_hash, self.field)
         return field_hash
 
-    @abc.abstractmethod
-    def get_types(self) -> Tuple[Type[Any], ...]:
+
+class FieldCaster(Generic[T]):
+    """Responsible for casting values in and out of a field."""
+
+    def __init__(
+        self,
+        field: AbstractField[T],
+        is_relationship: bool,
+        is_list: bool,
+        lazy_collection: LazyEntityCollectionClassEval,
+    ) -> None:
+        """Initialize the field caster."""
+        self.field = field
+        self.lazy_collection = lazy_collection
+        self.is_relationship = is_relationship
+        self.is_list = is_list
+
+    def copy(self) -> FieldCaster[T]:
+        """Returns a copy of the field caster."""
+        return self.__class__(
+            self.field,
+            is_relationship=self.is_relationship,
+            is_list=self.is_list,
+            lazy_collection=self.lazy_collection,
+        )
+
+    def initialize_from_annotation(
+        self,
+        parent_class: SgEntityMeta,
+        annotation: FieldAnnotation,
+    ) -> None:
+        """Create a field from a descriptor."""
+        entities = annotation.entities
+        # Make some checks
+        if self.is_relationship and len(entities) == 0:
+            raise error.SgInvalidAnnotationError("Expected at least one entity field")
+        # Construct a multi target entity
+        lazy_evals = [
+            LazyEntityClassEval(entity, parent_class.__registry__)
+            for entity in entities
+        ]
+        self.lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
+
+    def get_types(self) -> Tuple[Type[SgEntity], ...]:
         """Return the Python types of the attribute.
 
         Returns:
             tuple[Type[Any], ...]: Python types of the attribute
         """
+        return tuple(self.lazy_collection.get_all())
 
-    @abc.abstractmethod
     def update_entity_from_row_value(self, entity: SgEntity, field_value: Any) -> None:
         """Update an entity from a row value.
 
@@ -209,8 +194,10 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
             entity (SgEntity): the entity to update
             field_value: the row value
         """
+        if self.is_relationship:
+            return
+        entity.__state__.get_slot(self.field).value = field_value
 
-    @abc.abstractmethod
     def iter_entities_from_field_value(self, field_value: Any) -> Iterator[SgEntity]:
         """Iterate entities from a field value.
 
@@ -222,8 +209,16 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             Iterator[SgEntity]: the entities within the field value
         """
+        if not self.is_relationship:
+            return
+        if self.is_list:
+            for value in field_value:
+                yield value
+            return
+        if field_value is None:
+            return
+        yield field_value
 
-    @abc.abstractmethod
     def cast_value_over(
         self,
         func: Callable[[Any], Any],
@@ -240,8 +235,13 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             Any: result of the applied function
         """
+        if self.is_relationship:
+            if self.is_list:
+                return [func(v) for v in value]
+            else:
+                return func(value)
+        return value
 
-    @abc.abstractmethod
     def cast_column(
         self,
         column_value: Any,
@@ -263,6 +263,104 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             Any: result of the applied function
         """
+        if not self.is_relationship:
+            return column_value
+
+        if not self.is_list and column_value is None:
+            return None
+
+        def _cast_column(col: SgRow[Any]) -> Any:
+            return model_factory(self.lazy_collection.get_by_type(col.entity_type), col)
+
+        return self.cast_value_over(_cast_column, column_value)
+
+
+class AbstractField(Generic[T], metaclass=abc.ABCMeta):
+    """Definition of an abstract field."""
+
+    cast_type: Type[T]
+    __sg_type__: str = ""
+    __cast__: FieldCaster[T]
+    __info__: FieldInfo[T]
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        default_value: Optional[T] = None,
+        name_in_relation: Optional[str] = None,
+        alias_field: Optional[AbstractField[Any]] = None,
+        parent_field: Optional[AbstractField[Any]] = None,
+        primary: bool = False,
+        as_list: bool = False,
+        is_relationship: bool = False,
+        lazy_collection: Optional[LazyEntityCollectionClassEval] = None,
+    ) -> None:
+        """Initialize an instrumented attribute.
+
+        Args:
+            name (str): the name of the field
+            default_value (Any): the default value of the field
+            name_in_relation (str): the name of the field in relationship
+            alias_field (AbstractField[Any], optional): the alias field of the field
+            parent_field (AbstractField[Any], optional): the parent field of the field
+            primary (bool, optional): whether the field is primary or not
+            as_list (bool, optional): whether the field is list or not
+            is_relationship (bool, optional): whether the field is a relationship
+            lazy_collection (Optional[LazyEntityCollectionClassEval], optional):
+                the wrapped entities evaluator
+        """
+        self.__info__ = FieldInfo(
+            field=self,
+            name=name,
+            name_in_relation=name_in_relation,
+            default_value=default_value,
+            alias_field=alias_field,
+            parent_field=parent_field,
+            primary=primary,
+        )
+        self.__cast__ = FieldCaster(
+            self,
+            is_relationship,
+            as_list,
+            lazy_collection or LazyEntityCollectionClassEval([]),
+        )
+
+    def __repr__(self) -> str:
+        """Returns a string representation of the instrumented attribute.
+
+        Returns:
+            str: the instrumented attribute representation
+        """
+        return (
+            f"{self.__class__.__name__}"
+            f"({self.__info__.entity.__name__}.{self.__info__.field_name})"
+        )
+
+    def _relative_to(self, relative_attribute: AbstractField[Any]) -> Self:
+        """Build a new instrumented field relative to the given attribute.
+
+        Args:
+            relative_attribute (InstrumentedAttribute[T]): the relative attribute
+
+        Returns:
+            InstrumentedField[T]: the attribute relative to the given attribute
+        """
+        field_info = self.__info__
+        new_field_name = ".".join(
+            [
+                relative_attribute.__info__.field_name,
+                field_info.entity.__sg_type__,
+                field_info.field_name,
+            ]
+        )
+        new_field = self.__class__()
+        new_field_info = field_info.copy()
+        new_field_info.field_name = new_field_name
+        new_field_info.field = new_field
+        new_field_info.parent_field = relative_attribute
+        new_field.__info__ = new_field_info
+        new_field.__cast__ = self.__cast__.copy()
+        return new_field
 
     def eq(self, other: T) -> SgFieldCondition:
         """Filter entities where this field is equal to the given value.
@@ -310,94 +408,13 @@ class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
             default_value: default value of the field
             name_in_relation (str): the name of the attribute in the relationship
         """
-        super().__init__(name, default_value)
-        self._name_in_relation = name_in_relation
-
-    def get_types(self) -> Tuple[Type[Any],]:
-        """Return the Python type of the attribute.
-
-        It always returns a tuple with a single type.
-
-        Returns:
-            tuple[Type[Any]]: Python types of the attribute
-        """
-        return (self.cast_type,)
-
-    def _relative_to(self, relative_attribute: AbstractField[Any]) -> Self:
-        """Build a new instrumented field relative to the given attribute.
-
-        Args:
-            relative_attribute (InstrumentedAttribute[T]): the relative attribute
-
-        Returns:
-            InstrumentedField[T]: the attribute relative to the given attribute
-        """
-        new_field = super()._relative_to(relative_attribute)
-        new_field._name_in_relation = self.get_name_in_relation()
-        return new_field
-
-    def update_entity_from_row_value(self, entity: SgEntity, field_value: T) -> None:
-        """Update an entity from a row value.
-
-        It simply sets the value of the entity with the given value.
-
-        Args:
-            entity (SgEntity): the entity to update
-            field_value: the row value
-        """
-        entity.__state__.get_slot(self).value = field_value
-
-    def iter_entities_from_field_value(self, field_value: Any) -> Iterator[SgEntity]:
-        """Iterate entities from a field value.
-
-        It simply returns an empty iterator because instrumented field never refer to
-        other entities.
-
-        Args:
-            field_value: Any
-
-        Returns:
-            Iterator[SgEntity]: the entities within the field value
-        """
-        return iter([])
-
-    def cast_value_over(
-        self,
-        func: Callable[[T], T2],
-        value: T,
-    ) -> T:
-        """Apply the given function to the given value.
-
-        Instrumented field never cast the value and simply return the given value.
-
-        Args:
-            func (Callable[[Any], Any]): the function to apply
-            value (Any): the value on which to apply the function
-
-        Returns:
-            Any: result of the applied function
-        """
-        return value
-
-    def cast_column(
-        self,
-        column_value: T,
-        model_factory: Callable[[Type[SgEntity], SgRow[T2]], T2],
-    ) -> T:
-        """Cast the given row value to be used for instancing the entity.
-
-        Simply returns the given value as instrumented fields never refer to another
-        entity.
-
-        Args:
-            column_value (Any): the column value to cast
-            model_factory (Callable[[Type[SgEntity], SgRow[T]], T]): the function to
-                call for instantiating an entity from a row.
-
-        Returns:
-            Any: result of the applied function
-        """
-        return column_value
+        super().__init__(
+            name=name,
+            default_value=default_value,
+            name_in_relation=name_in_relation,
+            is_relationship=False,
+            as_list=False,
+        )
 
 
 class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
@@ -629,33 +646,13 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
 
     __sg_type__: str
     cast_type: Type[T]
-    _lazy_collection: LazyEntityCollectionClassEval
-
-    def get_types(self) -> Tuple[Type[SgEntity], ...]:
-        """Return the Python types the field can target.
-
-        Returns:
-            tuple[Type[SgEntity]]: entity class targeted by the relationship
-        """
-        return tuple(self._lazy_collection.get_all())
-
-    def update_entity_from_row_value(self, entity: SgEntity, field_value: T) -> None:
-        """Update an entity from a row value.
-
-        Entity fields are never updated calling an update on Shotgrid.
-
-        Args:
-            entity (SgEntity): the entity to update
-            field_value: the row value
-        """
-        return
 
     def f(self, field: T_field) -> T_field:
         """Return the given field in relation to the given field."""
-        if field.get_parent_class() not in self.get_types():
+        if field.__info__.entity not in self.__cast__.get_types():
             raise error.SgFieldConstructionError(
-                f"Cannot cast {self} as {field.get_parent_class()}. "
-                f"Expected types are {self.get_types()}"
+                f"Cannot cast {self} as {field.__info__.entity.__name__}. "
+                f"Expected types are {self.__cast__.get_types()}"
             )
         return field._relative_to(self)
 
@@ -750,20 +747,6 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.NOT_IN, others)
 
-    def _relative_to(self, relative_attribute: AbstractField[Any]) -> Self:
-        """Build a new instrumented relationship relative to the given attribute.
-
-        Args:
-            relative_attribute (InstrumentedAttribute[T]): the relative attribute
-
-        Returns:
-            InstrumentedMultiTargetSingleRelationship[T]: the attribute relative to
-                the given attribute
-        """
-        new_field = super()._relative_to(relative_attribute)
-        new_field._lazy_collection = self._lazy_collection
-        return new_field
-
 
 class EntityField(AbstractEntityField[Optional[T]]):
     """Definition a field targeting a single entity."""
@@ -771,108 +754,10 @@ class EntityField(AbstractEntityField[Optional[T]]):
     __sg_type__: str = "entity"
     cast_type: Type[T]
 
-    def __init__(self, name: Optional[str] = None, default_value: Optional[T] = None):
+    def __init__(self, name: Optional[str] = None):
         """Initialise the field."""
-        super().__init__(name=name, default_value=default_value)
-
-    def initialize_from_annotation(
-        self,
-        parent_class: SgEntityMeta,
-        annotation: FieldAnnotation,
-        attribute_name: str,
-    ) -> None:
-        """Creates an entity field from a field annotation."""
-        super().initialize_from_annotation(parent_class, annotation, attribute_name)
-        entities = annotation.entities
-        container_class = annotation.container_class
-        # Make some checks
-        if len(entities) == 0:
-            raise error.SgInvalidAnnotationError(
-                "An entity field must provide a target entity"
-            )
-        if self._alias_field:
-            if len(annotation.entities) != 1:
-                raise error.SgInvalidAnnotationError(
-                    "A alias field shall target a single entity"
-                )
-            # Make sure the entity type in annotation is in the target annotation
-            target_entity = annotation.entities[0]
-            target_annotation = self._alias_field.get_annotation()
-            if target_entity not in target_annotation.entities:
-                raise error.SgInvalidAnnotationError(
-                    "An alias field must target a multi target field containing "
-                    "its entity"
-                )
-            # An alias field use the same name as its target
-            self._field_name = self._alias_field.get_name()
-        if container_class:
-            raise error.SgInvalidAnnotationError(
-                "An entity field shall not have a container annotation"
-            )
-        # Construct a multi target entity
-        lazy_evals = [
-            LazyEntityClassEval(entity, parent_class.__registry__)
-            for entity in entities
-        ]
-        self._lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
-
-    def iter_entities_from_field_value(self, field_value: Any) -> Iterator[SgEntity]:
-        """Iterate entities from a field value.
-
-        Iterator of none or a single entity.
-
-        Args:
-            field_value: Any
-
-        Returns:
-            Iterator[SgEntity]: the entities within the field value
-        """
-        if field_value is None:
-            return
-        yield field_value
-
-    def cast_value_over(
-        self,
-        func: Callable[[T], T2],
-        value: T,
-    ) -> T2:
-        """Apply the given function to the given value.
-
-        Instrumented relationship simply call the given func with the given value as
-        argument.
-
-        Args:
-            func (Callable[[Any], Any]): the function to apply
-            value (Any): the value on which to apply the function
-
-        Returns:
-            Any: result of the applied function
-        """
-        return func(value)
-
-    def cast_column(
-        self,
-        column_value: Optional[SgRow[T]],
-        model_factory: Callable[[Type[SgEntity], SgRow[T]], T],
-    ) -> Optional[T]:
-        """Cast the given row value to be used for instancing the entity.
-
-        Instrumented relationship calls the model_factory function with the given
-        column value to instantiate the related entity.
-
-        Args:
-            column_value (Any): the column value to cast
-            model_factory (Callable[[Type[SgEntity], SgRow[T]], T]): the function to
-                call for instantiating an entity from a row.
-
-        Returns:
-            Any: result of the applied function
-        """
-        if column_value is None:
-            return None
-        return model_factory(
-            self._lazy_collection.get_by_type(column_value.entity_type),
-            column_value,
+        super().__init__(
+            name=name, default_value=None, is_relationship=True, as_list=False
         )
 
     if TYPE_CHECKING:
@@ -897,88 +782,9 @@ class MultiEntityField(AbstractEntityField[List[T]]):
 
     def __init__(self, name: Optional[str] = None):
         """Initialize the field."""
-        super().__init__(name=name, default_value=[])
-
-    def initialize_from_annotation(
-        self,
-        parent_class: SgEntityMeta,
-        annotation: FieldAnnotation,
-        attribute_name: str,
-    ) -> None:
-        """Create an instance of a field from a field annotation."""
-        super().initialize_from_annotation(parent_class, annotation, attribute_name)
-        entities = annotation.entities
-        container_class = annotation.container_class
-        # Make some checks
-        if len(entities) == 0:
-            raise error.SgInvalidAnnotationError(
-                "An entity field must provide a target entity"
-            )
-        if container_class:
-            raise error.SgInvalidAnnotationError(
-                "A multi entity field requires no container annotation"
-            )
-        # Construct a multi target entity
-        lazy_evals = [
-            LazyEntityClassEval(entity, parent_class.__registry__)
-            for entity in entities
-        ]
-        self._lazy_collection = LazyEntityCollectionClassEval(lazy_evals)
-
-    def iter_entities_from_field_value(
-        self, field_value: Collection[Any]
-    ) -> Iterator[SgEntity]:
-        """Iterate entities from a field value.
-
-        Args:
-            field_value: Any
-
-        Returns:
-            Iterator[SgEntity]: the entities within the field value
-        """
-        return iter(field_value)
-
-    def cast_value_over(
-        self,
-        func: Callable[[T], T2],
-        value: Iterable[T],
-    ) -> List[T2]:
-        """Apply the given function to the given value.
-
-        Instrumented multi relationship calls map each element of value to the given
-        function.
-
-        Args:
-            func (Callable[[Any], Any]): the function to apply
-            value (Any): the value on which to apply the function
-
-        Returns:
-            list: result of the applied function to every element of value
-        """
-        return [func(v) for v in value]
-
-    def cast_column(
-        self,
-        column_value: List[SgRow[T]],
-        model_factory: Callable[[Type[SgEntity], SgRow[T]], T],
-    ) -> List[T]:
-        """Cast the given row value to be used for instancing the entity.
-
-        The model_factory function is called for every row of in the given column_value.
-
-        Args:
-            column_value (Any): the column value to cast
-            model_factory (Callable[[Type[SgEntity], SgRow[T]], T]): the function to
-                call for instantiating an entity from a row.
-
-        Returns:
-            list: result of the applied model factory over every element of the given
-            column value.
-        """
-        return [
-            model_factory(self._lazy_collection.get_by_type(col.entity_type), col)
-            for col in column_value
-        ]
+        super().__init__(
+            name=name, default_value=[], as_list=True, is_relationship=True
+        )
 
     if TYPE_CHECKING:
 
@@ -1397,5 +1203,5 @@ def alias(target_relationship: AbstractEntityField[Any]) -> EntityField[Any]:
     ```
     """
     field: EntityField[Any] = EntityField()
-    field._alias_field = target_relationship
+    field.__info__.alias_field = target_relationship
     return field

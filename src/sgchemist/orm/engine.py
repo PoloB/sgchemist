@@ -90,10 +90,11 @@ class ShotgunAPIEngine(SgEngine):
         """
         model = query.model
         field_by_name = {
-            field.get_name(): field for field in query.fields + query.loading_fields
+            field.__info__.field_name: field
+            for field in query.fields + query.loading_fields
         }
         orders = [
-            {"field_name": field.get_name(), "direction": direction.value}
+            {"field_name": field.__info__.field_name, "direction": direction.value}
             for field, direction in query.order_fields
         ]
         condition = query.condition
@@ -120,7 +121,7 @@ class ShotgunAPIEngine(SgEngine):
                     continue
                 field = field_by_name[column_name]
                 column_value = (
-                    field.cast_value_over(_cast_record, column_value)
+                    field.__cast__.cast_value_over(_cast_record, column_value)
                     if column_value is not None
                     else column_value
                 )
@@ -131,7 +132,7 @@ class ShotgunAPIEngine(SgEngine):
             rows.append(_cast_record(record))
         # Reorganize the row contents
         for field in query.loading_fields:
-            key = field.get_name()
+            key = field.__info__.field_name
             column_name, entity_type, target_key = key.split(".")
             for row in rows:
                 row.content[column_name].content[target_key] = row.content.pop(key)

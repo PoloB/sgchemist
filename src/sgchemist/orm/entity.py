@@ -35,7 +35,7 @@ class SgEntity(metaclass=SgEntityMeta):
     __state__: ClassVar[EntityState]
 
     id: NumberField = NumberField(name="id")
-    id._primary = True
+    id.__info__.primary = True
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Adds the subclass to the global entity registry."""
@@ -58,7 +58,7 @@ class SgEntity(metaclass=SgEntityMeta):
         self.__state__ = EntityState(self)
         # Init with field default value by setting its state
         for field in self.__fields__.values():
-            self.__state__.get_slot(field).value = field.get_default_value()
+            self.__state__.get_slot(field).value = field.__info__.default_value
         # Set with keyword arguments
         for k, v in kwargs.items():
             field = self.__fields__.get(k)
@@ -67,7 +67,7 @@ class SgEntity(metaclass=SgEntityMeta):
                     f"{self.__class__.__name__} has no field {k}"
                 )
 
-            if field.is_primary():
+            if field.__info__.primary:
                 self.__state__.get_slot(field).value = v
             else:
                 setattr(self, k, v)
@@ -79,7 +79,7 @@ class SgEntity(metaclass=SgEntityMeta):
             str: representation of the entity.
         """
         primary_fields = {
-            field.get_name(): getattr(self, attr_name)
+            field.__info__.field_name: getattr(self, attr_name)
             for attr_name, field in self.__fields__.items()
             if attr_name in self.__primaries__
         }

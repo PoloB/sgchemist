@@ -185,14 +185,14 @@ class SgFindQuery(Generic[T_meta]):
         # Check the given fields belongs to the relationships of the queried fields
         new_state = dataclasses.replace(self._data)
         queried_relationship_paths = {
-            f.get_hash()
+            f.__info__.get_hash()
             for f in new_state.fields
-            if isinstance(f, AbstractEntityField) and not f.is_alias()
+            if isinstance(f, AbstractEntityField) and not f.__info__.is_alias()
         }
         for field in fields:
-            if field.is_primary():
+            if field.__info__.primary:
                 continue
-            if field.get_hash()[:-1] not in queried_relationship_paths:
+            if field.__info__.get_hash()[:-1] not in queried_relationship_paths:
                 raise error.SgQueryError(
                     f"Cannot load {field} because its entity is not queried."
                 )
@@ -207,12 +207,13 @@ class SgFindQuery(Generic[T_meta]):
             relationship_fields = tuple(
                 field
                 for field in self.get_data().fields
-                if isinstance(field, AbstractEntityField) and not field.is_alias()
+                if isinstance(field, AbstractEntityField)
+                and not field.__info__.is_alias()
             )
         # Construct all the fields for the relationships
         all_fields = []
         for field in relationship_fields:
-            for target_type in field.get_types():
+            for target_type in field.__cast__.get_types():
                 for target_field in target_type.__fields__.values():
                     all_fields.append(field.f(target_field))
         return self.load(*all_fields)
