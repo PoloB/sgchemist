@@ -8,7 +8,6 @@ import sys
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
-from typing import Collection
 from typing import Dict
 from typing import Generic
 from typing import List
@@ -120,12 +119,12 @@ class AliasFieldProperty(FieldProperty[T]):
         if instance is None:
             return self._field
         # Get the aliased field
-        aliased_field = self._field.get_aliased_field()
+        aliased_field = self._field.__info__.alias_field
         assert aliased_field is not None
         target_value = instance.__state__.get_slot(aliased_field).value
         if target_value is None:
             return None
-        expected_target_class = self._field.get_types()
+        expected_target_class = self._field.__cast__.get_types()
         if not isinstance(target_value, expected_target_class):
             return None
         return target_value
@@ -298,11 +297,9 @@ class SgEntityMeta(type):
 
         field_args_per_attr = {}
         for attr_name, field in base_fields.items():
-            new_field = field.__class__(field.get_name(), field.get_default_value())
-            new_field._primary = field.is_primary()
-            new_field._alias_field = field.get_aliased_field()
-            new_field._parent_class = cls
-            field_args_per_attr[attr_name] = (new_field, field.get_annotation())
+            new_field = field.__class__()
+            new_field.__info__ = field.__info__.copy()
+            field_args_per_attr[attr_name] = (new_field, new_field.__info__.annotation)
 
         # Add the field args from the class we are building
         for attr_name, annot in get_annotations(cls).items():
@@ -332,9 +329,15 @@ class SgEntityMeta(type):
                     f"{class_name}.{attr_name} is not initialized with a field."
                 )
             # Extract entity information from annotation
-            field_annot = FieldAnnotation(
-                field_type, *extract_annotation_info(annot)
-            )
+            try:
+                field_annot = FieldAnnotation(
+                    field_type, extract_annotation_info(annot)
+                )
+            except error.SgInvalidAnnotationError as e:
+                raise error.SgEntityClassDefinitionError(
+                    f"Cannot extract annotation information for field "
+                    f"{class_name}.{attr_name}"
+                ) from e
             field_args_per_attr[attr_name] = (field, field_annot)
 
         cls.__primaries__ = set()
@@ -342,17 +345,19 @@ class SgEntityMeta(type):
 
         for attr_name, (field, annotation) in field_args_per_attr.items():
             try:
-                field.initialize_from_annotation(cls, annotation, attr_name)
+                field.__info__.initialize_from_annotation(cls, annotation, attr_name)
+                field.__cast__.initialize_from_annotation(cls, annotation)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"
                 ) from e
-            field_name = field.get_name()
+            field_info = field.__info__
+            field_name = field_info.field_name
             # Add attribute to primaries if needed
-            if field.is_primary():
+            if field_info.primary:
                 cls.__primaries__.add(attr_name)
             # Check we are not redefining a field
-            if not field.is_alias():
+            if not field_info.is_alias():
                 if field_name in field_names:
                     raise error.SgEntityClassDefinitionError(
                         f"Field named '{field_name}' is already defined"
@@ -362,13 +367,13 @@ class SgEntityMeta(type):
                 # Add to the class
                 cls.__fields__[attr_name] = field
             # Create field descriptors
-            prop = AliasFieldProperty if field.is_alias() else FieldProperty
-            setattr(cls, attr_name, prop(field, not field.is_primary()))
+            prop = AliasFieldProperty if field_info.is_alias() else FieldProperty
+            setattr(cls, attr_name, prop(field, not field_info.primary))
 
 
 def extract_annotation_info(
     annotation: AnnotationScanType,
-) -> Tuple[Tuple[str, ...], Optional[Type[Collection[Any]]]]:
+) -> Tuple[str, ...]:
     """Returns the information extracted from a given annotation.
 
     Args:
@@ -380,16 +385,14 @@ def extract_annotation_info(
             the collection type wrapping the entities
     """
     if not hasattr(annotation, "__args__"):
-        return tuple(), None
+        return tuple()
     inner_annotation = annotation.__args__[0]
     inner_annotation = de_optionalize_union_types(inner_annotation)
     # Get the container type
-    container_class = None
     if hasattr(inner_annotation, "__origin__"):
         arg_origin = inner_annotation.__origin__
-        if isinstance(arg_origin, type) and issubclass(arg_origin, Collection):
-            container_class = arg_origin
-            inner_annotation = inner_annotation.__args__[0]
+        if isinstance(arg_origin, type):
+            raise error.SgInvalidAnnotationError("No container class expected")
     # Unpack the unions
     entities = expand_unions(inner_annotation)
-    return entities, container_class
+    return entities

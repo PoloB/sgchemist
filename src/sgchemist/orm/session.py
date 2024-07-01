@@ -158,7 +158,7 @@ class Session:
             # from relationship.
             # We construct a new field mapper in this case
             field_mapper = {
-                field.get_name_in_relation(): field_mapper[field.get_name()]
+                field.__info__.name_in_relation: field_mapper[field.__info__.field_name]
                 for field in entity_cls.__fields__.values()
             }
 
@@ -169,7 +169,9 @@ class Session:
         for attr_name, column_value in column_value_by_attr.items():
             field = entity_cls.__fields__[attr_name]
             # Cast column value
-            column_value = field.cast_column(column_value, self._get_or_create_instance)
+            column_value = field.__cast__.cast_column(
+                column_value, self._get_or_create_instance
+            )
             inst_data[attr_name] = column_value
 
         inst = entity_cls(**inst_data)
@@ -249,7 +251,9 @@ class Session:
         # Add modified relationships in cascade
         for field in entity.__fields__.values():
             rel_value = state.get_slot(field).value
-            for field_entity in field.iter_entities_from_field_value(rel_value):
+            for field_entity in field.__cast__.iter_entities_from_field_value(
+                rel_value
+            ):
                 self._check_relationship_commited(field_entity)
 
         query = SgBatchQuery(request_type, entity)
@@ -307,7 +311,7 @@ class Session:
             for field_name, field_value in row.content.items():
                 # Do not set the relationship field
                 field = original_model.__fields__[field_mapper[field_name]]
-                field.update_entity_from_row_value(original_model, field_value)
+                field.__cast__.update_entity_from_row_value(original_model, field_value)
             # The entity has now an unmodified state
             state.set_as_original()
             state.pending_add = False

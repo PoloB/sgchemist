@@ -52,7 +52,7 @@ def serialize_condition(condition: SgFieldCondition) -> SerializedCondition:
     if isinstance(condition.right, SgEntity):
         right = serialize_entity(condition.right)
     return [
-        condition.field.get_name(),
+        condition.field.__info__.field_name,
         condition.operator.value,
         right,
     ]
@@ -150,7 +150,7 @@ class ShotgunAPIBatchQuerySerializer:
                     "type": value.__sg_type__,
                     "id": value.id,
                 }
-            model_data[field.get_name()] = value
+            model_data[field.__info__.field_name] = value
         model_data.pop("id", None)
         return model_data
 
