@@ -6,10 +6,8 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Collection
 from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import TypeVar
@@ -84,7 +82,7 @@ class LazyEntityCollectionClassEval:
         """Return all the evaluated entity classes.
 
         Returns:
-            list[Type[SgEntity]]: list of entity classes
+            tuple[Type[SgEntity]]: list of entity classes
         """
         self._fill()
         return list(self._resolved_by_name.values())
@@ -96,4 +94,3 @@ class FieldAnnotation:
 
     field_type: Type[AbstractField[Any]]
     entities: Tuple[str, ...]
-    container_class: Optional[Type[Collection[Any]]]

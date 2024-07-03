@@ -68,8 +68,8 @@ def test_lazy_entity_collection_eval(
     "field, exp_name, exp_class, exp_default, exp_primary, "
     "exp_name_in_rel, exp_types",
     [
-        (Shot.name, "code", Shot, None, False, "name", (str,)),
-        (Shot.id, "id", Shot, None, True, "id", (int,)),
+        (Shot.name, "code", Shot, None, False, "name", tuple()),
+        (Shot.id, "id", Shot, None, True, "id", tuple()),
         (Shot.project, "project", Shot, None, False, "project", (Project,)),
         (
             Shot.parent_shots,
@@ -94,12 +94,12 @@ def test_field_attributes(
 ) -> None:
     """Tests the fields attributes."""
     assert isinstance(repr(field), str)
-    assert field.get_name() == exp_name
-    assert field.get_parent_class() is exp_class
-    assert field.get_default_value() == exp_default
-    assert not field.is_alias()
-    assert field.get_name_in_relation() == exp_name_in_rel
-    assert set(field.get_types()) == set(exp_types)
+    assert field.__info__.field_name == exp_name
+    assert field.__info__.entity is exp_class
+    assert field.__info__.default_value == exp_default
+    assert not field.__info__.is_alias()
+    assert field.__info__.name_in_relation == exp_name_in_rel
+    assert set(field.__cast__.get_types()) == set(exp_types)
 
 
 @pytest.mark.parametrize(
@@ -116,7 +116,7 @@ def test_field_attributes(
 )
 def test_build_relative_to(field: AbstractField[Any], exp_field_name: str) -> None:
     """Tests the relative field names."""
-    assert field.get_name() == exp_field_name
+    assert field.__info__.field_name == exp_field_name
 
 
 def test_missing_attribute_on_target_selector() -> None:
@@ -149,8 +149,8 @@ def test_update_entity_from_row_value(
     field: AbstractField[Any], value_to_set: Any, exp_value: Any
 ) -> None:
     """Tests the update entity from row attribute."""
-    inst = field.get_parent_class()()
-    field.update_entity_from_row_value(inst, value_to_set)
+    inst = field.__info__.entity()
+    field.__cast__.update_entity_from_row_value(inst, value_to_set)
     assert inst.__state__.get_slot(field).value == exp_value
 
 
@@ -170,7 +170,7 @@ def test_entities_iter_entities_from_field_values(
     field: AbstractField[Any], value: Any, exp_value: Any
 ) -> None:
     """Tests the entity iterator."""
-    assert list(field.iter_entities_from_field_value(value)) == exp_value
+    assert list(field.__cast__.iter_entities_from_field_value(value)) == exp_value
 
 
 @pytest.mark.parametrize(
@@ -189,7 +189,7 @@ def test_cast_value_over(
     exp_value: Any,
 ) -> None:
     """Tests the cast value over method."""
-    assert field.cast_value_over(func, value) == exp_value
+    assert field.__cast__.cast_value_over(func, value) == exp_value
 
 
 @pytest.mark.parametrize(
@@ -216,7 +216,7 @@ def test_cast_column(
     exp_value: Any,
 ) -> None:
     """Tests the cast column method."""
-    assert field.cast_column(value, func) == exp_value
+    assert field.__cast__.cast_column(value, func) == exp_value
 
 
 @pytest.mark.parametrize(
