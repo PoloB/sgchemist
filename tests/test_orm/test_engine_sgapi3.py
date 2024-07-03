@@ -12,7 +12,6 @@ from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.entity import SgEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
-from sgchemist.orm.row import SgRow
 from sgchemist.orm.session import Session
 
 
@@ -65,9 +64,8 @@ def test_engine_find(filled_engine: SgEngine, test_model: Type[SgEntity]) -> Non
     rows = filled_engine.find(find_query_state)
     assert len(rows) == 1
     row = rows[0]
-    assert isinstance(row, SgRow)
-    assert row.success
-    assert row.entity_hash == (test_model.__sg_type__, 1)
+    assert isinstance(row, dict)
+    assert row["id"] == 1
 
 
 @pytest.mark.parametrize(
@@ -83,10 +81,10 @@ def test_engine_create(engine: SgEngine, test_model_inst: SgEntity) -> None:
     batch_query = SgBatchQuery(BatchRequestType.CREATE, test_model_inst)
     rows = engine.batch([batch_query])
     assert len(rows) == 1
-    row = rows[0]
-    assert isinstance(row, SgRow)
-    assert row.success
-    assert row.entity_hash == (test_model_inst.__sg_type__, 1)
+    success, row = rows[0]
+    assert isinstance(row, dict)
+    assert success
+    assert row["id"] == 1
 
 
 @pytest.mark.parametrize(
@@ -110,7 +108,7 @@ def test_engine_batch_request(
     batch_query = SgBatchQuery(BatchRequestType.UPDATE, test_model_inst)
     rows = engine.batch([batch_query])
     assert len(rows) == 1
-    row = rows[0]
-    assert isinstance(row, SgRow)
-    assert row.success
-    assert row.entity_hash == (test_model_inst.__sg_type__, 1)
+    success, row = rows[0]
+    assert isinstance(row, dict)
+    assert success
+    assert row["id"] == 1

@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import ClassVar
 from typing import Dict
 from typing import Generic
 from typing import Iterator
@@ -33,7 +32,6 @@ from .annotation import LazyEntityCollectionClassEval
 from .constant import DateType
 from .constant import Operator
 from .queryop import SgFieldCondition
-from .row import SgRow
 
 if TYPE_CHECKING:
     from .entity import SgEntity
@@ -48,6 +46,7 @@ class FieldInfo(Generic[T]):
 
     annotation: FieldAnnotation
     entity: SgEntityMeta
+    default_value: T
 
     def __init__(
         self,
@@ -63,7 +62,9 @@ class FieldInfo(Generic[T]):
         self.field = field
         self.field_name = name or ""
         self.name_in_relation = name_in_relation or self.field_name
-        self.default_value = default_value
+        self.default_value = (
+            default_value if default_value is not None else field.default_value
+        )
         self.alias_field = alias_field
         self.parent_field = parent_field
         self.primary = primary
@@ -196,7 +197,7 @@ class FieldCaster(Generic[T]):
         """
         if self.is_relationship:
             return
-        entity.__state__.get_slot(self.field).value = field_value
+        entity.__state__.set_value(self.field, field_value)
 
     def iter_entities_from_field_value(self, field_value: Any) -> Iterator[SgEntity]:
         """Iterate entities from a field value.
@@ -245,7 +246,7 @@ class FieldCaster(Generic[T]):
     def cast_column(
         self,
         column_value: Any,
-        model_factory: Callable[[Type[SgEntity], SgRow[Any]], Any],
+        model_factory: Callable[[Type[SgEntity], Dict[str, Any]], Any],
     ) -> Any:
         """Cast the given row value to be used for instancing the entity.
 
@@ -269,8 +270,8 @@ class FieldCaster(Generic[T]):
         if not self.is_list and column_value is None:
             return None
 
-        def _cast_column(col: SgRow[Any]) -> Any:
-            return model_factory(self.lazy_collection.get_by_type(col.entity_type), col)
+        def _cast_column(col: Dict[str, Any]) -> Any:
+            return model_factory(self.lazy_collection.get_by_type(col["type"]), col)
 
         return self.cast_value_over(_cast_column, column_value)
 
@@ -279,6 +280,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     """Definition of an abstract field."""
 
     cast_type: Type[T]
+    default_value: T
     __sg_type__: str = ""
     __cast__: FieldCaster[T]
     __info__: FieldInfo[T]
@@ -506,8 +508,9 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
 class NumberField(NumericField[Optional[int]]):
     """An integer field."""
 
-    cast_type: Type[int] = int
     __sg_type__: str = "number"
+    cast_type: Type[int] = int
+    default_value = None
 
     if TYPE_CHECKING:
 
@@ -528,6 +531,7 @@ class FloatField(NumericField[Optional[float]]):
 
     cast_type: Type[float] = float
     __sg_type__: str = "float"
+    default_value = None
 
     if TYPE_CHECKING:
 
@@ -548,6 +552,7 @@ class TextField(AbstractValueField[Optional[str]]):
 
     cast_type: Type[str] = str
     __sg_type__: str = "text"
+    default_value = None
 
     def contains(self, text: str) -> SgFieldCondition:
         """Filter entities where this text field contains the given string.
@@ -753,6 +758,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
 
     __sg_type__: str = "entity"
     cast_type: Type[T]
+    default_value = None
 
     def __init__(self, name: Optional[str] = None):
         """Initialise the field."""
@@ -778,7 +784,6 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
-    default_value: ClassVar[List[Any]] = []
 
     def __init__(self, name: Optional[str] = None):
         """Initialize the field."""
@@ -804,7 +809,7 @@ class BooleanField(AbstractValueField[Optional[bool]]):
     """Definition a boolean field."""
 
     __sg_type__: str = "checkbox"
-    default_value: ClassVar[Optional[bool]] = None
+    default_value: Optional[bool] = None
 
     if TYPE_CHECKING:
 
@@ -937,7 +942,7 @@ class DateField(AbstractDateField[Optional[date]]):
 
     cast_type: Type[date] = date
     __sg_type__: str = "date"
-    default_value: ClassVar[Optional[date]] = None
+    default_value: Optional[date] = None
 
     if TYPE_CHECKING:
 
@@ -958,7 +963,7 @@ class DateTimeField(AbstractDateField[Optional[datetime]]):
 
     cast_type: Type[datetime] = datetime
     __sg_type__: str = "date_time"
-    default_value: ClassVar[Optional[datetime]] = None
+    default_value = None
 
     if TYPE_CHECKING:
 
@@ -998,7 +1003,7 @@ class ImageField(AbstractValueField[Optional[str]]):
 
     cast_type: Type[str] = str
     __sg_type__: str = "image"
-    default_value: ClassVar[Optional[str]] = None
+    default_value = None
 
     def exists(self) -> SgFieldCondition:
         """Filter entities where this image exists.
@@ -1039,7 +1044,7 @@ class ListField(AbstractValueField[Optional[List[str]]]):
 
     cast_type: Type[List[str]] = list
     __sg_type__: str = "list"
-    default_value: ClassVar[Optional[List[str]]] = None
+    default_value = None
 
     def is_in(self, others: List[str]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
@@ -1105,7 +1110,7 @@ class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
 
     cast_type: Type[Dict[str, Any]] = dict
     __sg_type__: str = "serializable"
-    default_value: ClassVar[Optional[Dict[str, Any]]] = None
+    default_value = None
 
     if TYPE_CHECKING:
 
@@ -1125,7 +1130,7 @@ class StatusField(AbstractValueField[str]):
     """Definition of a status field."""
 
     __sg_type__: str = "status_list"
-    default_value: ClassVar[str]
+    default_value = "wtg"
 
     if TYPE_CHECKING:
 
@@ -1146,7 +1151,7 @@ class UrlField(AbstractValueField[Optional[str]]):
 
     cast_type: Type[str] = str
     __sg_type__: str = "url"
-    default_value: ClassVar[Optional[str]] = None
+    default_value = None
 
     if TYPE_CHECKING:
 

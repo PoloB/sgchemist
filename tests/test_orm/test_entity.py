@@ -48,7 +48,7 @@ def shot_commited(shot_entity: Type[Shot]) -> Shot:
 def test_entity_values(shot_entity: Type[Shot]) -> None:
     """Tests the values of the fields."""
     assert shot_entity.__sg_type__ == "Shot"
-    assert list(shot_entity.__fields__.values()) == [
+    assert shot_entity.__fields__ == [
         shot_entity.id,
         shot_entity.name,
         shot_entity.description,
@@ -85,7 +85,7 @@ def test_model_creation_reserved_attributes() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            __fields__ = "test"  # type: ignore
+            __fields_by_attr__ = "test"  # type: ignore
 
 
 def test_model_duplicate_field() -> None:
@@ -302,13 +302,13 @@ def test_default_init(shot_entity: Type[Shot]) -> None:
 
 def test_get_fields(shot_entity: Type[Shot], shot_not_commited: Shot) -> None:
     """Tests field getter method."""
-    assert shot_not_commited.__state__.get_slot(shot_entity.name).value == "foo"
+    assert shot_not_commited.__state__.get_value(shot_entity.name) == "foo"
 
 
 def test_set_fields(shot_not_commited: Shot) -> None:
     """Tests field setter method."""
     model = shot_not_commited.__class__
-    shot_not_commited.__state__.get_slot(model.name).value = "test"
+    shot_not_commited.__state__.set_value(model.name, "test")
     assert shot_not_commited.name == "test"
 
 

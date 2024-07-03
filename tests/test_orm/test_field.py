@@ -2,6 +2,7 @@
 
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Tuple
 from typing import Type
 
@@ -26,7 +27,6 @@ from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import SgEntity
 from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.queryop import SgFieldCondition
-from sgchemist.orm.row import SgRow
 
 
 @pytest.fixture(scope="module")
@@ -151,7 +151,7 @@ def test_update_entity_from_row_value(
     """Tests the update entity from row attribute."""
     inst = field.__info__.entity()
     field.__cast__.update_entity_from_row_value(inst, value_to_set)
-    assert inst.__state__.get_slot(field).value == exp_value
+    assert inst.__state__.get_value(field) == exp_value
 
 
 @pytest.mark.parametrize(
@@ -197,21 +197,21 @@ def test_cast_value_over(
     [
         (Shot.id, lambda x, y: x, 5, 5),
         (Shot.project, lambda x, y: x, None, None),
-        (Shot.project, lambda x, y: x, SgRow("Project", 1, True, {}), Project),
+        (Shot.project, lambda x, y: x, {"type": "Project", "id": 1}, Project),
         (
             Shot.parent_shots,
-            lambda x, y: (x, y.entity_id),
-            [SgRow("Shot", 5, True, {}), SgRow("Shot", 3, True, {})],
+            lambda x, y: (x, y["id"]),
+            [{"type": "Shot", "id": 5}, {"type": "Shot", "id": 3}],
             [(Shot, 5), (Shot, 3)],
         ),
         (Task.entity, lambda x, y: x, None, None),
-        (Task.entity, lambda x, y: x, SgRow("Asset", 1, True, {}), Asset),
-        (Task.entity, lambda x, y: x, SgRow("Shot", 1, True, {}), Shot),
+        (Task.entity, lambda x, y: x, {"type": "Asset", "id": 1}, Asset),
+        (Task.entity, lambda x, y: x, {"type": "Shot", "id": 1}, Shot),
     ],
 )
 def test_cast_column(
     field: AbstractField[Any],
-    func: Callable[[Type[SgEntity], SgRow[Any]], Any],
+    func: Callable[[Type[SgEntity], Dict[str, Any]], Any],
     value: Any,
     exp_value: Any,
 ) -> None:

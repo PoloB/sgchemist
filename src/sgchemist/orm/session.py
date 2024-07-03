@@ -7,11 +7,13 @@ It keeps tracks of the pending queries and objects to commit to Shotgrid.
 from __future__ import annotations
 
 from types import TracebackType
+from typing import Any
 from typing import Dict
 from typing import Generic
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
@@ -21,7 +23,6 @@ from .engine import SgEngine
 from .entity import SgEntity
 from .query import SgBatchQuery
 from .query import SgFindQuery
-from .row import SgRow
 from .typing_alias import EntityHash
 
 T = TypeVar("T", bound=SgEntity)
@@ -119,36 +120,41 @@ class Session:
         return list(self._pending_queries.values())
 
     def _get_or_create_instance(
-        self, entity_cls: Type[SgEntity], row: SgRow[SgEntity]
+        self,
+        entity_cls: Type[SgEntity],
+        row: Dict[str, Any],
     ) -> SgEntity:
         """Gets or creates the entity from the given row.
 
         Args:
-            entity_cls (Type[SgEntity]): Type of the entity.
-            row (SgRow[SgEntity]): Row of the entity.
+            entity_cls: Type of the entity.
+            row: Row of the entity.
 
         Returns:
-            SgEntity: Instance of the entity.
+            Instance of the entity.
         """
         # We assume this is only called when dealing with relationships
         try:
-            column_value = self._entity_map[row.entity_hash]
+            column_value = self._entity_map[(entity_cls.__sg_type__, row["id"])]
         except KeyError:
             column_value = self._build_instance_from_row(entity_cls, row, True)
         return column_value
 
     def _build_instance_from_row(
-        self, entity_cls: Type[T], row: SgRow[T], is_relationship: bool = False
+        self,
+        entity_cls: Type[T],
+        row: Dict[str, Any],
+        is_relationship: bool = False,
     ) -> T:
         """Builds the entity from the given row.
 
         Args:
-            entity_cls (Type[T]): Type of the entity.
-            row (SgRow[T]): Row of the entity.
+            entity_cls: Type of the entity.
+            row: Row of the entity.
             is_relationship (bool, optional): Whether the entity part of a relationship.
 
         Returns:
-            T: Instance of the entity.
+            Instance of the entity.
         """
         inst_data = {}
         field_mapper = entity_cls.__attr_per_field_name__
@@ -159,15 +165,16 @@ class Session:
             # We construct a new field mapper in this case
             field_mapper = {
                 field.__info__.name_in_relation: field_mapper[field.__info__.field_name]
-                for field in entity_cls.__fields__.values()
+                for field in entity_cls.__fields__
             }
 
         column_value_by_attr = {
             field_mapper[column_name]: column_value
-            for column_name, column_value in row.content.items()
+            for column_name, column_value in row.items()
+            if column_name != "type"
         }
         for attr_name, column_value in column_value_by_attr.items():
-            field = entity_cls.__fields__[attr_name]
+            field = entity_cls.__fields_by_attr__[attr_name]
             # Cast column value
             column_value = field.__cast__.cast_column(
                 column_value, self._get_or_create_instance
@@ -177,13 +184,13 @@ class Session:
         inst = entity_cls(**inst_data)
         state = inst.__state__
         # Mark all the fields that were not queried as not available
-        for attr_name in set(entity_cls.__fields__).difference(
+        for attr_name in set(entity_cls.__fields_by_attr__).difference(
             set(column_value_by_attr)
         ):
-            state.get_slot(entity_cls.__fields__[attr_name]).available = False
+            state.set_available(entity_cls.__fields_by_attr__[attr_name], False)
 
         inst.__state__.set_as_original()
-        self._entity_map[row.entity_hash] = inst
+        self._entity_map[(entity_cls.__sg_type__, row["id"])] = inst
         return inst
 
     def exec(self, query: SgFindQuery[Type[T]]) -> SgFindResult[T]:
@@ -249,8 +256,8 @@ class Session:
             return self._pending_queries[entity]
 
         # Add modified relationships in cascade
-        for field in entity.__fields__.values():
-            rel_value = state.get_slot(field).value
+        for field in entity.__fields__:
+            rel_value = state.get_value(field)
             for field_entity in field.__cast__.iter_entities_from_field_value(
                 rel_value
             ):
@@ -258,7 +265,6 @@ class Session:
 
         query = SgBatchQuery(request_type, entity)
         self._pending_queries[entity] = query
-        state.session = self
         state.pending_add = request_type == BatchRequestType.CREATE
         return query
 
@@ -291,26 +297,28 @@ class Session:
         If any query fails the full transaction is cancelled.
         """
         # Add a batch for each
-        rows: List[SgRow[SgEntity]] = self._engine.batch(
+        rows: List[Tuple[bool, Dict[str, Any]]] = self._engine.batch(
             list(self._pending_queries.values())
         )
         assert len(rows) == len(self._pending_queries)
 
         for k, query in enumerate(self._pending_queries.values()):
-            row = rows[k]
+            success, row = rows[k]
             state = query.entity.__state__
 
             if query.request_type == BatchRequestType.DELETE:
-                state.deleted = row.success
+                state.deleted = success
                 state.pending_deletion = False
                 continue
 
             original_model = query.entity
             field_mapper = original_model.__attr_per_field_name__
 
-            for field_name, field_value in row.content.items():
+            for field_name, field_value in row.items():
+                if field_name == "type":
+                    continue
                 # Do not set the relationship field
-                field = original_model.__fields__[field_mapper[field_name]]
+                field = original_model.__fields_by_attr__[field_mapper[field_name]]
                 field.__cast__.update_entity_from_row_value(original_model, field_value)
             # The entity has now an unmodified state
             state.set_as_original()

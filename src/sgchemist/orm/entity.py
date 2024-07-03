@@ -6,11 +6,12 @@ from __future__ import annotations
 from typing import Any
 from typing import ClassVar
 from typing import Dict
-from typing import Set
+from typing import List
 from typing import Type
 from typing import TypeVar
 
-from . import error
+from sgchemist.orm import error
+
 from .fields import AbstractField
 from .fields import NumberField
 from .meta import EntityState
@@ -29,8 +30,8 @@ class SgEntity(metaclass=SgEntityMeta):
     __abstract__: ClassVar[bool] = True
     __sg_type__: ClassVar[str]
     __registry__: ClassVar[Dict[str, Type[SgEntity]]]
-    __fields__: ClassVar[Dict[str, AbstractField[Any]]]
-    __primaries__: ClassVar[Set[str]]
+    __fields__: ClassVar[List[AbstractField[Any]]]
+    __fields_by_attr__: ClassVar[Dict[str, AbstractField[Any]]]
     __attr_per_field_name__: ClassVar[Dict[str, str]]
     __state__: ClassVar[EntityState]
 
@@ -55,22 +56,16 @@ class SgEntity(metaclass=SgEntityMeta):
             error.SgInvalidAttributeError: raised when a keyword argument is not a
                 field of the entity.
         """
-        self.__state__ = EntityState(self)
-        # Init with field default value by setting its state
-        for field in self.__fields__.values():
-            self.__state__.get_slot(field).value = field.__info__.default_value
-        # Set with keyword arguments
-        for k, v in kwargs.items():
-            field = self.__fields__.get(k)
-            if not field:
-                raise error.SgInvalidAttributeError(
-                    f"{self.__class__.__name__} has no field {k}"
-                )
-
-            if field.__info__.primary:
-                self.__state__.get_slot(field).value = v
-            else:
-                setattr(self, k, v)
+        # Compute the values per field
+        try:
+            value_per_field = {
+                self.__fields_by_attr__[k]: v for k, v in kwargs.items()
+            }
+        except KeyError as e:
+            raise error.SgInvalidAttributeError(e.args) from e
+        # We set the values directly in the state to avoid the cost of using the
+        # properties.
+        self.__state__ = EntityState(self, value_per_field)
 
     def __repr__(self) -> str:
         """Returns a string representation of the entity.
@@ -78,13 +73,4 @@ class SgEntity(metaclass=SgEntityMeta):
         Returns:
             str: representation of the entity.
         """
-        primary_fields = {
-            field.__info__.field_name: getattr(self, attr_name)
-            for attr_name, field in self.__fields__.items()
-            if attr_name in self.__primaries__
-        }
-        repr_str = ",".join(
-            f"{field_name}={field_value}"
-            for field_name, field_value in primary_fields.items()
-        )
-        return f"{self.__class__.__name__}({repr_str})"
+        return f"{self.__class__.__name__}(id={self.id})"

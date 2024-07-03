@@ -233,12 +233,9 @@ def de_stringify_annotation(
     obj = None
     if isinstance(annotation, str):
         obj, annotation = _cleanup_mapped_str_annotation(annotation, originating_module)
-        try:
-            annotation = eval_expression(
-                annotation, originating_module, cls, locals_=locals_
-            )
-        except NameError:
-            return None, annotation
+        annotation = eval_expression(
+            annotation, originating_module, cls, locals_=locals_
+        )
     if not obj:
         obj = annotation
     return obj, annotation  # type: ignore
