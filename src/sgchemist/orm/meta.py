@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import dataclasses
 import inspect
 import sys
+from collections import defaultdict
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
@@ -31,15 +31,6 @@ T = TypeVar("T")
 
 if TYPE_CHECKING:
     from .entity import SgEntity
-    from .session import Session
-
-
-@dataclasses.dataclass
-class FieldSlot:
-    """A container for field value."""
-
-    value: Any
-    available: bool
 
 
 class FieldProperty(Generic[T]):
@@ -74,10 +65,10 @@ class FieldProperty(Generic[T]):
         """
         if instance is None:
             return self._field
-        slot = instance.__state__.get_slot(self._field)
-        if not slot.available:
+        state = instance.__state__
+        if not state.is_available(self._field):
             raise error.SgMissingFieldError(f"{self._field} has not been queried")
-        return slot.value
+        return state.get_value(self._field)
 
     def __set__(self, instance: SgEntity, value: T) -> None:
         """Set the state internal value of the instance.
@@ -100,7 +91,7 @@ class FieldProperty(Generic[T]):
         else:
             if self._field in state.modified_fields:
                 state.modified_fields.remove(self._field)
-        instance.__state__.get_slot(self._field).value = value
+        instance.__state__.set_value(self._field, value)
 
 
 class AliasFieldProperty(FieldProperty[T]):
@@ -121,7 +112,7 @@ class AliasFieldProperty(FieldProperty[T]):
         # Get the aliased field
         aliased_field = self._field.__info__.alias_field
         assert aliased_field is not None
-        target_value = instance.__state__.get_slot(aliased_field).value
+        target_value = instance.__state__.get_value(aliased_field)
         if target_value is None:
             return None
         expected_target_class = self._field.__cast__.get_types()
@@ -133,23 +124,38 @@ class AliasFieldProperty(FieldProperty[T]):
 class EntityState(object):
     """Defines the internal state of the instance field values."""
 
-    def __init__(self, instance: SgEntity):
+    __slots__ = (
+        "_entity",
+        "pending_add",
+        "pending_deletion",
+        "deleted",
+        "_values",
+        "_available",
+        "modified_fields",
+        "_original_values",
+    )
+
+    def __init__(
+        self, instance: SgEntity, values_per_field: Dict[AbstractField[T], T]
+    ):
         """Initialize the internal state of the instance.
 
         Args:
             instance (SgEntity): the instance of the field.
+            values_per_field: initialize the state with the given field values.
+                These fields will be marked as modified (expect primary key).
+                All other fields will be initialized to their default value.
         """
-        self._model_instance = instance
+        self._entity = instance
         self.pending_add = False
         self.pending_deletion = False
         self.deleted = False
-        self._original_values: Dict[AbstractField[Any], Any] = {}
-        self._slots: Dict[AbstractField[Any], FieldSlot] = {
-            field: FieldSlot(None, available=True)
-            for field in instance.__fields__.values()
-        }
-        self.modified_fields: List[AbstractField[Any]] = []
-        self.session: Optional[Session] = None
+        self._values: Dict[AbstractField[Any], T] = values_per_field
+        self._available: Dict[AbstractField[Any], bool] = defaultdict(lambda: True)
+        self.modified_fields: List[AbstractField[Any]] = list(
+            filter(lambda f: not f.__info__.primary, values_per_field)
+        )
+        self._original_values: Dict[AbstractField[T], T] = {}
 
     def is_modified(self) -> bool:
         """Return whether the entity is modified for its initial state.
@@ -168,9 +174,9 @@ class EntityState(object):
                 Note this may not represent the known state of the entity.
                 It may not match the current state of the entity in Shotgrid.
         """
-        return self._model_instance.id is not None
+        return self._entity.id is not None
 
-    def get_original_value(self, field: AbstractField[Any]) -> Any:
+    def get_original_value(self, field: AbstractField[T]) -> Optional[T]:
         """Return the entity initial value of the given attribute.
 
         Args:
@@ -181,21 +187,25 @@ class EntityState(object):
         """
         return self._original_values.get(field)
 
-    def get_slot(self, field: AbstractField[Any]) -> FieldSlot:
-        """Return the entity value of the given attribute (i.e. the current value).
+    def get_value(self, field: AbstractField[T]) -> T:
+        """Return the value of the field."""
+        return self._values.get(field, field.__info__.default_value)
 
-        Args:
-            field (AbstractField): the name of the attribute.
+    def set_value(self, field: AbstractField[T], value: T) -> None:
+        """Sets the value of the field."""
+        self._values[field] = value
 
-        Returns:
-            FieldSlot: the field slot for the given attribute
-        """
-        return self._slots[field]
+    def is_available(self, field: AbstractField[Any]) -> bool:
+        """Return True if the field is available."""
+        return self._available[field]
+
+    def set_available(self, field: AbstractField[Any], available: bool) -> None:
+        """Sets the availability of the field value."""
+        self._available[field] = available
 
     def set_as_original(self) -> None:
         """Set the current state of the entity as its original state."""
-        for field, slot in self._slots.items():
-            self._original_values[field] = slot.value
+        self._original_values = self._values.copy()
         self.modified_fields = []
 
 
@@ -239,9 +249,9 @@ class SgEntityMeta(type):
         field_intersect = set(attrs).intersection(
             {
                 "__fields__",
+                "__fields_by_attr__",
                 "__instance_state__",
                 "__attr_per_field_name__",
-                "__primaries__",
                 "__registry__",
             }
         )
@@ -270,7 +280,8 @@ class SgEntityMeta(type):
                 is invalid.
         """
         super().__init__(class_name, bases, dict_)
-        cls.__fields__: Dict[str, AbstractField[Any]] = {}
+        cls.__fields__: List[AbstractField[Any]] = []
+        cls.__fields_by_attr__: Dict[str, AbstractField[Any]] = {}
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
         cls.__abstract__ = dict_.get("__abstract__", False)
         cls.__instance_state__: EntityState  # noqa: B032
@@ -292,7 +303,9 @@ class SgEntityMeta(type):
         # Get all the fields of the parent class and create new ones
         base_fields: Dict[str, AbstractField[Any]] = {}
         for base in bases:
-            base_fields = base.__fields__ if hasattr(base, "__fields__") else {}
+            base_fields = (
+                base.__fields_by_attr__ if hasattr(base, "__fields_by_attr__") else {}
+            )
             base_fields.update(base_fields)
 
         field_args_per_attr = {}
@@ -340,7 +353,6 @@ class SgEntityMeta(type):
                 ) from e
             field_args_per_attr[attr_name] = (field, field_annot)
 
-        cls.__primaries__ = set()
         field_names = set()
 
         for attr_name, (field, annotation) in field_args_per_attr.items():
@@ -353,9 +365,6 @@ class SgEntityMeta(type):
                 ) from e
             field_info = field.__info__
             field_name = field_info.field_name
-            # Add attribute to primaries if needed
-            if field_info.primary:
-                cls.__primaries__.add(attr_name)
             # Check we are not redefining a field
             if not field_info.is_alias():
                 if field_name in field_names:
@@ -365,7 +374,8 @@ class SgEntityMeta(type):
                 field_names.add(field_name)
                 cls.__attr_per_field_name__[field_name] = attr_name
                 # Add to the class
-                cls.__fields__[attr_name] = field
+                cls.__fields_by_attr__[attr_name] = field
+                cls.__fields__.append(field)
             # Create field descriptors
             prop = AliasFieldProperty if field_info.is_alias() else FieldProperty
             setattr(cls, attr_name, prop(field, not field_info.primary))

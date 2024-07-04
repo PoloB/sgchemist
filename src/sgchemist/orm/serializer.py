@@ -144,7 +144,7 @@ class ShotgunAPIBatchQuerySerializer:
         """
         model_data = {}
         for field in fields:
-            value = entity.__state__.get_slot(field).value
+            value = entity.__state__.get_value(field)
             if isinstance(value, SgEntity):
                 value = {
                     "type": value.__sg_type__,
@@ -172,9 +172,7 @@ class ShotgunAPIBatchQuerySerializer:
                 "entity_type": entity.__sg_type__,
             }
             if request_type == BatchRequestType.CREATE:
-                model_data = self.serialize_entity(
-                    entity, list(entity.__fields__.values())
-                )
+                model_data = self.serialize_entity(entity, entity.__fields__)
                 batch_data["data"] = model_data
             elif request_type == BatchRequestType.UPDATE:
                 model_data = self.serialize_entity(

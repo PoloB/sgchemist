@@ -43,7 +43,7 @@ def asset_entity() -> Type[Asset]:
 @pytest.fixture
 def find_query_data(shot_entity: Type[Shot]) -> SgFindQueryData[Type[Shot]]:
     """Returns the find query state."""
-    return SgFindQueryData(shot_entity, tuple(shot_entity.__fields__.values()))
+    return SgFindQueryData(shot_entity, tuple(shot_entity.__fields__))
 
 
 @pytest.fixture
@@ -95,14 +95,6 @@ def test_summarize_state(
     assert isinstance(summarize_query_data.grouping, tuple)
     assert len(summarize_query_data.grouping) == 0
     assert summarize_query_data.include_archived_projects is True
-
-
-def test_state_copy(
-    find_query: SgFindQuery[Any], find_query_data: SgFindQueryData[Any]
-) -> None:
-    """Tests the copy is not the original state."""
-    # A copy is made in the getter
-    assert find_query.get_data() is not find_query_data
 
 
 def test_where(shot_entity: Type[Shot], find_query: SgFindQuery[Any]) -> None:

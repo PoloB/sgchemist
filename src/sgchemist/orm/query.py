@@ -28,7 +28,7 @@ from .typing_alias import OrderField
 T_meta = TypeVar("T_meta", bound=SgEntityMeta)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class SgFindQueryData(Generic[T_meta]):
     """Defines a data container for find query data.
 
@@ -66,7 +66,7 @@ class SgFindQuery(Generic[T_meta]):
         Returns:
             SgFindQueryData[T_meta]: the query data managed by the query.
         """
-        return dataclasses.replace(self._data)
+        return self._data
 
     def where(self, condition: SgFilterObject) -> SgFindQuery[T_meta]:
         """Filters the query result to the given condition.
@@ -97,12 +97,15 @@ class SgFindQuery(Generic[T_meta]):
         """
         if isinstance(direction, str):
             direction = Order(direction)
-        new_state = dataclasses.replace(self._data)
-        # Concat ordered fields
-        new_state.order_fields = (
-            *new_state.order_fields,
+        new_order = (
+            *self._data.order_fields,
             (field, direction),
         )
+        new_state = dataclasses.replace(
+            self._data,
+            order_fields=new_order,
+        )
+        # Concat ordered fields
         return self.__class__(new_state)
 
     def limit(self, limit: int) -> SgFindQuery[T_meta]:
@@ -114,8 +117,7 @@ class SgFindQuery(Generic[T_meta]):
         Returns:
             SgFindQuery[T_meta]: a new query with the limit added.
         """
-        new_state = dataclasses.replace(self._data)
-        new_state.limit = limit
+        new_state = dataclasses.replace(self._data, limit=limit)
         return self.__class__(new_state)
 
     def retired_only(self) -> SgFindQuery[T_meta]:
@@ -162,13 +164,14 @@ class SgFindQuery(Generic[T_meta]):
         """
         preset = {"preset_name": preset_name}
         preset.update(preset_kwargs)
-        new_state = dataclasses.replace(self._data)
         # To avoid side effects we copy the previous presets
         new_preset = [
-            preset_dict.copy() for preset_dict in new_state.additional_filter_presets
+            preset_dict.copy() for preset_dict in self._data.additional_filter_presets
         ]
         new_preset.append(preset)
-        new_state.additional_filter_presets = new_preset
+        new_state = dataclasses.replace(
+            self._data, additional_filter_presets=new_preset
+        )
         return self.__class__(new_state)
 
     def load(self, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
@@ -183,10 +186,9 @@ class SgFindQuery(Generic[T_meta]):
             SgFindQuery[T_meta]: a new query with the loading added.
         """
         # Check the given fields belongs to the relationships of the queried fields
-        new_state = dataclasses.replace(self._data)
         queried_relationship_paths = {
             f.__info__.get_hash()
-            for f in new_state.fields
+            for f in self._data.fields
             if isinstance(f, AbstractEntityField) and not f.__info__.is_alias()
         }
         for field in fields:
@@ -196,7 +198,9 @@ class SgFindQuery(Generic[T_meta]):
                 raise error.SgQueryError(
                     f"Cannot load {field} because its entity is not queried."
                 )
-        new_state.loading_fields = (*self._data.loading_fields, *fields)
+        new_state = dataclasses.replace(
+            self._data, loading_fields=(*self._data.loading_fields, *fields)
+        )
         return self.__class__(new_state)
 
     def load_all(
@@ -214,7 +218,7 @@ class SgFindQuery(Generic[T_meta]):
         all_fields = []
         for field in relationship_fields:
             for target_type in field.__cast__.get_types():
-                for target_field in target_type.__fields__.values():
+                for target_field in target_type.__fields__:
                     all_fields.append(field.f(target_field))
         return self.load(*all_fields)
 
@@ -347,9 +351,9 @@ def select(model: T_meta, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
         SgFindQuery[T_meta]: the query for the given entity.
     """
     if not fields:
-        fields = tuple(model.__fields__.values())
+        fields = tuple(model.__fields_by_attr__.values())
     # Checking the given fields belong to the given model
-    model_fields = list(model.__fields__.values())
+    model_fields = list(model.__fields_by_attr__.values())
     for field in fields:
         if field not in model_fields:
             raise error.SgQueryError(f"{field} is not a field of {model}")
