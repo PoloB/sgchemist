@@ -19,6 +19,7 @@ from typing import TypeVar
 from typing_extensions import get_origin
 
 from . import error
+from . import field_info
 from .annotation import FieldAnnotation
 from .fields import AbstractField
 from .typing_util import AnnotationScanType
@@ -44,9 +45,8 @@ class FieldProperty(Generic[T]):
         """Initialize the field descriptor.
 
         Args:
-            field (AbstractField[T]): the instrumented
-                attribute to wrap.
-            settable (bool): whether the attribute is settable or not.
+            field: the field to wrap.
+            settable: whether the attribute is settable or not.
         """
         self._field = field
         self._settable = settable
@@ -57,8 +57,8 @@ class FieldProperty(Generic[T]):
         From the class itself, it returns the wrapped instrumented attribute.
 
         Args:
-            instance (Optional[SgEntity]): the instance of the attribute.
-            obj_type (Any): the type of the attribute.
+            instance: the instance of the attribute.
+            obj_type: the type of the attribute.
 
         Returns:
             Any: the value of the attribute or the instrumented attribute.
@@ -74,8 +74,8 @@ class FieldProperty(Generic[T]):
         """Set the state internal value of the instance.
 
         Args:
-            instance (Optional[SgEntity]): the instance of the attribute.
-            value (T): the value to set.
+            instance: the instance of the attribute.
+            value: the value to set.
 
         Raises:
             ValueError: raised when the attribute is not settable.
@@ -101,21 +101,21 @@ class AliasFieldProperty(FieldProperty[T]):
         """Return the value of the targeted field.
 
         Args:
-            instance (Optional[SgEntity]): the instance of the field.
-            obj_type (Any): the type of the field.
+            instance: the instance of the field.
+            obj_type: the type of the field.
 
         Returns:
-            Any: the value of the targeted field.
+            the value of the targeted field.
         """
         if instance is None:
             return self._field
         # Get the aliased field
-        aliased_field = self._field.__info__.alias_field
+        aliased_field = field_info.get_alias(self._field)
         assert aliased_field is not None
         target_value = instance.__state__.get_value(aliased_field)
         if target_value is None:
             return None
-        expected_target_class = self._field.__cast__.get_types()
+        expected_target_class = field_info.get_types(self._field)
         if not isinstance(target_value, expected_target_class):
             return None
         return target_value
@@ -135,13 +135,11 @@ class EntityState(object):
         "_original_values",
     )
 
-    def __init__(
-        self, instance: SgEntity, values_per_field: Dict[AbstractField[T], T]
-    ):
+    def __init__(self, instance: SgEntity, values_per_field: Dict[AbstractField[T], T]):
         """Initialize the internal state of the instance.
 
         Args:
-            instance (SgEntity): the instance of the field.
+            instance: the instance of the field.
             values_per_field: initialize the state with the given field values.
                 These fields will be marked as modified (expect primary key).
                 All other fields will be initialized to their default value.
@@ -153,7 +151,7 @@ class EntityState(object):
         self._values: Dict[AbstractField[Any], T] = values_per_field
         self._available: Dict[AbstractField[Any], bool] = defaultdict(lambda: True)
         self.modified_fields: List[AbstractField[Any]] = list(
-            filter(lambda f: not f.__info__.primary, values_per_field)
+            filter(lambda f: not field_info.is_primary(f), values_per_field)
         )
         self._original_values: Dict[AbstractField[T], T] = {}
 
@@ -161,7 +159,7 @@ class EntityState(object):
         """Return whether the entity is modified for its initial state.
 
         Returns:
-            bool: True if the entity is modified for its initial state.
+            True if the entity is modified for its initial state.
                 False otherwise.
         """
         return bool(self.modified_fields)
@@ -170,7 +168,7 @@ class EntityState(object):
         """Return whether the entity is already commited.
 
         Returns:
-            bool: True if the entity is commited. False otherwise.
+            True if the entity is commited. False otherwise.
                 Note this may not represent the known state of the entity.
                 It may not match the current state of the entity in Shotgrid.
         """
@@ -180,16 +178,16 @@ class EntityState(object):
         """Return the entity initial value of the given attribute.
 
         Args:
-            field (AbstractField): the name of the attribute.
+            field: the name of the attribute.
 
         Returns:
-            Any: the entity initial value of the given attribute.
+            the entity initial value of the given attribute.
         """
         return self._original_values.get(field)
 
     def get_value(self, field: AbstractField[T]) -> T:
         """Return the value of the field."""
-        return self._values.get(field, field.__info__.default_value)
+        return self._values.get(field, field_info.get_default_value(field))
 
     def set_value(self, field: AbstractField[T], value: T) -> None:
         """Sets the value of the field."""
@@ -235,12 +233,12 @@ class SgEntityMeta(type):
         create.
 
         Args:
-            name (str): the name of the entity class.
-            bases (tuple[type[Any], ...]): the base classes of the entity class.
-            attrs (dict[str, Any]): the attributes of the entity class.
+            name: the name of the entity class.
+            bases: the base classes of the entity class.
+            attrs: the attributes of the entity class.
 
         Returns:
-            SgEntityMeta: the new entity class.
+            the new entity class.
 
         Raises:
             error.SgEntityClassDefinitionError: raised if the definition of the class
@@ -271,9 +269,9 @@ class SgEntityMeta(type):
         """Initialize the new class.
 
         Args:
-            class_name (str): the name of the class.
-            bases (tuple[type[Any], ...]): the base classes of the class.
-            dict_ (dict[str, Any]): the attributes of the class.
+            class_name: the name of the class.
+            bases: the base classes of the class.
+            dict_: the attributes of the class.
 
         Raises:
             error.SgEntityClassDefinitionError: raised if the definition of the class
@@ -312,7 +310,10 @@ class SgEntityMeta(type):
         for attr_name, field in base_fields.items():
             new_field = field.__class__()
             new_field.__info__ = field.__info__.copy()
-            field_args_per_attr[attr_name] = (new_field, new_field.__info__.annotation)
+            field_args_per_attr[attr_name] = (
+                new_field,
+                field_info.get_annotation(new_field),
+            )
 
         # Add the field args from the class we are building
         for attr_name, annot in get_annotations(cls).items():
@@ -357,16 +358,14 @@ class SgEntityMeta(type):
 
         for attr_name, (field, annotation) in field_args_per_attr.items():
             try:
-                field.__info__.initialize_from_annotation(cls, annotation, attr_name)
-                field.__cast__.initialize_from_annotation(cls, annotation)
+                field_info.initialize_from_annotation(field, cls, annotation, attr_name)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"
                 ) from e
-            field_info = field.__info__
-            field_name = field_info.field_name
+            field_name = field_info.get_name(field)
             # Check we are not redefining a field
-            if not field_info.is_alias():
+            if not field_info.is_alias(field):
                 if field_name in field_names:
                     raise error.SgEntityClassDefinitionError(
                         f"Field named '{field_name}' is already defined"
@@ -377,8 +376,8 @@ class SgEntityMeta(type):
                 cls.__fields_by_attr__[attr_name] = field
                 cls.__fields__.append(field)
             # Create field descriptors
-            prop = AliasFieldProperty if field_info.is_alias() else FieldProperty
-            setattr(cls, attr_name, prop(field, not field_info.primary))
+            prop = AliasFieldProperty if field_info.is_alias(field) else FieldProperty
+            setattr(cls, attr_name, prop(field, not field_info.is_primary(field)))
 
 
 def extract_annotation_info(
