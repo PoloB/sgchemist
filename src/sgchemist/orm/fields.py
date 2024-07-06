@@ -17,7 +17,6 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import TypeVar
-from typing import Union
 from typing import overload
 
 from typing_extensions import Self
@@ -53,10 +52,10 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     def __init__(
         self,
         name: str = "",
-        default_value: Optional[T] = None,
+        default_value: T | None = None,
         name_in_relation: str = "",
-        alias_field: Optional[AbstractField[Any]] = None,
-        parent_field: Optional[AbstractField[Any]] = None,
+        alias_field: AbstractField[Any] | None = None,
+        parent_field: AbstractField[Any] | None = None,
         primary: bool = False,
         as_list: bool = False,
         is_relationship: bool = False,
@@ -160,7 +159,7 @@ class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
     def __init__(
         self,
         name: str = "",
-        default_value: Optional[T] = None,
+        default_value: T | None = None,
         name_in_relation: str = "",
     ):
         """Initialize an instrumented field.
@@ -238,26 +237,26 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.NOT_BETWEEN, [low, high])
 
-    def is_in(self, others: List[T]) -> SgFieldCondition:
+    def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
         This is the equivalent of the "in" filter of Shotgrid.
 
         Args:
-            others (list): values to test
+            others: values to test
 
         Returns:
             The field condition.
         """
         return SgFieldCondition(self, Operator.IN, others)
 
-    def is_not_in(self, others: List[T]) -> SgFieldCondition:
+    def is_not_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
 
         This is the equivalent of the "not_in" filter of Shotgrid.
 
         Args:
-            others (list): values to test
+            others: values to test
 
         Returns:
             The field condition.
@@ -278,11 +277,9 @@ class NumberField(NumericField[Optional[int]]):
         def __get__(self, instance: None, owner: Any) -> NumberField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[int]: ...
+        def __get__(self, instance: Any, owner: Any) -> int | None: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[int], NumberField]:
+        def __get__(self, instance: Any | None, owner: Any) -> int | None | NumberField:
             """Return the value of the field."""
 
 
@@ -299,11 +296,11 @@ class FloatField(NumericField[Optional[float]]):
         def __get__(self, instance: None, owner: Any) -> FloatField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[float]: ...
+        def __get__(self, instance: Any, owner: Any) -> float | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[float], FloatField]:
+            self, instance: Any | None, owner: Any
+        ) -> float | None | FloatField:
             """Return the value of the field."""
 
 
@@ -340,7 +337,7 @@ class TextField(AbstractValueField[Optional[str]]):
         """
         return SgFieldCondition(self, Operator.NOT_CONTAINS, text)
 
-    def is_in(self, others: List[T]) -> SgFieldCondition:
+    def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
         This is the equivalent of the "in" filter of Shotgrid.
@@ -353,7 +350,7 @@ class TextField(AbstractValueField[Optional[str]]):
         """
         return SgFieldCondition(self, Operator.IN, others)
 
-    def is_not_in(self, others: List[T]) -> SgFieldCondition:
+    def is_not_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
 
         This is the equivalent of the "not_in" filter of Shotgrid.
@@ -398,11 +395,9 @@ class TextField(AbstractValueField[Optional[str]]):
         def __get__(self, instance: None, owner: Any) -> TextField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[str]: ...
+        def __get__(self, instance: Any, owner: Any) -> str | None: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[str], TextField]:
+        def __get__(self, instance: Any | None, owner: Any) -> str | None | TextField:
             """Return the value of the field."""
 
 
@@ -487,7 +482,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.NAME_IS, text)
 
-    def is_in(self, others: List[T]) -> SgFieldCondition:
+    def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
         This is the equivalent of the "in" filter of Shotgrid.
@@ -500,7 +495,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.IN, others)
 
-    def is_not_in(self, others: List[T]) -> SgFieldCondition:
+    def is_not_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
 
         This is the equivalent of the "not_in" filter of Shotgrid.
@@ -533,11 +528,11 @@ class EntityField(AbstractEntityField[Optional[T]]):
         def __get__(self, instance: None, owner: Any) -> EntityField[T]: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[T]: ...
+        def __get__(self, instance: Any, owner: Any) -> T | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[T], EntityField[T]]:
+            self, instance: Any | None, owner: Any
+        ) -> T | None | EntityField[T]:
             """Return the value of the field."""
 
 
@@ -560,9 +555,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
         @overload
         def __get__(self, instance: Any, owner: Any) -> T: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[T, MultiEntityField[T]]:
+        def __get__(self, instance: Any | None, owner: Any) -> T | MultiEntityField[T]:
             """Return the value of the field."""
 
 
@@ -570,7 +563,7 @@ class BooleanField(AbstractValueField[Optional[bool]]):
     """Definition a boolean field."""
 
     __sg_type__: str = "checkbox"
-    default_value: Optional[bool] = None
+    default_value: bool | None = None
 
     if TYPE_CHECKING:
 
@@ -578,11 +571,11 @@ class BooleanField(AbstractValueField[Optional[bool]]):
         def __get__(self, instance: None, owner: Any) -> BooleanField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[bool]: ...
+        def __get__(self, instance: Any, owner: Any) -> bool | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[bool], BooleanField]:
+            self, instance: Any | None, owner: Any
+        ) -> bool | None | BooleanField:
             """Return the value of the field."""
 
 
@@ -703,7 +696,7 @@ class DateField(AbstractDateField[Optional[date]]):
 
     cast_type: Type[date] = date
     __sg_type__: str = "date"
-    default_value: Optional[date] = None
+    default_value: date | None = None
 
     if TYPE_CHECKING:
 
@@ -711,11 +704,9 @@ class DateField(AbstractDateField[Optional[date]]):
         def __get__(self, instance: None, owner: Any) -> DateField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[date]: ...
+        def __get__(self, instance: Any, owner: Any) -> date | None: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[date], DateField]:
+        def __get__(self, instance: Any | None, owner: Any) -> date | None | DateField:
             """Return the value of the field."""
 
 
@@ -732,11 +723,11 @@ class DateTimeField(AbstractDateField[Optional[datetime]]):
         def __get__(self, instance: None, owner: Any) -> DateTimeField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[datetime]: ...
+        def __get__(self, instance: Any, owner: Any) -> datetime | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[datetime], DateTimeField]:
+            self, instance: Any | None, owner: Any
+        ) -> datetime | None | DateTimeField:
             """Return the value of the field."""
 
 
@@ -751,11 +742,11 @@ class DurationField(NumberField):
         def __get__(self, instance: None, owner: Any) -> DurationField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[int]: ...
+        def __get__(self, instance: Any, owner: Any) -> int | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[int], DurationField]:
+            self, instance: Any | None, owner: Any
+        ) -> int | None | DurationField:
             """Return the value of the field."""
 
 
@@ -792,22 +783,20 @@ class ImageField(AbstractValueField[Optional[str]]):
         def __get__(self, instance: None, owner: Any) -> ImageField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[str]: ...
+        def __get__(self, instance: Any, owner: Any) -> str | None: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[str], ImageField]:
+        def __get__(self, instance: Any | None, owner: Any) -> str | None | ImageField:
             """Return the value of the field."""
 
 
 class ListField(AbstractValueField[Optional[List[str]]]):
     """Definition of a list field."""
 
-    cast_type: Type[List[str]] = list
+    cast_type: Type[list[str]] = list
     __sg_type__: str = "list"
     default_value = None
 
-    def is_in(self, others: List[str]) -> SgFieldCondition:
+    def is_in(self, others: list[str]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
         This is the equivalent of the "in" filter of Shotgrid.
@@ -816,11 +805,11 @@ class ListField(AbstractValueField[Optional[List[str]]]):
             others: values to test
 
         Returns:
-            SgFieldCondition: The field condition.
+            The field condition.
         """
         return SgFieldCondition(self, Operator.IN, others)
 
-    def is_not_in(self, others: List[str]) -> SgFieldCondition:
+    def is_not_in(self, others: list[str]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
 
         This is the equivalent of the "not_in" filter of Shotgrid.
@@ -829,7 +818,7 @@ class ListField(AbstractValueField[Optional[List[str]]]):
             others: values to test
 
         Returns:
-            SgFieldCondition: The field condition.
+            The field condition.
         """
         return SgFieldCondition(self, Operator.NOT_IN, others)
 
@@ -839,11 +828,11 @@ class ListField(AbstractValueField[Optional[List[str]]]):
         def __get__(self, instance: None, owner: Any) -> ListField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[List[str]]: ...
+        def __get__(self, instance: Any, owner: Any) -> list[str] | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[List[str]], ListField]:
+            self, instance: Any | None, owner: Any
+        ) -> list[str] | None | ListField:
             """Return the value of the field."""
 
 
@@ -858,18 +847,18 @@ class PercentField(FloatField):
         def __get__(self, instance: None, owner: Any) -> PercentField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[float]: ...
+        def __get__(self, instance: Any, owner: Any) -> float | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[float], PercentField]:
+            self, instance: Any | None, owner: Any
+        ) -> float | None | PercentField:
             """Return the value of the field."""
 
 
 class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
     """Definition of a serializable field."""
 
-    cast_type: Type[Dict[str, Any]] = dict
+    cast_type: Type[dict[str, Any]] = dict
     __sg_type__: str = "serializable"
     default_value = None
 
@@ -879,11 +868,11 @@ class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
         def __get__(self, instance: None, owner: Any) -> SerializableField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[Dict[str, Any]]: ...
+        def __get__(self, instance: Any, owner: Any) -> dict[str, Any] | None: ...
 
         def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[Dict[str, Any]], SerializableField]:
+            self, instance: Any | None, owner: Any
+        ) -> dict[str, Any] | None | SerializableField:
             """Return the value of the field."""
 
 
@@ -901,9 +890,7 @@ class StatusField(AbstractValueField[str]):
         @overload
         def __get__(self, instance: Any, owner: Any) -> str: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[str, StatusField]:
+        def __get__(self, instance: Any | None, owner: Any) -> str | StatusField:
             """Return the value of the field."""
 
 
@@ -920,16 +907,14 @@ class UrlField(AbstractValueField[Optional[str]]):
         def __get__(self, instance: None, owner: Any) -> UrlField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> Optional[str]: ...
+        def __get__(self, instance: Any, owner: Any) -> str | None: ...
 
-        def __get__(
-            self, instance: Optional[Any], owner: Any
-        ) -> Union[Optional[str], UrlField]:
+        def __get__(self, instance: Any | None, owner: Any) -> str | None | UrlField:
             """Return the value of the field."""
 
 
 # Expose all the available fields (intended for model generation)
-field_by_sg_type: Dict[str, Type[AbstractField[Any]]] = {
+field_by_sg_type: dict[str, Type[AbstractField[Any]]] = {
     field_cls.__sg_type__: field_cls
     for name, field_cls in locals().items()
     if isinstance(field_cls, type)
@@ -959,8 +944,8 @@ def alias(target_relationship: AbstractEntityField[Any]) -> EntityField[Any]:
         __sg_type__ = "Task"
 
         entity: EntityField[Optional[Asset | Shot]]
-        asset: EntityField[Optional[Asset]] = alias_relationship(entity)
-        shot: EntityField[Optional[Shot]] = alias_relationship(entity)
+        asset: EntityField[Asset | None] = alias_relationship(entity)
+        shot: EntityField[Shot | None] = alias_relationship(entity)
 
     # Create a filter using target selector
     filter = Task.entity.Shot.id.eq(123)

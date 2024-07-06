@@ -5,10 +5,10 @@ from __future__ import annotations
 import dataclasses
 import pickle
 from typing import Any
-from typing import Dict
 from typing import Generic
 from typing import TypeVar
 
+from typing_extensions import Self
 from typing_extensions import TypedDict
 
 T = TypeVar("T")
@@ -16,16 +16,18 @@ T = TypeVar("T")
 
 class ValueSchemaInfo(TypedDict, Generic[T], total=True):
     """A value schema generic dict."""
+
     value: T
     editable: bool
 
 
 class FieldSchemaInfo(TypedDict, Generic[T], total=True):
     """A field schema generic dict."""
+
     name: ValueSchemaInfo[str]
     entity_type: ValueSchemaInfo[str]
     data_type: ValueSchemaInfo[str]
-    properties: Dict[str, ValueSchemaInfo[Any]]
+    properties: dict[str, ValueSchemaInfo[Any]]
 
 
 @dataclasses.dataclass
@@ -36,14 +38,14 @@ class ValueSchema(Generic[T]):
     editable: bool
 
     @classmethod
-    def from_schema(cls, schema: ValueSchemaInfo[T]) -> ValueSchema[T]:
+    def from_schema(cls, schema: ValueSchemaInfo[T]) -> Self:
         """Instantiate a value from a schema dictionary.
 
         Args:
-            schema (ValueSchemaInfo): A schema dictionary.
+            schema: A schema dictionary.
 
         Returns:
-            Self: A value schema instance.
+            A value schema instance.
         """
         return cls(**schema)
 
@@ -59,15 +61,15 @@ class FieldSchema:
     properties: dict[str, ValueSchema[Any]]
 
     @classmethod
-    def from_schema(cls, field_name: str, schema: FieldSchemaInfo[Any]) -> FieldSchema:
+    def from_schema(cls, field_name: str, schema: FieldSchemaInfo[Any]) -> Self:
         """Instantiate a field from a schema dictionary.
 
         Args:
-            field_name (str): The name of the field.
-            schema (FieldSchema): A schema dictionary.
+            field_name: The name of the field.
+            schema: A schema dictionary.
 
         Returns:
-            Self: A field schema instance.
+            A field schema instance.
         """
         return cls(
             field_name=field_name,
@@ -105,11 +107,11 @@ def load_entities(schema_path: str, schema_entity_path: str) -> list[EntitySchem
     ```
 
     Args:
-        schema_path (str): The path to the schema file.
-        schema_entity_path (str): The path to the entity file.
+        schema_path: The path to the schema file.
+        schema_entity_path: The path to the entity file.
 
     Returns:
-        list[EntitySchema]: A list of schema entities.
+        A list of schema entities.
     """
     entities = []
 

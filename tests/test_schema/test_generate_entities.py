@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import pathlib
-from typing import List
-from typing import Tuple
 from unittest import mock
 
 import pytest
@@ -20,7 +18,7 @@ def output_script_path(tmp_path: pathlib.Path) -> str:
 
 
 @pytest.fixture
-def cli_args(schema_paths: Tuple[str, str], output_script_path: str) -> List[str]:
+def cli_args(schema_paths: tuple[str, str], output_script_path: str) -> list[str]:
     """Return test cli arguments for the given schema paths and output script path."""
     return [
         "--in-schema",
@@ -40,7 +38,7 @@ def cli_args(schema_paths: Tuple[str, str], output_script_path: str) -> List[str
     ]
 
 
-def test_generate_python_script_models(schema_paths: Tuple[str, str]) -> None:
+def test_generate_python_script_models(schema_paths: tuple[str, str]) -> None:
     """Test the python script generation."""
     entities = parse.load_entities(*schema_paths)
     # Test with standard arguments
@@ -82,7 +80,7 @@ def test_generate_python_script_models(schema_paths: Tuple[str, str]) -> None:
     )
 
 
-def test_main(cli_args: List[str], output_script_path: str) -> None:
+def test_main(cli_args: list[str], output_script_path: str) -> None:
     """Test the main function of the module."""
     generate.main(cli_args)
     with open(output_script_path, "r") as f:
@@ -90,7 +88,7 @@ def test_main(cli_args: List[str], output_script_path: str) -> None:
     exec(python_script, globals())
 
 
-def test_cli(cli_args: List[str], output_script_path: str) -> None:
+def test_cli(cli_args: list[str], output_script_path: str) -> None:
     """Test the cli function of the module."""
     cli_args = ["testProg", *cli_args]
     with mock.patch("sys.argv", cli_args):

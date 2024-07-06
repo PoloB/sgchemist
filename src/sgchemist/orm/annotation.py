@@ -5,9 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
@@ -23,7 +20,7 @@ class LazyEntityClassEval:
 
     _entity: Type[SgEntity]
 
-    def __init__(self, class_name: str, registry: Dict[str, Type[SgEntity]]) -> None:
+    def __init__(self, class_name: str, registry: dict[str, Type[SgEntity]]) -> None:
         """Initialize an instance.
 
         Args:
@@ -38,7 +35,7 @@ class LazyEntityClassEval:
         """Return the entity class after evaluation.
 
         Returns:
-            SgEntityMeta: the entity class
+            the entity class
         """
         if not self._resolved:
             self._entity = eval(self.class_name, {}, self.registry)
@@ -49,14 +46,14 @@ class LazyEntityClassEval:
 class LazyEntityCollectionClassEval:
     """A collection of lazy entity classes."""
 
-    def __init__(self, lazy_entities: List[LazyEntityClassEval]) -> None:
+    def __init__(self, lazy_entities: list[LazyEntityClassEval]) -> None:
         """Initialize an instance.
 
         Args:
             lazy_entities: list of lazy entity classes
         """
         self._lazy_entities = lazy_entities
-        self._resolved_by_name: Dict[str, Type[SgEntity]] = {}
+        self._resolved_by_name: dict[str, Type[SgEntity]] = {}
         self._resolved_entities: list[Type[SgEntity]] = []
         self._resolved = False
 
@@ -81,7 +78,7 @@ class LazyEntityCollectionClassEval:
             self._fill()
         return self._resolved_by_name[entity_type]
 
-    def get_all(self) -> List[Type[SgEntity]]:
+    def get_all(self) -> list[Type[SgEntity]]:
         """Return all the evaluated entity classes."""
         if not self._resolved:
             self._fill()
@@ -94,7 +91,7 @@ class FieldAnnotation:
     __slots__ = ("_field_type", "_entities")
 
     def __init__(
-        self, field_type: Type[AbstractField[Any]], entities: Tuple[str, ...]
+        self, field_type: Type[AbstractField[Any]], entities: tuple[str, ...]
     ) -> None:
         """Initialize an instance of field annotation."""
         self._field_type = field_type
@@ -106,6 +103,6 @@ class FieldAnnotation:
         return self._field_type
 
     @property
-    def entities(self) -> Tuple[str, ...]:
+    def entities(self) -> tuple[str, ...]:
         """Return the entities."""
         return self._entities

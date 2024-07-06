@@ -1,8 +1,8 @@
 """Tests the serializer for the shotgun-api3."""
 
+from __future__ import annotations
+
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Type
 
 import pytest
@@ -184,8 +184,8 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
 )
 def test_batch_serializer(
     batch_serialize: ShotgunAPIBatchQuerySerializer,
-    batch_queries: List[SgBatchQuery],
-    expected_serialization: List[Dict[str, Any]],
+    batch_queries: list[SgBatchQuery],
+    expected_serialization: list[dict[str, Any]],
 ) -> None:
     """Tests different batch serialization cases."""
     assert batch_serialize.serialize(batch_queries) == expected_serialization

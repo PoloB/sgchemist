@@ -1,9 +1,9 @@
 """Testing instrumented fields."""
 
+from __future__ import annotations
+
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import Tuple
 from typing import Type
 
 import pytest
@@ -95,7 +95,7 @@ def test_field_attributes(
     exp_default: Any,
     exp_primary: bool,
     exp_name_in_rel: str,
-    exp_types: Tuple[Type[SgEntity], ...],
+    exp_types: tuple[Type[SgEntity], ...],
 ) -> None:
     """Tests the fields attributes."""
     assert isinstance(repr(field), str)
@@ -198,7 +198,7 @@ def test_entities_iter_entities_from_field_values(
 )
 def test_cast_column(
     field: AbstractField[Any],
-    func: Callable[[Type[SgEntity], Dict[str, Any]], Any],
+    func: Callable[[Type[SgEntity], dict[str, Any]], Any],
     value: Any,
     exp_value: Any,
 ) -> None:

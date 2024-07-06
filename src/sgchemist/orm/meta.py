@@ -8,11 +8,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
-from typing import Dict
 from typing import Generic
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
@@ -51,7 +47,7 @@ class FieldProperty(Generic[T]):
         self._field = field
         self._settable = settable
 
-    def __get__(self, instance: Optional[SgEntity], obj_type: Any = None) -> Any:
+    def __get__(self, instance: SgEntity | None, obj_type: Any = None) -> Any:
         """Return the value of the attribute from the internal state of the instance.
 
         From the class itself, it returns the wrapped instrumented attribute.
@@ -61,7 +57,7 @@ class FieldProperty(Generic[T]):
             obj_type: the type of the attribute.
 
         Returns:
-            Any: the value of the attribute or the instrumented attribute.
+            the value of the attribute or the instrumented attribute.
         """
         if instance is None:
             return self._field
@@ -97,7 +93,7 @@ class FieldProperty(Generic[T]):
 class AliasFieldProperty(FieldProperty[T]):
     """Defines an alias field descriptor."""
 
-    def __get__(self, instance: Optional[SgEntity], obj_type: Any = None) -> Any:
+    def __get__(self, instance: SgEntity | None, obj_type: Any = None) -> Any:
         """Return the value of the targeted field.
 
         Args:
@@ -135,7 +131,7 @@ class EntityState(object):
         "_original_values",
     )
 
-    def __init__(self, instance: SgEntity, values_per_field: Dict[AbstractField[T], T]):
+    def __init__(self, instance: SgEntity, values_per_field: dict[AbstractField[T], T]):
         """Initialize the internal state of the instance.
 
         Args:
@@ -148,19 +144,18 @@ class EntityState(object):
         self.pending_add = False
         self.pending_deletion = False
         self.deleted = False
-        self._values: Dict[AbstractField[Any], T] = values_per_field
-        self._available: Dict[AbstractField[Any], bool] = defaultdict(lambda: True)
-        self.modified_fields: List[AbstractField[Any]] = list(
+        self._values: dict[AbstractField[Any], T] = values_per_field
+        self._available: dict[AbstractField[Any], bool] = defaultdict(lambda: True)
+        self.modified_fields: list[AbstractField[Any]] = list(
             filter(lambda f: not field_info.is_primary(f), values_per_field)
         )
-        self._original_values: Dict[AbstractField[T], T] = {}
+        self._original_values: dict[AbstractField[T], T] = {}
 
     def is_modified(self) -> bool:
         """Return whether the entity is modified for its initial state.
 
         Returns:
-            True if the entity is modified for its initial state.
-                False otherwise.
+            True if the entity is modified for its initial state. False otherwise.
         """
         return bool(self.modified_fields)
 
@@ -174,7 +169,7 @@ class EntityState(object):
         """
         return self._entity.id is not None
 
-    def get_original_value(self, field: AbstractField[T]) -> Optional[T]:
+    def get_original_value(self, field: AbstractField[T]) -> T | None:
         """Return the entity initial value of the given attribute.
 
         Args:
@@ -225,7 +220,7 @@ class SgEntityMeta(type):
     """
 
     def __new__(
-        cls, name: str, bases: Tuple[Type[Any], ...], attrs: Dict[str, Any]
+        cls, name: str, bases: tuple[Type[Any], ...], attrs: dict[str, Any]
     ) -> SgEntityMeta:
         """Creates a new entity class.
 
@@ -263,8 +258,8 @@ class SgEntityMeta(type):
     def __init__(
         cls,
         class_name: str,
-        bases: Tuple[Type[Any], ...],
-        dict_: Dict[str, Any],
+        bases: tuple[Type[Any], ...],
+        dict_: dict[str, Any],
     ):
         """Initialize the new class.
 
@@ -278,8 +273,8 @@ class SgEntityMeta(type):
                 is invalid.
         """
         super().__init__(class_name, bases, dict_)
-        cls.__fields__: List[AbstractField[Any]] = []
-        cls.__fields_by_attr__: Dict[str, AbstractField[Any]] = {}
+        cls.__fields__: list[AbstractField[Any]] = []
+        cls.__fields_by_attr__: dict[str, AbstractField[Any]] = {}
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
         cls.__abstract__ = dict_.get("__abstract__", False)
         cls.__instance_state__: EntityState  # noqa: B032
@@ -299,7 +294,7 @@ class SgEntityMeta(type):
             )
 
         # Get all the fields of the parent class and create new ones
-        base_fields: Dict[str, AbstractField[Any]] = {}
+        base_fields: dict[str, AbstractField[Any]] = {}
         for base in bases:
             base_fields = (
                 base.__fields_by_attr__ if hasattr(base, "__fields_by_attr__") else {}
@@ -382,16 +377,14 @@ class SgEntityMeta(type):
 
 def extract_annotation_info(
     annotation: AnnotationScanType,
-) -> Tuple[str, ...]:
+) -> tuple[str, ...]:
     """Returns the information extracted from a given annotation.
 
     Args:
-        annotation (AnnotationScanType): the annotation
+        annotation: the annotation
 
     Returns:
-        tuple[tuple[str, ...], Optional[Type[Collection[Any]]]]:
-            a tuple of extracted entity types,
-            the collection type wrapping the entities
+        a tuple of extracted entity types, the collection type wrapping the entities
     """
     if not hasattr(annotation, "__args__"):
         return tuple()

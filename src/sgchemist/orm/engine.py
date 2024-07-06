@@ -12,9 +12,6 @@ from __future__ import annotations
 
 import abc
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
@@ -37,7 +34,7 @@ class SgEngine:
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def find(self, query: SgFindQueryData[Type[T]]) -> List[Dict[str, Any]]:
+    def find(self, query: SgFindQueryData[Type[T]]) -> list[dict[str, Any]]:
         """Execute a find query and return the rows.
 
         Each row is referring to a single Shotgrid entity.
@@ -50,8 +47,8 @@ class SgEngine:
 
     @abc.abstractmethod
     def batch(
-        self, batch_queries: List[SgBatchQuery]
-    ) -> List[Tuple[bool, Dict[str, Any]]]:
+        self, batch_queries: list[SgBatchQuery]
+    ) -> list[tuple[bool, dict[str, Any]]]:
         """Execute a batch query and return the rows.
 
         Each row is referring to a single Shotgrid entity.
@@ -70,17 +67,17 @@ class ShotgunAPIEngine(SgEngine):
         """Initialize the engine.
 
         Args:
-            shotgun_object: Shotgun API object.
+            shotgun_object (shotgun_api3.Shotgun): Shotgun API object.
         """
         self._sg = shotgun_object
         self._query_serializer = ShotgunAPIObjectSerializer()
         self._batch_serializer = ShotgunAPIBatchQuerySerializer()
 
-    def find(self, query: SgFindQueryData[Type[T]]) -> List[Dict[str, Any]]:
+    def find(self, query: SgFindQueryData[Type[T]]) -> list[dict[str, Any]]:
         """Execute a find query and return the rows.
 
         Args:
-            query: query state to execute.
+            query (SgFindQueryData): query state to execute.
 
         Returns:
             rows returned by the query.
@@ -96,7 +93,7 @@ class ShotgunAPIEngine(SgEngine):
         ]
         condition = query.condition
         filters = self._query_serializer.serialize_filter(condition)
-        records: List[Dict[str, Any]] = self._sg.find(
+        records: list[dict[str, Any]] = self._sg.find(
             entity_type=model.__sg_type__,
             filters=filters,
             fields=list(field_by_name),
@@ -116,8 +113,8 @@ class ShotgunAPIEngine(SgEngine):
         return records
 
     def batch(
-        self, batch_queries: List[SgBatchQuery]
-    ) -> List[Tuple[bool, Dict[str, Any]]]:
+        self, batch_queries: list[SgBatchQuery]
+    ) -> list[tuple[bool, dict[str, Any]]]:
         """Execute a batch query and return the rows.
 
         Args:
@@ -128,7 +125,7 @@ class ShotgunAPIEngine(SgEngine):
         """
         serialized_batch = self._batch_serializer.serialize(batch_queries)
         returned_data = self._sg.batch(serialized_batch)
-        rows: List[Tuple[bool, Dict[str, Any]]] = []
+        rows: list[tuple[bool, dict[str, Any]]] = []
         for batch_index, batch in enumerate(batch_queries):
             record = returned_data[batch_index]
             # shotgun_api3 returns a list of bool to tell if the elements has been

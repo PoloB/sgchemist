@@ -1,5 +1,7 @@
 """Script generating an entity classes from a given set of schema json files."""
 
+from __future__ import annotations
+
 import logging
 import re
 import sys
@@ -7,8 +9,6 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from typing import Any
 from typing import Iterable
-from typing import List
-from typing import Optional
 
 from ..orm.fields import AbstractEntityField
 from ..orm.fields import EntityField
@@ -24,19 +24,19 @@ logger = logging.getLogger("model_generate")
 def _generate_python_script_field(
     entity_schema: EntitySchema,
     field_schema: FieldSchema,
-    skip_entities: List[str],
+    skip_entities: list[str],
     create_aliases: bool = False,
-) -> List[str]:
+) -> list[str]:
     """Generate python script for a given field for the given entity schema.
 
     Args:
-        entity_schema (schema_entity.EntitySchema): entity schema the field belongs to
-        field_schema (schema_entity.FieldSchema): field schema to generate script for
-        skip_entities (list[str]): list of entities to skip
-        create_aliases (bool): create aliases for multi target fields
+        entity_schema: entity schema the field belongs to
+        field_schema: field schema to generate script for
+        skip_entities: list of entities to skip
+        create_aliases: create aliases for multi target fields
 
     Returns:
-        list[str]: list of generated python scripts, one for each field.
+        list of generated python scripts, one for each field.
     """
     field_args = []
     field_data_type = field_schema.data_type.value
@@ -97,7 +97,7 @@ def _generate_entity_script_from_schema(schema: EntitySchema) -> str:
     """Generates the script for the given entity schema.
 
     Args:
-        schema (schema_entity.EntitySchema): entity schema to generate script for
+        schema: entity schema to generate script for
 
     Returns:
         str: the python script creating the entity class
@@ -109,8 +109,8 @@ def _generate_entity_script_from_schema(schema: EntitySchema) -> str:
 
 def generate_python_script_models(
     entity_schemas: Iterable[EntitySchema],
-    skip_entities: Optional[List[str]] = None,
-    skip_field_patterns: Optional[List[str]] = None,
+    skip_entities: list[str] | None = None,
+    skip_field_patterns: list[str] | None = None,
     include_connections: bool = False,
     create_field_aliases: bool = False,
 ) -> str:
@@ -119,10 +119,10 @@ def generate_python_script_models(
     Args:
         entity_schemas (list[schema_entity.EntitySchema]): list of entity schemas to
             generate classes for
-        skip_entities (list[str]): list of entities to skip
-        skip_field_patterns (list[str]): list of field patterns to skip
-        include_connections (bool): create the connection classes
-        create_field_aliases (bool): create aliases for multi target fields
+        skip_entities: list of entities to skip
+        skip_field_patterns: list of field patterns to skip
+        include_connections: create the connection classes
+        create_field_aliases: create aliases for multi target fields
 
     Returns:
         str: the python script creating the entity classes
@@ -275,11 +275,11 @@ You can then pass these files to sg2python to create the python script.
     return parser
 
 
-def main(argv: List[Any]) -> None:
+def main(argv: list[Any]) -> None:
     """Runs the command line from the given arguments.
 
     Args:
-        argv (list[Any]): list of arguments
+        argv: list of arguments
     """
     parser = get_cli_parser()
     args = parser.parse_args(argv)

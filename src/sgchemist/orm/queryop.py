@@ -8,6 +8,8 @@ from typing import Any
 from typing import List
 from typing import TypeVar
 
+from typing_extensions import Self
+
 from .constant import LogicalOperator
 from .constant import Operator
 
@@ -27,10 +29,10 @@ class SgFilterObject(object):
         """Combines this object with another with a and operation.
 
         Args:
-            other (Self): object to combine.
+            other: object to combine.
 
         Returns:
-            SgFilterObject: combined object.
+            combined object.
         """
 
     @abc.abstractmethod
@@ -38,10 +40,10 @@ class SgFilterObject(object):
         """Combines this object with another with a or operation.
 
         Args:
-            other (Self): object to combine.
+            other: object to combine.
 
         Returns:
-            SgFilterObject: combined object.
+            combined object.
         """
 
 
@@ -52,10 +54,10 @@ class SgNullCondition(SgFilterObject):
         """Returns the other object as null condition has no effect.
 
         Args:
-            other (SgFilterObject): object to combine.
+            other: object to combine.
 
         Returns:
-            SgFilterObject: combined object.
+            combined object.
         """
         return other
 
@@ -63,10 +65,10 @@ class SgNullCondition(SgFilterObject):
         """Returns the other object as null condition has no effect.
 
         Args:
-            other (SgFilterObject): object to combine.
+            other: object to combine.
 
         Returns:
-            SgFilterObject: combined object.
+            combined object.
         """
         return other
 
@@ -78,23 +80,21 @@ class SgFilterOperation(SgFilterObject):
         """Initialize the filter operation.
 
         Args:
-            operator (LogicalOperator): operator to use.
-            sg_objects (list[SgFilterObject]): list of filter objects.
+            operator: operator to use.
+            sg_objects: list of filter objects.
         """
         self.operator = operator
         self.sg_objects = sg_objects
 
-    def _op(
-        self, operator: LogicalOperator, other: SgFilterObject
-    ) -> SgFilterOperation:
+    def _op(self, operator: LogicalOperator, other: SgFilterObject) -> Self:
         """Returns a new filter operation combining this operation with another object.
 
         Args:
-            operator (LogicalOperator): operator to use.
-            other (SgFilterObject): object to combine.
+            operator: operator to use.
+            other: object to combine.
 
         Returns:
-            Self: combined object.
+            combined object.
         """
         objects: List[SgFilterObject] = [self, other]
 
@@ -107,25 +107,25 @@ class SgFilterOperation(SgFilterObject):
 
         return self.__class__(operator, objects)
 
-    def __and__(self, other: SgFilterObject) -> SgFilterOperation:
+    def __and__(self, other: SgFilterObject) -> Self:
         """Combines this operation with another object with a and operator.
 
         Args:
-            other (SgFilterObject): object to combine.
+            other: object to combine.
 
         Returns:
-            SgFilterOperation: combined object.
+            combined object.
         """
         return self._op(LogicalOperator.ALL, other)
 
-    def __or__(self, other: SgFilterObject) -> SgFilterOperation:
+    def __or__(self, other: SgFilterObject) -> Self:
         """Combines this operation with another object with a or operator.
 
         Args:
-            other (SgFilterObject): object to combine.
+            other: object to combine.
 
         Returns:
-            SgFilterOperation: combined object.
+            combined object.
         """
         return self._op(LogicalOperator.ANY, other)
 
@@ -142,9 +142,9 @@ class SgFieldCondition(SgFilterObject):
         """Initialize the field condition.
 
         Args:
-            field (InstrumentedAttribute[T]): field attribute to create the condition on
-            operator (Operator): operator to use.
-            right (Any): value to compare the field against.
+            field: field attribute to create the condition on
+            operator: operator to use.
+            right: value to compare the field against.
         """
         self.field = field
         self.operator = operator
@@ -154,7 +154,7 @@ class SgFieldCondition(SgFilterObject):
         """Combines this operation with another object with a and operator.
 
         Returns:
-            SgFilterOperation: combined object.
+            combined object.
         """
         return SgFilterOperation(LogicalOperator.ALL, [self, other])
 
@@ -162,6 +162,6 @@ class SgFieldCondition(SgFilterObject):
         """Combines this operation with another object with a or operator.
 
         Returns:
-            SgFilterOperation: combined object.
+            combined object.
         """
         return SgFilterOperation(LogicalOperator.ANY, [self, other])
