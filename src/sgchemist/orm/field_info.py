@@ -8,11 +8,12 @@ from typing import Callable
 from typing import Dict
 from typing import Generic
 from typing import Iterator
-from typing import NotRequired
 from typing import Tuple
 from typing import Type
 from typing import TypedDict
 from typing import TypeVar
+
+from typing_extensions import NotRequired
 
 from sgchemist.orm import error
 from sgchemist.orm.annotation import LazyEntityClassEval
