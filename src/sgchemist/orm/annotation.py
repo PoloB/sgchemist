@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 from __future__ import annotations
 
-import dataclasses
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
@@ -28,8 +27,8 @@ class LazyEntityClassEval:
         """Initialize an instance.
 
         Args:
-            class_name (str): the name of the class
-            registry (dict[str, Type[SgEntity]]): registry where all classes are defined
+            class_name: the name of the class
+            registry: registry where all classes are defined
         """
         self.class_name = class_name
         self.registry = registry
@@ -54,43 +53,59 @@ class LazyEntityCollectionClassEval:
         """Initialize an instance.
 
         Args:
-            lazy_entities (list[LazyEntityClassEval]): list of lazy entity classes
+            lazy_entities: list of lazy entity classes
         """
         self._lazy_entities = lazy_entities
         self._resolved_by_name: Dict[str, Type[SgEntity]] = {}
+        self._resolved_entities: list[Type[SgEntity]] = []
+        self._resolved = False
 
     def _fill(self) -> None:
         """Evaluates all the lazy entity classes and fill internal cache."""
-        if not self._resolved_by_name:
-            for lazy in self._lazy_entities:
-                entity = lazy.get()
-                self._resolved_by_name[entity.__sg_type__] = entity
+        for lazy in self._lazy_entities:
+            entity = lazy.get()
+            self._resolved_by_name[entity.__sg_type__] = entity
+        self._resolved_entities = list(self._resolved_by_name.values())
+        self._resolved = True
 
     def get_by_type(self, entity_type: str) -> Type[SgEntity]:
         """Return the entity class for its Shotgrid type.
 
         Args:
-            entity_type (str): the entity type
+            entity_type: the entity type
 
         Returns:
-            Type[SgEntity]: the entity class
+            the entity class
         """
-        self._fill()
+        if not self._resolved:
+            self._fill()
         return self._resolved_by_name[entity_type]
 
     def get_all(self) -> List[Type[SgEntity]]:
-        """Return all the evaluated entity classes.
-
-        Returns:
-            tuple[Type[SgEntity]]: list of entity classes
-        """
-        self._fill()
-        return list(self._resolved_by_name.values())
+        """Return all the evaluated entity classes."""
+        if not self._resolved:
+            self._fill()
+        return self._resolved_entities
 
 
-@dataclasses.dataclass
 class FieldAnnotation:
     """A well-defined field annotation."""
 
-    field_type: Type[AbstractField[Any]]
-    entities: Tuple[str, ...]
+    __slots__ = ("_field_type", "_entities")
+
+    def __init__(
+        self, field_type: Type[AbstractField[Any]], entities: Tuple[str, ...]
+    ) -> None:
+        """Initialize an instance of field annotation."""
+        self._field_type = field_type
+        self._entities = entities
+
+    @property
+    def field_type(self) -> Type[AbstractField[Any]]:
+        """Return the field type."""
+        return self._field_type
+
+    @property
+    def entities(self) -> Tuple[str, ...]:
+        """Return the entities."""
+        return self._entities

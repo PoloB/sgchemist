@@ -9,6 +9,7 @@ from typing import Union
 
 from typing_extensions import TypedDict
 
+from . import field_info
 from .constant import BatchRequestType
 from .entity import SgEntity
 from .fields import AbstractField
@@ -52,7 +53,7 @@ def serialize_condition(condition: SgFieldCondition) -> SerializedCondition:
     if isinstance(condition.right, SgEntity):
         right = serialize_entity(condition.right)
     return [
-        condition.field.__info__.field_name,
+        field_info.get_name(condition.field),
         condition.operator.value,
         right,
     ]
@@ -150,7 +151,7 @@ class ShotgunAPIBatchQuerySerializer:
                     "type": value.__sg_type__,
                     "id": value.id,
                 }
-            model_data[field.__info__.field_name] = value
+            model_data[field_info.get_name(field)] = value
         model_data.pop("id", None)
         return model_data
 

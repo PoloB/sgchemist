@@ -20,6 +20,7 @@ from typing import TypeVar
 
 import shotgun_api3
 
+from . import field_info
 from .constant import BatchRequestType
 from .entity import SgEntity
 from .query import SgBatchQuery
@@ -65,13 +66,11 @@ class SgEngine:
 class ShotgunAPIEngine(SgEngine):
     """Engine implementation based on shotgun-api3."""
 
-    def __init__(
-        self, shotgun_object: shotgun_api3.Shotgun
-    ) -> None:
+    def __init__(self, shotgun_object: shotgun_api3.Shotgun) -> None:
         """Initialize the engine.
 
         Args:
-            shotgun_object (shotgun_api3.Shotgun): Shotgun API object.
+            shotgun_object: Shotgun API object.
         """
         self._sg = shotgun_object
         self._query_serializer = ShotgunAPIObjectSerializer()
@@ -81,18 +80,18 @@ class ShotgunAPIEngine(SgEngine):
         """Execute a find query and return the rows.
 
         Args:
-            query (SgFindQueryData): query state to execute.
+            query: query state to execute.
 
         Returns:
             rows returned by the query.
         """
         model = query.model
         field_by_name = {
-            field.__info__.field_name: field
+            field_info.get_name(field): field
             for field in query.fields + query.loading_fields
         }
         orders = [
-            {"field_name": field.__info__.field_name, "direction": direction.value}
+            {"field_name": field_info.get_name(field), "direction": direction.value}
             for field, direction in query.order_fields
         ]
         condition = query.condition
@@ -110,7 +109,7 @@ class ShotgunAPIEngine(SgEngine):
         )
         # Reorganize the row contents
         for field in query.loading_fields:
-            key = field.__info__.field_name
+            key = field_info.get_name(field)
             column_name, _, target_key = key.split(".")
             for row in records:
                 row[column_name][target_key] = row.pop(key)

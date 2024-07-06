@@ -36,7 +36,7 @@ class SgEntity(metaclass=SgEntityMeta):
     __state__: ClassVar[EntityState]
 
     id: NumberField = NumberField(name="id")
-    id.__info__.primary = True
+    id.__info__["primary"] = True
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Adds the subclass to the global entity registry."""
@@ -58,9 +58,7 @@ class SgEntity(metaclass=SgEntityMeta):
         """
         # Compute the values per field
         try:
-            value_per_field = {
-                self.__fields_by_attr__[k]: v for k, v in kwargs.items()
-            }
+            value_per_field = {self.__fields_by_attr__[k]: v for k, v in kwargs.items()}
         except KeyError as e:
             raise error.SgInvalidAttributeError(e.args) from e
         # We set the values directly in the state to avoid the cost of using the
@@ -71,6 +69,6 @@ class SgEntity(metaclass=SgEntityMeta):
         """Returns a string representation of the entity.
 
         Returns:
-            str: representation of the entity.
+            representation of the entity.
         """
         return f"{self.__class__.__name__}(id={self.id})"
