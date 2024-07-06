@@ -228,11 +228,9 @@ def cast_column(
         func: Callable[[Any], Any],
         value: Any,
     ) -> Any:
-        if info["is_relationship"]:
-            if info["is_list"]:
-                return [func(v) for v in value]
-            else:
-                return func(value)
-        return value
+        if info["is_list"]:
+            return [func(v) for v in value]
+        else:
+            return func(value)
 
     return _cast_value_over(_cast_column, column_value)
