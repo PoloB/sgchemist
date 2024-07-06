@@ -1,4 +1,5 @@
 """Collections of typing utility functions."""
+
 from __future__ import absolute_import
 from __future__ import annotations
 
@@ -86,7 +87,7 @@ def eval_expression(
         in_class: The class in which the expression is defined.
 
     Returns:
-        Any: The result of the evaluated expression.
+        The result of the evaluated expression.
 
     Raises:
         NameError: the given module cannot be found in ``sys.modules``
@@ -109,7 +110,7 @@ def eval_name_only(
         module_name: The name of the module in which the variable is defined.
 
     Returns:
-        Any: The result of the evaluated variable.
+        The result of the evaluated variable.
 
     Raises:
         NameError: the given module cannot be found in ``sys.modules`` or in the
@@ -137,7 +138,7 @@ def _cleanup_mapped_str_annotation(
         originating_module: The module where the annotation string is located.
 
     Returns:
-        tuple[Any, str]: the top element of the annotation, the cleaned annotation.
+        the top element of the annotation, the cleaned annotation.
     """
     # fix up an annotation that comes in as the form:
     # 'Container[List[Address]]'  so that it instead looks like:
@@ -227,8 +228,7 @@ def de_stringify_annotation(
         locals_: The local variables to use for evaluating the annotation.
 
     Returns:
-        tuple[Optional[Type[Any]], AnnotationScanType]: The top element of the
-            annotation, the cleaned annotation.
+       The top element of the annotation, the cleaned annotation.
     """
     obj = None
     if isinstance(annotation, str):
@@ -251,7 +251,7 @@ def make_union_type(*types: AnnotationScanType) -> Type[Any]:
         types: The types to make a Union type.
 
     Returns:
-        Type[Any]: The union type.
+        The union type.
     """
     return cast(Any, Union).__getitem__(types)  # type: ignore
 
@@ -267,7 +267,7 @@ def is_origin_of(
         module: The module where the type is located.
 
     Returns:
-        bool: True if the type has an __origin__ with the given names.
+        True if the type has an __origin__ with the given names.
     """
     origin = get_origin(type_)
     if origin is None:
@@ -283,7 +283,7 @@ def is_optional(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
         type_: The type to check.
 
     Returns:
-        bool: True if the type is an optional.
+        True if the type is an optional.
     """
     return is_origin_of(
         type_,
@@ -299,7 +299,7 @@ def is_union(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
         type_: The type to check.
 
     Returns:
-        bool: True if the type is union.
+        True if the type is union.
     """
     return is_origin_of(type_, Union)
 
@@ -311,7 +311,7 @@ def expand_unions(type_: str) -> Tuple[str, ...]:
         type_: The type to expand.
 
     Returns:
-        tuple[str, ...]: The types expanded.
+        The types expanded.
     """
     ret = tuple([type_])
     if is_fwd_ref(type_):
@@ -333,7 +333,7 @@ def de_optionalize_union_types(
         type_: The type to de-optionalize.
 
     Returns:
-        AnnotationScanType: The annotation without any optionals.
+        The annotation without any optionals.
     """
     if is_optional(type_):
         typ = set(type_.__args__)

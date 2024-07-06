@@ -1,6 +1,5 @@
 """Defines the base entity class."""
 
-from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import Any
@@ -66,9 +65,5 @@ class SgEntity(metaclass=SgEntityMeta):
         self.__state__ = EntityState(self, value_per_field)
 
     def __repr__(self) -> str:
-        """Returns a string representation of the entity.
-
-        Returns:
-            representation of the entity.
-        """
+        """Returns a string representation of the entity."""
         return f"{self.__class__.__name__}(id={self.id})"

@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import Any
 from typing import ClassVar
 from typing import List
-from typing import Optional
 from typing import Type
-from typing import Union
 
 import pytest
 from classes import Asset
@@ -103,7 +101,7 @@ def test_model_entity_field_has_no_container() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[List[SgEntity]]
+            entity_with_container: EntityField[list[SgEntity]]
 
 
 def test_model_multi_entity_field_has_no_container() -> None:
@@ -112,7 +110,7 @@ def test_model_multi_entity_field_has_no_container() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            multi_entity_container: MultiEntityField[List[SgEntity]]
+            multi_entity_container: MultiEntityField[list[SgEntity]]
 
 
 def test_undefined_fields() -> None:
@@ -163,7 +161,7 @@ def test_union_entity_is_multi_target() -> None:
 
     class TestWithUnion(SgEntity):
         __sg_type__ = "test"
-        entity: EntityField[Union[SgEntity, TestEntity]]
+        entity: EntityField[SgEntity | TestEntity]
 
     assert isinstance(TestWithUnion.entity, EntityField)
 
@@ -172,11 +170,11 @@ def test_union_entity_is_multi_target() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            entity: MultiEntityField[List[Union[SgEntity, TestEntity]]]
+            entity: MultiEntityField[list[SgEntity | TestEntity]]
 
     class TestEntity2(SgEntity):
         __sg_type__ = "test"
-        entity: MultiEntityField[Union[SgEntity, TestEntity]]
+        entity: MultiEntityField[SgEntity | TestEntity]
 
 
 def test_alias_field_construction() -> None:
@@ -190,7 +188,7 @@ def test_alias_field_construction() -> None:
 
         class TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[TestWithAlias, TestEntity]] = EntityField()
+            entity: EntityField[TestWithAlias | TestEntity] = EntityField()
             alias: MultiEntityField[TestEntity] = alias(entity)  # type: ignore[assignment]
 
     # An alias relationship cannot target multiple entities
@@ -198,8 +196,8 @@ def test_alias_field_construction() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[TestEntity1, TestEntity]] = EntityField()
-            alias: EntityField[Union[TestEntity, TestEntity1]] = alias(entity)
+            entity: EntityField[TestEntity1 | TestEntity] = EntityField()
+            alias: EntityField[TestEntity | TestEntity1] = alias(entity)
 
     class OutsideEntity(SgEntity):
         __sg_type__ = "outside"
@@ -210,7 +208,7 @@ def test_alias_field_construction() -> None:
 
         class _TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[Union[TestWithAlias, TestEntity]] = EntityField()
+            entity: EntityField[TestWithAlias | TestEntity] = EntityField()
             alias: EntityField[OutsideEntity] = alias(entity)
 
 
@@ -220,19 +218,19 @@ def test_various_annotations() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            test: Optional[EntityField[Any]]
+            test: EntityField[Any] | None
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity2(SgEntity):
             __sg_type__ = "test"
-            test: List[EntityField[Any]]
+            test: list[EntityField[Any]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity3(SgEntity):
             __sg_type__ = "test"
-            test: List[Any] = EntityField()  # type: ignore[assignment]
+            test: list[Any] = EntityField()  # type: ignore[assignment]
 
     class TestEntity4(SgEntity):
         __sg_type__ = "test"
@@ -242,7 +240,7 @@ def test_various_annotations() -> None:
 
         class TestEntity5(SgEntity):
             __sg_type__ = "test"
-            test: List[str]
+            test: list[str]
 
     class Other:
         pass

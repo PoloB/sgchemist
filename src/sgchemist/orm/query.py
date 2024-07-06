@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import dataclasses
 from typing import Any
-from typing import Dict
 from typing import Generic
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import TypeVar
-from typing import Union
+
+from typing_extensions import Self
 
 from . import error
 from . import field_info
@@ -54,15 +51,15 @@ class SgFindQueryData(Generic[T_meta]):
     def __init__(
         self,
         model: T_meta,
-        fields: Tuple[AbstractField[Any], ...],
+        fields: tuple[AbstractField[Any], ...],
         condition: SgFilterObject | None = None,
-        order_fields: Tuple[OrderField, ...] = tuple(),
+        order_fields: tuple[OrderField, ...] = tuple(),
         limit: int = 0,
         retired_only: bool = False,
         page: int = 0,
         include_archived_projects: bool = True,
-        additional_filter_presets: List[Dict[str, Any]] | None = None,
-        loading_fields: Tuple[AbstractField[Any], ...] = tuple(),
+        additional_filter_presets: list[dict[str, Any]] | None = None,
+        loading_fields: tuple[AbstractField[Any], ...] = tuple(),
     ):
         """Initializes a find query data object."""
         self._model = model
@@ -79,15 +76,15 @@ class SgFindQueryData(Generic[T_meta]):
     def copy(
         self,
         model: T_meta | None = None,
-        fields: Tuple[AbstractField[Any], ...] | None = None,
+        fields: tuple[AbstractField[Any], ...] | None = None,
         condition: SgFilterObject | None = None,
-        order_fields: Tuple[OrderField, ...] | None = None,
+        order_fields: tuple[OrderField, ...] | None = None,
         limit: int | None = None,
         retired_only: bool | None = None,
         page: int | None = None,
         include_archived_projects: bool | None = None,
-        additional_filter_presets: List[Dict[str, Any]] | None = None,
-        loading_fields: Tuple[AbstractField[Any], ...] | None = None,
+        additional_filter_presets: list[dict[str, Any]] | None = None,
+        loading_fields: tuple[AbstractField[Any], ...] | None = None,
     ) -> SgFindQueryData[T_meta]:
         """Returns a copy of the object with the given modified attributes."""
         model = model if model is not None else self._model
@@ -125,7 +122,7 @@ class SgFindQueryData(Generic[T_meta]):
         return self._model
 
     @property
-    def fields(self) -> Tuple[AbstractField[Any], ...]:
+    def fields(self) -> tuple[AbstractField[Any], ...]:
         """Return the fields of the query."""
         return self._fields
 
@@ -135,7 +132,7 @@ class SgFindQueryData(Generic[T_meta]):
         return self._condition
 
     @property
-    def order_fields(self) -> Tuple[OrderField, ...]:
+    def order_fields(self) -> tuple[OrderField, ...]:
         """Return the order fields of the query."""
         return self._order_fields
 
@@ -160,12 +157,12 @@ class SgFindQueryData(Generic[T_meta]):
         return self._include_archived_projects
 
     @property
-    def additional_filter_presets(self) -> List[Dict[str, Any]]:
+    def additional_filter_presets(self) -> list[dict[str, Any]]:
         """Return the additional_filter_presets."""
         return self._additional_filter_presets
 
     @property
-    def loading_fields(self) -> Tuple[AbstractField[Any], ...]:
+    def loading_fields(self) -> tuple[AbstractField[Any], ...]:
         """Return the loading_fields."""
         return self._loading_fields
 
@@ -189,7 +186,7 @@ class SgFindQuery(Generic[T_meta]):
         """
         return self._data
 
-    def where(self, condition: SgFilterObject) -> SgFindQuery[T_meta]:
+    def where(self, condition: SgFilterObject) -> Self:
         """Filters the query result to the given condition.
 
         Args:
@@ -205,8 +202,8 @@ class SgFindQuery(Generic[T_meta]):
     def order_by(
         self,
         field: AbstractField[Any],
-        direction: Union[Order, str] = Order.ASC,
-    ) -> SgFindQuery[T_meta]:
+        direction: Order | str = Order.ASC,
+    ) -> Self:
         """Orders the query results by the given field.
 
         Args:
@@ -223,7 +220,7 @@ class SgFindQuery(Generic[T_meta]):
         # Concat ordered fields
         return self.__class__(new_state)
 
-    def limit(self, limit: int) -> SgFindQuery[T_meta]:
+    def limit(self, limit: int) -> Self:
         """Limit the query to the given number of records.
 
         Args:
@@ -235,7 +232,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = self._data.copy(limit=limit)
         return self.__class__(new_state)
 
-    def retired_only(self) -> SgFindQuery[T_meta]:
+    def retired_only(self) -> Self:
         """Limit the query to retired entities only.
 
         Returns:
@@ -244,7 +241,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = self._data.copy(retired_only=True)
         return self.__class__(new_state)
 
-    def page(self, page_number: int) -> SgFindQuery[T_meta]:
+    def page(self, page_number: int) -> Self:
         """Specify the page to query.
 
         Args:
@@ -256,7 +253,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = self._data.copy(page=page_number)
         return self.__class__(new_state)
 
-    def reject_archived_projects(self) -> SgFindQuery[T_meta]:
+    def reject_archived_projects(self) -> Self:
         """Reject archived projects from the queried records.
 
         Returns:
@@ -265,9 +262,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = self._data.copy(include_archived_projects=False)
         return self.__class__(new_state)
 
-    def filter_preset(
-        self, preset_name: str, **preset_kwargs: Any
-    ) -> SgFindQuery[T_meta]:
+    def filter_preset(self, preset_name: str, **preset_kwargs: Any) -> Self:
         """Filters the query results using the given preset.
 
         Args:
@@ -287,7 +282,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = self._data.copy(additional_filter_presets=new_preset)
         return self.__class__(new_state)
 
-    def load(self, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
+    def load(self, *fields: AbstractField[Any]) -> Self:
         """Adds the given fields to the query.
 
         The results will be nested into the object hierarchy.
@@ -310,9 +305,7 @@ class SgFindQuery(Generic[T_meta]):
         )
         return self.__class__(new_state)
 
-    def load_all(
-        self, *relationship_fields: AbstractEntityField[Any]
-    ) -> SgFindQuery[T_meta]:
+    def load_all(self, *relationship_fields: AbstractEntityField[Any]) -> Self:
         """Load all the fields of the given relationship fields."""
         if not relationship_fields:
             relationship_fields = tuple(
@@ -334,8 +327,8 @@ class SgSummarizeQueryData(Generic[T_meta]):
     """Defines a data container for summary query data."""
 
     model: SgEntityMeta
-    condition: Optional[SgFilterObject] = None
-    grouping: Tuple[GroupingField, ...] = tuple()
+    condition: SgFilterObject | None = None
+    grouping: tuple[GroupingField, ...] = tuple()
     include_archived_projects: bool = True
 
 
@@ -361,7 +354,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         """
         return dataclasses.replace(self._state)
 
-    def where(self, condition: SgFilterObject) -> SgSummarizeQuery[T_meta]:
+    def where(self, condition: SgFilterObject) -> Self:
         """Filters the query result to the given condition.
 
         Args:
@@ -381,8 +374,8 @@ class SgSummarizeQuery(Generic[T_meta]):
         self,
         field: AbstractField[Any],
         group_type: GroupingType,
-        direction: Union[Order, str] = Order.ASC,
-    ) -> SgSummarizeQuery[T_meta]:
+        direction: Order | str = Order.ASC,
+    ) -> Self:
         """Groups the query results by the given field.
 
         Args:
@@ -403,7 +396,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         )
         return self.__class__(new_state)
 
-    def reject_archived_projects(self) -> SgSummarizeQuery[T_meta]:
+    def reject_archived_projects(self) -> Self:
         """Rejects the archived projects from the query.
 
         Returns:

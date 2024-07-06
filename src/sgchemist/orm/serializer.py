@@ -31,10 +31,10 @@ def serialize_entity(model: SgEntity) -> SerializedEntity:
     """Serialize the given sgchemist entity to shotgun-api3 entity.
 
     Args:
-        model (SgEntity): sgchemist entity to serialize
+        model: sgchemist entity to serialize
 
     Returns:
-        SerializedEntity: serialized entity
+        serialized entity
     """
     assert model.id is not None
     return {"id": model.id, "type": model.__sg_type__}
@@ -47,7 +47,7 @@ def serialize_condition(condition: SgFieldCondition) -> SerializedCondition:
         condition: sgchemist condition to serialize
 
     Returns:
-        SerializedCondition: serialized condition
+        serialized condition
     """
     right = condition.right
     if isinstance(condition.right, SgEntity):
@@ -68,10 +68,10 @@ class ShotgunAPIObjectSerializer:
         """Returns filters for shotgun-api3 from the given sgchemist object.
 
         Args:
-            sg_object (SgFilterObject or SgEntity): sgchemist object to serialize
+            sg_object: sgchemist object to serialize
 
         Returns:
-            list[SerializedObject]: list of serialized objects
+            list of serialized objects
         """
         if isinstance(sg_object, SgNullCondition):
             return []
@@ -83,10 +83,10 @@ class ShotgunAPIObjectSerializer:
         """Serialize the given sgchemist object to shotgun-api3 object.
 
         Args:
-            sg_object (SgFilterObject or SgEntity): sgchemist object to serialize
+            sg_object: sgchemist object to serialize
 
         Returns:
-            SerializedObject: serialized object
+            serialized object
         """
         if isinstance(sg_object, SgFieldCondition):
             return serialize_condition(sg_object)
@@ -107,7 +107,7 @@ class ShotgunAPIObjectSerializer:
             filter_operator: sgchemist operator to serialize
 
         Returns:
-            SerializedOperator: serialized operator
+            serialized operator
         """
         return {
             "filter_operator": filter_operator.operator.value,
@@ -136,12 +136,11 @@ class ShotgunAPIBatchQuerySerializer:
         """Serialize the given sgchemist entity to shotgun-api3 batch query.
 
         Args:
-            entity (SgEntity): sgchemist entity to serialize
-            fields (list[InstrumentedAttribute[Any]]): fields to include in the
-                serialization
+            entity: sgchemist entity to serialize
+            fields: fields to include in the serialization
 
         Returns:
-            dict[str, Any]: serialized entity
+            serialized entity
         """
         model_data = {}
         for field in fields:
@@ -159,10 +158,10 @@ class ShotgunAPIBatchQuerySerializer:
         """Serialize the given sgchemist batch queries to shotgun-api3 batch queries.
 
         Args:
-            batch_queries (list[SgBatchQuery]): sgchemist batch queries
+            batch_queries: sgchemist batch queries
 
         Returns:
-            list[dict[str, Any]]: serialized batch queries
+            serialized batch queries
         """
         serialized_batch_queries = []
         for query in batch_queries:

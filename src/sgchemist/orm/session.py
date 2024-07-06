@@ -8,12 +8,8 @@ from __future__ import annotations
 
 from types import TracebackType
 from typing import Any
-from typing import Dict
 from typing import Generic
 from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import Type
 from typing import TypeVar
 
@@ -35,11 +31,11 @@ T = TypeVar("T", bound=SgEntity)
 class SgFindResult(Generic[T]):
     """Defines the result of a query to Shotgrid."""
 
-    def __init__(self, entities: List[T]) -> None:
+    def __init__(self, entities: list[T]) -> None:
         """Initializes the entity result of a query to Shotgrid.
 
         Args:
-            entities (list[T]): List of entities.
+            entities: List of entities.
         """
         self._entities = entities
 
@@ -47,7 +43,7 @@ class SgFindResult(Generic[T]):
         """Returns an iter of the results.
 
         Returns:
-            Iterator[T]: Iterator of results.
+            Iterator of results.
         """
         return iter(self._entities)
 
@@ -55,7 +51,7 @@ class SgFindResult(Generic[T]):
         """Returns the number of entities in the result.
 
         Returns:
-            int: Number of entities in the result.
+            Number of entities in the result.
         """
         return len(self._entities)
 
@@ -63,15 +59,15 @@ class SgFindResult(Generic[T]):
         """Returns the first entity in the result.
 
         Returns:
-            T: First entity in the result.
+            First entity in the result.
         """
         return next(iter(self._entities))
 
-    def all(self) -> List[T]:
+    def all(self) -> list[T]:
         """Returns all entities in the result.
 
         Returns:
-            list[T]: All entities in the result.
+            All entities in the result.
         """
         return self._entities
 
@@ -83,25 +79,25 @@ class Session:
         """Initializes the session object from an engine.
 
         Args:
-            engine (sgchemist.orm.engine.Engine): engine to use.
+            engine: engine to use.
         """
         self._engine: SgEngine = engine
-        self._pending_queries: Dict[SgEntity, SgBatchQuery] = {}
-        self._entity_map: Dict[EntityHash, SgEntity] = {}
+        self._pending_queries: dict[SgEntity, SgBatchQuery] = {}
+        self._entity_map: dict[EntityHash, SgEntity] = {}
 
     def __enter__(self) -> Session:
         """Starts the session context.
 
         Returns:
-            Session: Session context.
+            Session context.
         """
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: Type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Ends the session context by commiting all the pending queries."""
         self.commit()
@@ -110,23 +106,23 @@ class Session:
         """Returns an iterator of all the entities currently managed by the session.
 
         Returns:
-            Iterator[SgEntity]: Iterator of entities currently managed by the session.
+            Iterator of entities currently managed by the session.
         """
         return iter(self._pending_queries.keys())
 
     @property
-    def pending_queries(self) -> List[SgBatchQuery]:
+    def pending_queries(self) -> list[SgBatchQuery]:
         """Returns the pending queries.
 
         Returns:
-            list[SgBatchQuery]: List of pending queries.
+            List of pending queries.
         """
         return list(self._pending_queries.values())
 
     def _get_or_create_instance(
         self,
         entity_cls: Type[SgEntity],
-        row: Dict[str, Any],
+        row: dict[str, Any],
     ) -> SgEntity:
         """Gets or creates the entity from the given row.
 
@@ -147,7 +143,7 @@ class Session:
     def _build_instance_from_row(
         self,
         entity_cls: Type[T],
-        row: Dict[str, Any],
+        row: dict[str, Any],
         is_relationship: bool = False,
     ) -> T:
         """Builds the entity from the given row.
@@ -203,10 +199,10 @@ class Session:
         """Executes the find query and returns the results.
 
         Args:
-            query (SgFindQuery[Type[T]]): Query to execute.
+            query: Query to execute.
 
         Returns:
-            SgFindResult[T]: Result of the query.
+            Result of the query.
         """
         query_state = query.get_data()
         rows = self._engine.find(query_state)
@@ -241,10 +237,10 @@ class Session:
         Otherwise, it is added for update even if its fields are not yet modified.
 
         Args:
-            entity (SgEntity): Entity to add.
+            entity: Entity to add.
 
         Returns:
-            SgBatchQuery: the batch query object.
+            the batch query object.
 
         Raises:
             error.SgAddEntityError: the entity is already in a pending deletion state.
@@ -276,10 +272,10 @@ class Session:
         """Mark the given entity for deletion.
 
         Args:
-            entity (SgEntity): Entity to delete on commit
+            entity: Entity to delete on commit
 
         Returns:
-            SgBatchQuery: the batch query object.
+            the batch query object.
         """
         state = entity.__state__
 
@@ -301,7 +297,7 @@ class Session:
         If any query fails the full transaction is cancelled.
         """
         # Add a batch for each
-        rows: List[Tuple[bool, Dict[str, Any]]] = self._engine.batch(
+        rows: list[tuple[bool, dict[str, Any]]] = self._engine.batch(
             list(self._pending_queries.values())
         )
         assert len(rows) == len(self._pending_queries)

@@ -1,6 +1,7 @@
 """Tests the session module."""
 
-from typing import List
+from __future__ import annotations
+
 from typing import Type
 
 import pytest
@@ -67,14 +68,14 @@ def test_db(
     test_asset: Asset,
     test_task_shot: Task,
     test_task_asset: Task,
-) -> List[SgEntity]:
+) -> list[SgEntity]:
     """Returns a database content."""
     return [test_project, test_shot, test_asset, test_task_shot, test_task_asset]
 
 
 @pytest.fixture
 def filled_engine(
-    session: Session, engine: SgEngine, test_db: List[SgEntity]
+    session: Session, engine: SgEngine, test_db: list[SgEntity]
 ) -> SgEngine:
     """Returns an engine filled with database content."""
     for inst in test_db:
