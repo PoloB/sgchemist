@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import Callable
-from typing import Type
 
 import pytest
 from classes import Asset
@@ -35,13 +34,13 @@ from sgchemist.orm.queryop import SgFieldCondition
 
 
 @pytest.fixture(scope="module")
-def entity_class() -> Type[Shot]:
+def entity_class() -> type[Shot]:
     """The test entity class."""
     return Shot
 
 
 @pytest.fixture
-def lazy_class_eval(entity_class: Type[Shot]) -> LazyEntityClassEval:
+def lazy_class_eval(entity_class: type[Shot]) -> LazyEntityClassEval:
     """The test lazy entity."""
     return LazyEntityClassEval(entity_class.__name__, entity_class.__registry__)
 
@@ -55,7 +54,7 @@ def lazy_collection_eval(
 
 
 def test_lazy_entity_class_eval(
-    lazy_class_eval: LazyEntityClassEval, entity_class: Type[SgEntity]
+    lazy_class_eval: LazyEntityClassEval, entity_class: type[SgEntity]
 ) -> None:
     """Test the lazy entity getter."""
     assert lazy_class_eval.get() is entity_class
@@ -63,7 +62,7 @@ def test_lazy_entity_class_eval(
 
 
 def test_lazy_entity_collection_eval(
-    lazy_collection_eval: LazyEntityCollectionClassEval, entity_class: Type[SgEntity]
+    lazy_collection_eval: LazyEntityCollectionClassEval, entity_class: type[SgEntity]
 ) -> None:
     """Test the lazy entity collection getter."""
     assert lazy_collection_eval.get_by_type(entity_class.__sg_type__) is entity_class
@@ -91,11 +90,11 @@ def test_lazy_entity_collection_eval(
 def test_field_attributes(
     field: AbstractField[Any],
     exp_name: str,
-    exp_class: Type[SgEntity],
+    exp_class: type[SgEntity],
     exp_default: Any,
     exp_primary: bool,
     exp_name_in_rel: str,
-    exp_types: tuple[Type[SgEntity], ...],
+    exp_types: tuple[type[SgEntity], ...],
 ) -> None:
     """Tests the fields attributes."""
     assert isinstance(repr(field), str)
@@ -198,7 +197,7 @@ def test_entities_iter_entities_from_field_values(
 )
 def test_cast_column(
     field: AbstractField[Any],
-    func: Callable[[Type[SgEntity], dict[str, Any]], Any],
+    func: Callable[[type[SgEntity], dict[str, Any]], Any],
     value: Any,
     exp_value: Any,
 ) -> None:

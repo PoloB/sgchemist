@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Type
 
 import pytest
 from classes import Project
@@ -22,13 +21,13 @@ from sgchemist.orm.serializer import serialize_entity
 
 
 @pytest.fixture
-def project_entity() -> Type[Project]:
+def project_entity() -> type[Project]:
     """Returns the project entity."""
     return Project
 
 
 @pytest.fixture
-def shot_entity() -> Type[Shot]:
+def shot_entity() -> type[Shot]:
     """Returns the shot entity."""
     return Shot
 
@@ -46,25 +45,25 @@ def batch_serialize() -> ShotgunAPIBatchQuerySerializer:
 
 
 @pytest.fixture
-def simple_field(shot_entity: Type[Shot]) -> AbstractValueField[Any]:
+def simple_field(shot_entity: type[Shot]) -> AbstractValueField[Any]:
     """Returns a simple test field."""
     return shot_entity.name
 
 
 @pytest.fixture
-def relation_field(shot_entity: Type[Shot]) -> EntityField[Any]:
+def relation_field(shot_entity: type[Shot]) -> EntityField[Any]:
     """Returns a relation field."""
     return shot_entity.project
 
 
 @pytest.fixture
-def project_inst(project_entity: Type[Project]) -> Project:
+def project_inst(project_entity: type[Project]) -> Project:
     """Returns a project instance."""
     return project_entity(id=101)
 
 
 def test_serialize_entity(
-    find_serialize: ShotgunAPIObjectSerializer, shot_entity: Type[Shot]
+    find_serialize: ShotgunAPIObjectSerializer, shot_entity: type[Shot]
 ) -> None:
     """Tests the serialization of an entity instance."""
     inst = shot_entity(name="foo", id=42)
@@ -98,9 +97,9 @@ def test_serialize_simple_condition(
 ) -> None:
     """Tests the serialization of a simple condition."""
     condition = simple_field.eq("foo")
-    expected_serialize = ["code", "is", "foo"]
+    expected_serialize = ("code", "is", "foo")
     assert serialize_condition(condition) == expected_serialize
-    assert find_serialize.serialize_filter(condition) == [expected_serialize]
+    assert find_serialize.serialize_filter(condition) == [list(expected_serialize)]
 
 
 def test_serialize_entity_condition(
@@ -110,9 +109,9 @@ def test_serialize_entity_condition(
 ) -> None:
     """Tests the serialization of a condition over an entity."""
     model_cond = relation_field.eq(project_inst)
-    expected_serialize = ["project", "is", {"type": "Project", "id": 101}]
+    expected_serialize = ("project", "is", {"type": "Project", "id": 101})
     assert serialize_condition(model_cond) == expected_serialize
-    assert find_serialize.serialize_filter(model_cond) == [expected_serialize]
+    assert find_serialize.serialize_filter(model_cond) == [list(expected_serialize)]
 
 
 def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) -> None:

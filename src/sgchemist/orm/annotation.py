@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Type
 from typing import TypeVar
 
 if TYPE_CHECKING:
@@ -18,9 +17,9 @@ T = TypeVar("T")
 class LazyEntityClassEval:
     """Defers the evaluation of a class name used in annotation."""
 
-    _entity: Type[SgEntity]
+    _entity: type[SgEntity]
 
-    def __init__(self, class_name: str, registry: dict[str, Type[SgEntity]]) -> None:
+    def __init__(self, class_name: str, registry: dict[str, type[SgEntity]]) -> None:
         """Initialize an instance.
 
         Args:
@@ -31,7 +30,7 @@ class LazyEntityClassEval:
         self.registry = registry
         self._resolved: bool = False
 
-    def get(self) -> Type[SgEntity]:
+    def get(self) -> type[SgEntity]:
         """Return the entity class after evaluation.
 
         Returns:
@@ -53,8 +52,8 @@ class LazyEntityCollectionClassEval:
             lazy_entities: list of lazy entity classes
         """
         self._lazy_entities = lazy_entities
-        self._resolved_by_name: dict[str, Type[SgEntity]] = {}
-        self._resolved_entities: list[Type[SgEntity]] = []
+        self._resolved_by_name: dict[str, type[SgEntity]] = {}
+        self._resolved_entities: list[type[SgEntity]] = []
         self._resolved = False
 
     def _fill(self) -> None:
@@ -65,7 +64,7 @@ class LazyEntityCollectionClassEval:
         self._resolved_entities = list(self._resolved_by_name.values())
         self._resolved = True
 
-    def get_by_type(self, entity_type: str) -> Type[SgEntity]:
+    def get_by_type(self, entity_type: str) -> type[SgEntity]:
         """Return the entity class for its Shotgrid type.
 
         Args:
@@ -78,7 +77,7 @@ class LazyEntityCollectionClassEval:
             self._fill()
         return self._resolved_by_name[entity_type]
 
-    def get_all(self) -> list[Type[SgEntity]]:
+    def get_all(self) -> list[type[SgEntity]]:
         """Return all the evaluated entity classes."""
         if not self._resolved:
             self._fill()
@@ -91,14 +90,14 @@ class FieldAnnotation:
     __slots__ = ("_field_type", "_entities")
 
     def __init__(
-        self, field_type: Type[AbstractField[Any]], entities: tuple[str, ...]
+        self, field_type: type[AbstractField[Any]], entities: tuple[str, ...]
     ) -> None:
         """Initialize an instance of field annotation."""
         self._field_type = field_type
         self._entities = entities
 
     @property
-    def field_type(self) -> Type[AbstractField[Any]]:
+    def field_type(self) -> type[AbstractField[Any]]:
         """Return the field type."""
         return self._field_type
 

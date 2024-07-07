@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import ClassVar
-from typing import List
-from typing import Type
 
 import pytest
 from classes import Asset
@@ -26,24 +24,24 @@ from sgchemist.orm.meta import EntityState
 
 
 @pytest.fixture
-def shot_entity() -> Type[Shot]:
+def shot_entity() -> type[Shot]:
     """Returns the TestShot entity."""
     return Shot
 
 
 @pytest.fixture
-def shot_not_commited(shot_entity: Type[Shot]) -> Shot:
+def shot_not_commited(shot_entity: type[Shot]) -> Shot:
     """Returns a non commited TestShot instance."""
     return shot_entity(name="foo")
 
 
 @pytest.fixture
-def shot_commited(shot_entity: Type[Shot]) -> Shot:
+def shot_commited(shot_entity: type[Shot]) -> Shot:
     """Returns a commited TestShot instance."""
     return shot_entity(name="foo", id=42)
 
 
-def test_entity_values(shot_entity: Type[Shot]) -> None:
+def test_entity_values(shot_entity: type[Shot]) -> None:
     """Tests the values of the fields."""
     assert shot_entity.__sg_type__ == "Shot"
     assert shot_entity.__fields__ == [
@@ -234,7 +232,7 @@ def test_various_annotations() -> None:
 
     class TestEntity4(SgEntity):
         __sg_type__ = "test"
-        test: ClassVar[List[Any]]
+        test: ClassVar[list[Any]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -247,7 +245,7 @@ def test_various_annotations() -> None:
 
     class TestEntity6(SgEntity):
         __sg_type__ = "test"
-        test: ClassVar[List[Other]]
+        test: ClassVar[list[Other]]
 
     # String annotation
     class TestEntity7(SgEntity):
@@ -287,7 +285,7 @@ def test_various_annotations() -> None:
             test: MultiEntityField  # type: ignore
 
 
-def test_default_init(shot_entity: Type[Shot]) -> None:
+def test_default_init(shot_entity: type[Shot]) -> None:
     """Tests the initialization of an entity."""
     inst = shot_entity(name="test")
     assert inst.name == "test"
@@ -298,7 +296,7 @@ def test_default_init(shot_entity: Type[Shot]) -> None:
         shot_entity(foo="test")
 
 
-def test_get_fields(shot_entity: Type[Shot], shot_not_commited: Shot) -> None:
+def test_get_fields(shot_entity: type[Shot], shot_not_commited: Shot) -> None:
     """Tests field getter method."""
     assert shot_not_commited.__state__.get_value(shot_entity.name) == "foo"
 

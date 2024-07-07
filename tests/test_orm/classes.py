@@ -47,6 +47,7 @@ class Task(SgEntity):
     """A test task entity."""
 
     __sg_type__ = "Task"
+    # TODO: do so we can use union with | instead of Union and Optional
     name: TextField = TextField(name="content")
     entity: EntityField[Optional[Union[Asset, Shot]]] = EntityField()
     shot: EntityField[Optional[Shot]] = alias(entity)

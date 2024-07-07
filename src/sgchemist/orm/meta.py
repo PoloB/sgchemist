@@ -9,16 +9,13 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
 from typing import Generic
-from typing import Type
 from typing import TypeVar
-
-from typing_extensions import get_origin
 
 from . import error
 from . import field_info
 from .annotation import FieldAnnotation
 from .fields import AbstractField
-from .typing_util import AnnotationScanType
+from .typing_alias import AnnotationScanType
 from .typing_util import de_optionalize_union_types
 from .typing_util import de_stringify_annotation
 from .typing_util import expand_unions
@@ -220,7 +217,7 @@ class SgEntityMeta(type):
     """
 
     def __new__(
-        cls, name: str, bases: tuple[Type[Any], ...], attrs: dict[str, Any]
+        cls, name: str, bases: tuple[type[Any], ...], attrs: dict[str, Any]
     ) -> SgEntityMeta:
         """Creates a new entity class.
 
@@ -258,7 +255,7 @@ class SgEntityMeta(type):
     def __init__(
         cls,
         class_name: str,
-        bases: tuple[Type[Any], ...],
+        bases: tuple[type[Any], ...],
         dict_: dict[str, Any],
     ):
         """Initialize the new class.
@@ -321,9 +318,14 @@ class SgEntityMeta(type):
                     f"Cannot destringify annotation {annot} "
                     f"for field {class_name}.{attr_name}"
                 ) from e
+            if field_type is None:
+                raise error.SgEntityClassDefinitionError(
+                    f"Couldn't get the main type of annotation {annot} "
+                    f"for field {class_name}.{attr_name}"
+                )
 
             # We shall never care about ClassVar
-            if get_origin(annot) is ClassVar:
+            if field_type is ClassVar:
                 continue
 
             if not isinstance(field_type, type) or not issubclass(

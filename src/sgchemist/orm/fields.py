@@ -15,7 +15,6 @@ from typing import Dict
 from typing import Generic
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 from typing import overload
 
@@ -38,7 +37,7 @@ T2 = TypeVar("T2")
 class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     """Definition of an abstract field."""
 
-    cast_type: Type[T]
+    cast_type: type[T]
     default_value: T
     __sg_type__: str = ""
     __info__: FieldInfo[T]
@@ -181,7 +180,7 @@ class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
 class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
     """Definition of an abstract numerical field."""
 
-    cast_type: Type[T]
+    cast_type: type[T]
 
     def gt(self, other: T) -> SgFieldCondition:
         """Filter entities where this field is greater than the given value.
@@ -268,7 +267,7 @@ class NumberField(NumericField[Optional[int]]):
     """An integer field."""
 
     __sg_type__: str = "number"
-    cast_type: Type[int] = int
+    cast_type: type[int] = int
     default_value = None
 
     if TYPE_CHECKING:
@@ -286,7 +285,7 @@ class NumberField(NumericField[Optional[int]]):
 class FloatField(NumericField[Optional[float]]):
     """A float field."""
 
-    cast_type: Type[float] = float
+    cast_type: type[float] = float
     __sg_type__: str = "float"
     default_value = None
 
@@ -307,7 +306,7 @@ class FloatField(NumericField[Optional[float]]):
 class TextField(AbstractValueField[Optional[str]]):
     """A text field."""
 
-    cast_type: Type[str] = str
+    cast_type: type[str] = str
     __sg_type__: str = "text"
     default_value = None
 
@@ -405,7 +404,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
     """Definition a field targeting an entity."""
 
     __sg_type__: str
-    cast_type: Type[T]
+    cast_type: type[T]
 
     def f(self, field: T_field) -> T_field:
         """Return the given field in relation to the given field."""
@@ -417,7 +416,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
             )
         return field._relative_to(self)
 
-    def type_is(self, entity_cls: Type[SgEntity]) -> SgFieldCondition:
+    def type_is(self, entity_cls: type[SgEntity]) -> SgFieldCondition:
         """Filter entities where this entity is of the given type.
 
         This is the equivalent of the "type_is" filter of Shotgrid.
@@ -430,7 +429,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.TYPE_IS, entity_cls.__sg_type__)
 
-    def type_is_not(self, entity_cls: Type[SgEntity]) -> SgFieldCondition:
+    def type_is_not(self, entity_cls: type[SgEntity]) -> SgFieldCondition:
         """Filter entities where this entity is not of the given type.
 
         This is the equivalent of the "type_is_not" filter of Shotgrid.
@@ -513,7 +512,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
     """Definition a field targeting a single entity."""
 
     __sg_type__: str = "entity"
-    cast_type: Type[T]
+    cast_type: type[T]
     default_value = None
 
     def __init__(self, name: str = ""):
@@ -694,7 +693,7 @@ class AbstractDateField(NumericField[T]):
 class DateField(AbstractDateField[Optional[date]]):
     """Definition of a date field."""
 
-    cast_type: Type[date] = date
+    cast_type: type[date] = date
     __sg_type__: str = "date"
     default_value: date | None = None
 
@@ -713,7 +712,7 @@ class DateField(AbstractDateField[Optional[date]]):
 class DateTimeField(AbstractDateField[Optional[datetime]]):
     """Definition of a date time field."""
 
-    cast_type: Type[datetime] = datetime
+    cast_type: type[datetime] = datetime
     __sg_type__: str = "date_time"
     default_value = None
 
@@ -753,7 +752,7 @@ class DurationField(NumberField):
 class ImageField(AbstractValueField[Optional[str]]):
     """Definition of an image field."""
 
-    cast_type: Type[str] = str
+    cast_type: type[str] = str
     __sg_type__: str = "image"
     default_value = None
 
@@ -792,7 +791,7 @@ class ImageField(AbstractValueField[Optional[str]]):
 class ListField(AbstractValueField[Optional[List[str]]]):
     """Definition of a list field."""
 
-    cast_type: Type[list[str]] = list
+    cast_type: type[list[str]] = list
     __sg_type__: str = "list"
     default_value = None
 
@@ -858,7 +857,7 @@ class PercentField(FloatField):
 class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
     """Definition of a serializable field."""
 
-    cast_type: Type[dict[str, Any]] = dict
+    cast_type: type[dict[str, Any]] = dict
     __sg_type__: str = "serializable"
     default_value = None
 
@@ -897,7 +896,7 @@ class StatusField(AbstractValueField[str]):
 class UrlField(AbstractValueField[Optional[str]]):
     """Definition of an url field."""
 
-    cast_type: Type[str] = str
+    cast_type: type[str] = str
     __sg_type__: str = "url"
     default_value = None
 
@@ -914,7 +913,7 @@ class UrlField(AbstractValueField[Optional[str]]):
 
 
 # Expose all the available fields (intended for model generation)
-field_by_sg_type: dict[str, Type[AbstractField[Any]]] = {
+field_by_sg_type: dict[str, type[AbstractField[Any]]] = {
     field_cls.__sg_type__: field_cls
     for name, field_cls in locals().items()
     if isinstance(field_cls, type)

@@ -10,7 +10,6 @@ from types import TracebackType
 from typing import Any
 from typing import Generic
 from typing import Iterator
-from typing import Type
 from typing import TypeVar
 
 from . import error
@@ -95,7 +94,7 @@ class Session:
 
     def __exit__(
         self,
-        exc_type: Type[BaseException] | None,
+        exc_type: type[BaseException] | None,
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
@@ -121,7 +120,7 @@ class Session:
 
     def _get_or_create_instance(
         self,
-        entity_cls: Type[SgEntity],
+        entity_cls: type[SgEntity],
         row: dict[str, Any],
     ) -> SgEntity:
         """Gets or creates the entity from the given row.
@@ -142,7 +141,7 @@ class Session:
 
     def _build_instance_from_row(
         self,
-        entity_cls: Type[T],
+        entity_cls: type[T],
         row: dict[str, Any],
         is_relationship: bool = False,
     ) -> T:
@@ -195,7 +194,7 @@ class Session:
         self._entity_map[(entity_cls.__sg_type__, row["id"])] = inst
         return inst
 
-    def exec(self, query: SgFindQuery[Type[T]]) -> SgFindResult[T]:
+    def exec(self, query: SgFindQuery[type[T]]) -> SgFindResult[T]:
         """Executes the find query and returns the results.
 
         Args:

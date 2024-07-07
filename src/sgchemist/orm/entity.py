@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import ClassVar
-from typing import Dict
-from typing import List
-from typing import Type
 from typing import TypeVar
 
 from sgchemist.orm import error
@@ -28,10 +25,10 @@ class SgEntity(metaclass=SgEntityMeta):
 
     __abstract__: ClassVar[bool] = True
     __sg_type__: ClassVar[str]
-    __registry__: ClassVar[Dict[str, Type[SgEntity]]]
-    __fields__: ClassVar[List[AbstractField[Any]]]
-    __fields_by_attr__: ClassVar[Dict[str, AbstractField[Any]]]
-    __attr_per_field_name__: ClassVar[Dict[str, str]]
+    __registry__: ClassVar[dict[str, type[SgEntity]]]
+    __fields__: ClassVar[list[AbstractField[Any]]]
+    __fields_by_attr__: ClassVar[dict[str, AbstractField[Any]]]
+    __attr_per_field_name__: ClassVar[dict[str, str]]
     __state__: ClassVar[EntityState]
 
     id: NumberField = NumberField(name="id")

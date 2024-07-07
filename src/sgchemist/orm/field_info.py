@@ -5,11 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Generic
 from typing import Iterator
-from typing import Tuple
-from typing import Type
 from typing import TypeVar
 
 from typing_extensions import NotRequired
@@ -132,7 +129,7 @@ def get_name_in_relation(field: AbstractField[Any]) -> str:
 
 def get_hash(
     field: AbstractField[Any],
-) -> Tuple[AbstractField[Any], ...]:
+) -> tuple[AbstractField[Any], ...]:
     """Return the hash of the attribute."""
     parent_field = field.__info__["parent_field"]
     parent_hash = get_hash(parent_field) if parent_field else tuple()
@@ -140,7 +137,7 @@ def get_hash(
     return field_hash
 
 
-def get_types(field: AbstractField[Any]) -> Tuple[Type[SgEntity], ...]:
+def get_types(field: AbstractField[Any]) -> tuple[type[SgEntity], ...]:
     """Return the Python types of the attribute.
 
     Returns:
@@ -196,7 +193,7 @@ def iter_entities_from_field_value(
 def cast_column(
     field: AbstractField[Any],
     column_value: Any,
-    model_factory: Callable[[Type[SgEntity], Dict[str, Any]], Any],
+    model_factory: Callable[[type[SgEntity], dict[str, Any]], Any],
 ) -> Any:
     """Cast the given row value to be used for instancing the entity.
 
@@ -221,7 +218,7 @@ def cast_column(
     if not info["is_list"] and column_value is None:
         return None
 
-    def _cast_column(col: Dict[str, Any]) -> Any:
+    def _cast_column(col: dict[str, Any]) -> Any:
         return model_factory(info["lazy_collection"].get_by_type(col["type"]), col)
 
     def _cast_value_over(

@@ -9,28 +9,22 @@ import sys
 from re import Match
 from typing import Any
 from typing import ClassVar
-from typing import Dict
 from typing import ForwardRef
 from typing import Mapping
 from typing import Optional
-from typing import Tuple
-from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import _SpecialForm
 from typing import cast
 
-from typing_extensions import Literal
-from typing_extensions import NewType
 from typing_extensions import Protocol
-from typing_extensions import TypeAliasType
 from typing_extensions import TypeGuard
 from typing_extensions import get_origin
 
+from sgchemist.orm.typing_alias import AnnotationScanType
+
 _T = TypeVar("_T", bound=Any)
 
-NoneType = Literal[None]
-AnnotationScanType = Union[Type[Any], str, ForwardRef, NewType, TypeAliasType]
 NoneFwd = ForwardRef("None")
 
 
@@ -54,7 +48,7 @@ def get_annotations(obj: Any) -> Mapping[str, Any]:
 class ArgsTypeProtocol(Protocol):
     """Defines a Protocol for types that have ``__args__``."""
 
-    __args__: Tuple[AnnotationScanType, ...]
+    __args__: tuple[AnnotationScanType, ...]
 
 
 def is_fwd_ref(type_: AnnotationScanType) -> TypeGuard[ForwardRef]:
@@ -75,8 +69,8 @@ def is_fwd_ref(type_: AnnotationScanType) -> TypeGuard[ForwardRef]:
 def eval_expression(
     expression: str,
     module_name: str,
-    in_class: Type[Any],
-    locals_: Optional[Mapping[str, Any]] = None,
+    in_class: type[Any],
+    locals_: Mapping[str, Any] | None = None,
 ) -> Any:
     """Evaluates the given Python expression.
 
@@ -92,7 +86,7 @@ def eval_expression(
     Raises:
         NameError: the given module cannot be found in ``sys.modules``
     """
-    base_globals: Dict[str, Any] = sys.modules[module_name].__dict__
+    base_globals: dict[str, Any] = sys.modules[module_name].__dict__
     cls_namespace = dict(in_class.__dict__)
     cls_namespace.setdefault(in_class.__name__, in_class)
     cls_namespace.update(base_globals)
@@ -116,7 +110,7 @@ def eval_name_only(
         NameError: the given module cannot be found in ``sys.modules`` or in the
             global variables.
     """
-    base_globals: Dict[str, Any] = sys.modules[module_name].__dict__
+    base_globals: dict[str, Any] = sys.modules[module_name].__dict__
 
     # name only, just look in globals.  eval() works perfectly fine here,
     # however we are seeking to have this be faster, as this occurs for
@@ -130,7 +124,7 @@ def eval_name_only(
 
 def _cleanup_mapped_str_annotation(
     annotation: str, originating_module: str
-) -> Tuple[Any, str]:
+) -> tuple[Any, str]:
     """Cleans the given annotation string to only keep the internal as strings.
 
     Args:
@@ -145,7 +139,7 @@ def _cleanup_mapped_str_annotation(
     # 'Container[List["Address"]]' , which will allow us to get
     # "Address" as a string
 
-    inner: Optional[Match[str]]
+    inner: Match[str] | None
     annotation = annotation.strip("\"'")
 
     mm = re.match(r"^(.+?)\[(.+)]$", annotation)
@@ -209,11 +203,11 @@ def _cleanup_mapped_str_annotation(
 
 
 def de_stringify_annotation(
-    cls: Type[Any],
+    cls: type[Any],
     annotation: AnnotationScanType,
     originating_module: str,
     locals_: Mapping[str, Any],
-) -> Tuple[Optional[Type[Any]], AnnotationScanType]:
+) -> tuple[Any | None, AnnotationScanType]:
     """Resolve annotations that may be string based into real objects.
 
     This is particularly important if a module defines "from __future__ import
@@ -233,15 +227,17 @@ def de_stringify_annotation(
     obj = None
     if isinstance(annotation, str):
         obj, annotation = _cleanup_mapped_str_annotation(annotation, originating_module)
+        if obj is ClassVar:
+            return obj, annotation
         annotation = eval_expression(
             annotation, originating_module, cls, locals_=locals_
         )
     if not obj:
         obj = annotation
-    return obj, annotation  # type: ignore
+    return obj, annotation
 
 
-def make_union_type(*types: AnnotationScanType) -> Type[Any]:
+def make_union_type(*types: AnnotationScanType) -> type[Any]:
     """Make a Union type.
 
     This is needed by :func:`.de_optionalize_union_types` which removes
@@ -256,9 +252,7 @@ def make_union_type(*types: AnnotationScanType) -> Type[Any]:
     return cast(Any, Union).__getitem__(types)  # type: ignore
 
 
-def is_origin_of(
-    type_: Any, *types: _SpecialForm, module: Optional[str] = None
-) -> bool:
+def is_origin_of(type_: Any, *types: _SpecialForm, module: str | None = None) -> bool:
     """Return True if the given type has an __origin__ with the given names.
 
     Args:
@@ -285,11 +279,7 @@ def is_optional(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
     Returns:
         True if the type is an optional.
     """
-    return is_origin_of(
-        type_,
-        Optional,
-        Union,
-    )
+    return is_origin_of(type_, Optional, Union)
 
 
 def is_union(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
@@ -304,7 +294,7 @@ def is_union(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
     return is_origin_of(type_, Union)
 
 
-def expand_unions(type_: str) -> Tuple[str, ...]:
+def expand_unions(type_: str) -> tuple[str, ...]:
     """Returns a type as a tuple of individual types, expanding for ``Union`` types.
 
     Args:
