@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 from typing import ClassVar
+from typing import Union
 
 import pytest
 from classes import Asset
@@ -163,6 +164,12 @@ def test_union_entity_is_multi_target() -> None:
 
     assert isinstance(TestWithUnion.entity, EntityField)
 
+    class TestWithUnionOldStyle(SgEntity):
+        __sg_type__ = "test"
+        entity: EntityField[Union[SgEntity, TestEntity]]
+
+    assert isinstance(TestWithUnionOldStyle.entity, EntityField)
+
     # Multi entity must not be a list
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -186,7 +193,7 @@ def test_alias_field_construction() -> None:
 
         class TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[TestWithAlias | TestEntity] = EntityField()
+            entity: EntityField[TestWithAlias | TestEntity | None] = EntityField()
             alias: MultiEntityField[TestEntity] = alias(entity)  # type: ignore[assignment]
 
     # An alias relationship cannot target multiple entities

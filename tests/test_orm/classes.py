@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-from typing import Union
-
 from sgchemist.orm import alias
 from sgchemist.orm.entity import SgEntity
 from sgchemist.orm.fields import DateTimeField
@@ -47,10 +44,9 @@ class Task(SgEntity):
     """A test task entity."""
 
     __sg_type__ = "Task"
-    # TODO: do so we can use union with | instead of Union and Optional
     name: TextField = TextField(name="content")
-    entity: EntityField[Optional[Union[Asset, Shot]]] = EntityField()
-    shot: EntityField[Optional[Shot]] = alias(entity)
-    asset: EntityField[Optional[Asset]] = alias(entity)
+    entity: EntityField[Asset | Shot | None] = EntityField()
+    shot: EntityField[Shot | None] = alias(entity)
+    asset: EntityField[Asset | None] = alias(entity)
     created_at: DateTimeField
     image: ImageField = ImageField()

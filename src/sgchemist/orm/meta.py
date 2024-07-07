@@ -318,11 +318,6 @@ class SgEntityMeta(type):
                     f"Cannot destringify annotation {annot} "
                     f"for field {class_name}.{attr_name}"
                 ) from e
-            if field_type is None:
-                raise error.SgEntityClassDefinitionError(
-                    f"Couldn't get the main type of annotation {annot} "
-                    f"for field {class_name}.{attr_name}"
-                )
 
             # We shall never care about ClassVar
             if field_type is ClassVar:

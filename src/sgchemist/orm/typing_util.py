@@ -266,20 +266,7 @@ def is_origin_of(type_: Any, *types: _SpecialForm, module: str | None = None) ->
     origin = get_origin(type_)
     if origin is None:
         return False
-
     return origin in types and (module is None or origin.__module__.startswith(module))
-
-
-def is_optional(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
-    """Return True if the given type is an optional.
-
-    Args:
-        type_: The type to check.
-
-    Returns:
-        True if the type is an optional.
-    """
-    return is_origin_of(type_, Optional, Union)
 
 
 def is_union(type_: Any) -> TypeGuard[ArgsTypeProtocol]:
@@ -325,7 +312,15 @@ def de_optionalize_union_types(
     Returns:
         The annotation without any optionals.
     """
-    if is_optional(type_):
+    if is_fwd_ref(type_):
+        # Check for new style union using "|"
+        splits = re.split(r"\s*\|\s*", type_.__forward_arg__)
+        try:
+            splits.remove("None")
+        except ValueError:
+            pass
+        return " | ".join(splits)
+    if is_origin_of(type_, Optional, Union):
         typ = set(type_.__args__)
         typ.discard(NoneFwd)
         typ.discard(type(None))
