@@ -4,14 +4,10 @@ from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Any
-from typing import TypeVar
 
 if TYPE_CHECKING:
-    from sgchemist.orm import SgEntity
-    from sgchemist.orm.fields import AbstractField
-
-T = TypeVar("T")
+    from .entity import SgEntity
+    from .meta import SgEntityMeta
 
 
 class LazyEntityClassEval:
@@ -19,16 +15,23 @@ class LazyEntityClassEval:
 
     _entity: type[SgEntity]
 
-    def __init__(self, class_name: str, registry: dict[str, type[SgEntity]]) -> None:
+    def __init__(
+        self, class_: str | type[SgEntity], registry: dict[str, SgEntityMeta]
+    ) -> None:
         """Initialize an instance.
 
         Args:
-            class_name: the name of the class
+            class_: the name of the class
             registry: registry where all classes are defined
         """
-        self.class_name = class_name
-        self.registry = registry
         self._resolved: bool = False
+        if not isinstance(class_, str):
+            self.class_name = class_.__name__
+            self._entity = class_
+            self._resolved = True
+        else:
+            self.class_name = class_
+        self.registry = registry
 
     def get(self) -> type[SgEntity]:
         """Return the entity class after evaluation.
@@ -82,26 +85,3 @@ class LazyEntityCollectionClassEval:
         if not self._resolved:
             self._fill()
         return self._resolved_entities
-
-
-class FieldAnnotation:
-    """A well-defined field annotation."""
-
-    __slots__ = ("_field_type", "_entities")
-
-    def __init__(
-        self, field_type: type[AbstractField[Any]], entities: tuple[str, ...]
-    ) -> None:
-        """Initialize an instance of field annotation."""
-        self._field_type = field_type
-        self._entities = entities
-
-    @property
-    def field_type(self) -> type[AbstractField[Any]]:
-        """Return the field type."""
-        return self._field_type
-
-    @property
-    def entities(self) -> tuple[str, ...]:
-        """Return the entities."""
-        return self._entities

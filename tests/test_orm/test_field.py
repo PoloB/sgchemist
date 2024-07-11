@@ -28,8 +28,8 @@ from sgchemist.orm.field_info import cast_column
 from sgchemist.orm.field_info import get_types
 from sgchemist.orm.field_info import is_alias
 from sgchemist.orm.field_info import iter_entities_from_field_value
-from sgchemist.orm.field_info import update_entity_from_value
 from sgchemist.orm.fields import AbstractField
+from sgchemist.orm.fields import update_entity_from_value
 from sgchemist.orm.queryop import SgFieldCondition
 
 
@@ -175,7 +175,7 @@ def test_entities_iter_entities_from_field_values(
     field: AbstractField[Any], value: Any, exp_value: Any
 ) -> None:
     """Tests the entity iterator."""
-    assert list(iter_entities_from_field_value(field, value)) == exp_value
+    assert list(iter_entities_from_field_value(field.__info__, value)) == exp_value
 
 
 @pytest.mark.parametrize(
@@ -202,7 +202,7 @@ def test_cast_column(
     exp_value: Any,
 ) -> None:
     """Tests the cast column method."""
-    assert cast_column(field, value, func) == exp_value
+    assert cast_column(field.__info__, value, func) == exp_value
 
 
 @pytest.mark.parametrize(

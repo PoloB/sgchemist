@@ -38,7 +38,6 @@ class SgEntity(metaclass=SgEntityMeta):
         """Adds the subclass to the global entity registry."""
         if cls.__name__ in cls.__registry__:
             return
-        # Set the
         cls.__registry__[cls.__name__] = cls
         cls.__registry__ = cls.__registry__
 

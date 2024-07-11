@@ -7,18 +7,14 @@ import sys
 from collections import defaultdict
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import ClassVar
 from typing import Generic
 from typing import TypeVar
 
 from . import error
 from . import field_info
-from .annotation import FieldAnnotation
 from .fields import AbstractField
-from .typing_alias import AnnotationScanType
-from .typing_util import de_optionalize_union_types
-from .typing_util import de_stringify_annotation
-from .typing_util import expand_unions
+from .fields import FieldAnnotation
+from .fields import initialize_from_annotation
 from .typing_util import get_annotations
 
 T = TypeVar("T")
@@ -277,7 +273,7 @@ class SgEntityMeta(type):
         cls.__instance_state__: EntityState  # noqa: B032
         cls.__attr_per_field_name__ = {}
         # Get the registry back from parent class
-        cls.__registry__ = {}
+        cls.__registry__: dict[str, SgEntityMeta] = {class_name: cls}
         for base in bases:
             registry = base.__dict__.get("__registry__")
             if registry:
@@ -307,50 +303,38 @@ class SgEntityMeta(type):
                 field_info.get_annotation(new_field),
             )
 
+        # Prepare global variables for evaluating the annotations
+        cls_namespace = dict(cls.__dict__)
+        cls_namespace.setdefault(cls.__name__, cls)
+        original_scope = sys.modules[cls.__module__].__dict__.copy()
+        original_scope.update(cls_namespace)
+
         # Add the field args from the class we are building
         for attr_name, annot in get_annotations(cls).items():
-            try:
-                field_type, annot = de_stringify_annotation(
-                    cls, annot, cls.__module__, _all_fields
-                )
-            except Exception as e:
-                raise error.SgEntityClassDefinitionError(
-                    f"Cannot destringify annotation {annot} "
-                    f"for field {class_name}.{attr_name}"
-                ) from e
-
-            # We shall never care about ClassVar
-            if field_type is ClassVar:
-                continue
-
-            if not isinstance(field_type, type) or not issubclass(
-                field_type, AbstractField
-            ):
-                raise error.SgEntityClassDefinitionError(
-                    f"{class_name}.{attr_name} is not a field annotation."
-                )
-            field = dict_.get(attr_name, field_type(name=attr_name))
-            if not isinstance(field, AbstractField):
-                raise error.SgEntityClassDefinitionError(
-                    f"{class_name}.{attr_name} is not initialized with a field."
-                )
             # Extract entity information from annotation
             try:
-                field_annot = FieldAnnotation(
-                    field_type, extract_annotation_info(annot)
-                )
+                field_annot = FieldAnnotation.extract(annot, original_scope)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot extract annotation information for field "
                     f"{class_name}.{attr_name}"
                 ) from e
+            if not field_annot.is_field():
+                continue
+
+            # Build the field if it is not already declared
+            field = dict_.get(attr_name, field_annot.field_type(name=attr_name))
+            if not isinstance(field, AbstractField):
+                raise error.SgEntityClassDefinitionError(
+                    f"{class_name}.{attr_name} is not initialized with a field."
+                )
             field_args_per_attr[attr_name] = (field, field_annot)
 
         field_names = set()
 
         for attr_name, (field, annotation) in field_args_per_attr.items():
             try:
-                field_info.initialize_from_annotation(field, cls, annotation, attr_name)
+                initialize_from_annotation(field, cls, annotation, attr_name)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot build instrumentation for field {class_name}.{attr_name}"
@@ -370,28 +354,3 @@ class SgEntityMeta(type):
             # Create field descriptors
             prop = AliasFieldProperty if field_info.is_alias(field) else FieldProperty
             setattr(cls, attr_name, prop(field, not field_info.is_primary(field)))
-
-
-def extract_annotation_info(
-    annotation: AnnotationScanType,
-) -> tuple[str, ...]:
-    """Returns the information extracted from a given annotation.
-
-    Args:
-        annotation: the annotation
-
-    Returns:
-        a tuple of extracted entity types, the collection type wrapping the entities
-    """
-    if not hasattr(annotation, "__args__"):
-        return tuple()
-    inner_annotation = annotation.__args__[0]
-    inner_annotation = de_optionalize_union_types(inner_annotation)
-    # Get the container type
-    if hasattr(inner_annotation, "__origin__"):
-        arg_origin = inner_annotation.__origin__
-        if isinstance(arg_origin, type):
-            raise error.SgInvalidAnnotationError("No container class expected")
-    # Unpack the unions
-    entities = expand_unions(inner_annotation)
-    return entities

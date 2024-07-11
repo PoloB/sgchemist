@@ -4,6 +4,7 @@ The main function of these fields is to provide the correct type annotations.
 Internally, only the classes inheriting from InstrumentedAttribute are used.
 """
 
+from __future__ import absolute_import
 from __future__ import annotations
 
 import abc
@@ -12,6 +13,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
+from typing import ForwardRef
 from typing import Generic
 from typing import List
 from typing import Optional
@@ -21,14 +23,20 @@ from typing import overload
 from typing_extensions import Self
 
 from . import error
+from .annotation import LazyEntityClassEval
+from .annotation import LazyEntityCollectionClassEval
 from .constant import DateType
 from .constant import Operator
-from .field_info import FieldInfo
 from .field_info import get_types
 from .queryop import SgFieldCondition
+from .typing_util import cleanup_mapped_str_annotation
+from .typing_util import de_optionalize_union_types
+from .typing_util import expand_unions
 
 if TYPE_CHECKING:
     from .entity import SgEntity
+    from .field_info import FieldInfo
+    from .meta import SgEntityMeta
 
 T = TypeVar("T")
 T2 = TypeVar("T2")
@@ -955,3 +963,169 @@ def alias(target_relationship: AbstractEntityField[Any]) -> EntityField[Any]:
     field: EntityField[Any] = EntityField()
     field.__info__["alias_field"] = target_relationship
     return field
+
+
+class FieldAnnotation:
+    """A well-defined field annotation."""
+
+    __slots__ = ("_field_type", "_entities")
+
+    @classmethod
+    def extract(cls, annotation: str, scope: dict[str, Any]) -> Self:
+        """Attempt to extract information from the given annotation.
+
+        This is where all the `magic` really happen but also where it is
+        the most dangerous. Annotations behave very differently between
+        python <3.10 et later.
+        For example, it is not possible to declare specified builtin types
+        like `tuple[str] or dict[str, Any]`.
+        This method tries its best to keep an agnostic approach across
+        all python 3.7+ versions until their EOL.
+        Global and local variables are used to evaluate some of the content of the
+        annotation.
+
+        Args:
+            annotation: the annotation string to extract information from.
+            scope: the variables in the same scope as the annotation.
+
+        Returns:
+            the extracted field information
+
+        Raises:
+            error.SgInvalidAnnotationError: when the reliable information
+                couldn't be extracted from the annotation.
+        """
+        # Check annotation are as string
+        # Otherwise it probably means annotations are not from __future__
+        if not isinstance(annotation, str):
+            raise error.SgInvalidAnnotationError(
+                "sgchemist does not support non string annotations. "
+                "If you are using python <3.10, please add "
+                "`from __future__ import annotations` to your imports."
+            )
+
+        # String un-stringifying the annotation as much as possible.
+        # At least we need to extract the main outer type to check it is a field kind.
+        try:
+            outer_type, cleaned_annot = cleanup_mapped_str_annotation(annotation, scope)
+        except Exception as e:
+            raise error.SgInvalidAnnotationError(
+                f"Cannot evaluate annotation {annotation}"
+            ) from e
+        # We never care about anything but AbstractField
+        if not isinstance(outer_type, type) or not issubclass(
+            outer_type, AbstractField
+        ):
+            return cls(outer_type, tuple())
+
+        # Evaluate full annotation
+        # Add ForwardRef in the scope to make sure we can evaluate what was not yet
+        # defined in the scope already
+        eval_scope = scope.copy()
+        eval_scope["ForwardRef"] = ForwardRef
+        try:
+            annot_eval = eval(cleaned_annot, eval_scope)
+        except Exception as e:
+            raise error.SgInvalidAnnotationError(
+                f"Cannot evaluate annotation {cleaned_annot}"
+            ) from e
+
+        # Extract entity information from the evaluated annotation
+        if not hasattr(annot_eval, "__args__"):
+            return cls(outer_type, tuple())
+
+        inner_annotation = annot_eval.__args__[0]
+        inner_annotation = de_optionalize_union_types(inner_annotation)
+        # Get the container type
+        if hasattr(inner_annotation, "__origin__"):
+            arg_origin = inner_annotation.__origin__
+            if isinstance(arg_origin, type):
+                raise error.SgInvalidAnnotationError("No container class expected")
+        # Unpack the unions
+        entities = expand_unions(inner_annotation)
+        return cls(outer_type, entities)
+
+    def __init__(self, field_type: type[Any], entities: tuple[str, ...]) -> None:
+        """Initialize an instance of field annotation."""
+        self._field_type = field_type
+        self._entities = entities
+
+    @property
+    def field_type(self) -> type[Any]:
+        """Return the field type."""
+        return self._field_type
+
+    @property
+    def entities(self) -> tuple[str, ...]:
+        """Return the entities."""
+        return self._entities
+
+    def is_field(self) -> bool:
+        """Return True if the annotation is a field annotation."""
+        return isinstance(self._field_type, type) and issubclass(
+            self._field_type, AbstractField
+        )
+
+
+def initialize_from_annotation(
+    field: AbstractField[Any],
+    parent_class: SgEntityMeta,
+    annotation: FieldAnnotation,
+    attribute_name: str,
+) -> None:
+    """Create a field from a descriptor."""
+    if annotation.field_type is not field.__class__:
+        raise error.SgInvalidAnnotationError(
+            f"Cannot initialize field of type {field.__class__.__name__} "
+            f"with a {annotation.field_type.__name__}"
+        )
+    info = field.__info__
+    if info["alias_field"]:
+        if len(annotation.entities) != 1:
+            raise error.SgInvalidAnnotationError(
+                "A alias field shall target a single entity"
+            )
+        # Make sure the entity type in annotation is in the target annotation
+        target_entity = annotation.entities[0]
+        target_annotation = info["alias_field"].__info__["annotation"]
+        if target_entity not in target_annotation.entities:
+            raise error.SgInvalidAnnotationError(
+                "An alias field must target a multi target field containing "
+                "its entity"
+            )
+        # An alias field use the same name as its target
+        info["name"] = info["alias_field"].__info__["name"]
+    info["entity"] = parent_class
+    info["annotation"] = annotation
+    info["name"] = info["name"] or attribute_name
+    info["name_in_relation"] = info["name_in_relation"] or info["name"]
+
+    # Make some checks
+    if info["is_relationship"] and len(annotation.entities) == 0:
+        raise error.SgInvalidAnnotationError("Expected at least one entity field")
+    # Construct a multi target entity
+    lazy_evals = [
+        LazyEntityClassEval(entity, parent_class.__registry__)
+        for entity in annotation.entities
+    ]
+    info["lazy_collection"] = LazyEntityCollectionClassEval(lazy_evals)
+    if "default_value" not in info:
+        info["default_value"] = field.default_value
+
+
+def update_entity_from_value(
+    field: AbstractField[Any], entity: SgEntity, field_value: Any
+) -> None:
+    """Update an entity from a row value.
+
+    Used by the Session to convert the value returned by an update back to the
+    entity field.
+
+    Args:
+        field: the field to update the value from
+        entity: the entity to update
+        field_value: the row value
+    """
+    if field.__info__["is_relationship"]:
+        return
+    entity.__state__.set_value(field, field_value)

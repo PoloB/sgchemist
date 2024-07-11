@@ -19,7 +19,7 @@ from .engine import SgEngine
 from .entity import SgEntity
 from .field_info import cast_column
 from .field_info import iter_entities_from_field_value
-from .field_info import update_entity_from_value
+from .fields import update_entity_from_value
 from .query import SgBatchQuery
 from .query import SgFindQuery
 from .typing_alias import EntityHash
@@ -178,7 +178,7 @@ class Session:
             field = entity_cls.__fields_by_attr__[attr_name]
             # Cast column value
             column_value = cast_column(
-                field, column_value, self._get_or_create_instance
+                field.__info__, column_value, self._get_or_create_instance
             )
             inst_data[attr_name] = column_value
 
@@ -259,7 +259,9 @@ class Session:
         # Add modified relationships in cascade
         for field in entity.__fields__:
             rel_value = state.get_value(field)
-            for field_entity in iter_entities_from_field_value(field, rel_value):
+            for field_entity in iter_entities_from_field_value(
+                field.__info__, rel_value
+            ):
                 self._check_relationship_commited(field_entity)
 
         query = SgBatchQuery(request_type, entity)
