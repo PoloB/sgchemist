@@ -9,7 +9,7 @@ from classes import Shot
 from classes import Task
 
 from sgchemist.orm import Session
-from sgchemist.orm import SgEntity
+from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import error
 from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
@@ -66,14 +66,14 @@ def test_db(
     test_asset: Asset,
     test_task_shot: Task,
     test_task_asset: Task,
-) -> list[SgEntity]:
+) -> list[SgBaseEntity]:
     """Returns a database content."""
     return [test_project, test_shot, test_asset, test_task_shot, test_task_asset]
 
 
 @pytest.fixture
 def filled_engine(
-    session: Session, engine: SgEngine, test_db: list[SgEntity]
+    session: Session, engine: SgEngine, test_db: list[SgBaseEntity]
 ) -> SgEngine:
     """Returns an engine filled with database content."""
     for inst in test_db:
@@ -217,7 +217,7 @@ def test_delete_already_deleted(session: Session, test_project: Project) -> None
 def test_execute_query_find(
     filled_engine: SgEngine,
     session: Session,
-    model: type[SgEntity],
+    model: type[SgBaseEntity],
     expected_count: int,
 ) -> None:
     """Tests query find returns the expected number of results."""

@@ -19,13 +19,13 @@ import shotgun_api3
 
 from . import field_info
 from .constant import BatchRequestType
-from .entity import SgEntity
+from .entity import SgBaseEntity
 from .query import SgBatchQuery
 from .query import SgFindQueryData
 from .serializer import ShotgunAPIBatchQuerySerializer
 from .serializer import ShotgunAPIObjectSerializer
 
-T = TypeVar("T", bound=SgEntity)
+T = TypeVar("T", bound=SgBaseEntity)
 
 
 class SgEngine:

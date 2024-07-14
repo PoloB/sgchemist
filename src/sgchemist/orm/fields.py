@@ -34,9 +34,9 @@ from .typing_util import de_optionalize_union_types
 from .typing_util import expand_unions
 
 if TYPE_CHECKING:
-    from .entity import SgEntity
+    from .entity import SgBaseEntity
+    from .entity import SgEntityMeta
     from .field_info import FieldInfo
-    from .meta import SgEntityMeta
 
 T = TypeVar("T")
 T2 = TypeVar("T2")
@@ -424,7 +424,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
             )
         return field._relative_to(self)
 
-    def type_is(self, entity_cls: type[SgEntity]) -> SgFieldCondition:
+    def type_is(self, entity_cls: type[SgBaseEntity]) -> SgFieldCondition:
         """Filter entities where this entity is of the given type.
 
         This is the equivalent of the "type_is" filter of Shotgrid.
@@ -437,7 +437,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.TYPE_IS, entity_cls.__sg_type__)
 
-    def type_is_not(self, entity_cls: type[SgEntity]) -> SgFieldCondition:
+    def type_is_not(self, entity_cls: type[SgBaseEntity]) -> SgFieldCondition:
         """Filter entities where this entity is not of the given type.
 
         This is the equivalent of the "type_is_not" filter of Shotgrid.
@@ -1023,12 +1023,7 @@ class FieldAnnotation:
         # defined in the scope already
         eval_scope = scope.copy()
         eval_scope["ForwardRef"] = ForwardRef
-        try:
-            annot_eval = eval(cleaned_annot, eval_scope)
-        except Exception as e:
-            raise error.SgInvalidAnnotationError(
-                f"Cannot evaluate annotation {cleaned_annot}"
-            ) from e
+        annot_eval = eval(cleaned_annot, eval_scope)
 
         # Extract entity information from the evaluated annotation
         if not hasattr(annot_eval, "__args__"):
@@ -1068,10 +1063,7 @@ class FieldAnnotation:
 
 
 def initialize_from_annotation(
-    field: AbstractField[Any],
-    parent_class: SgEntityMeta,
-    annotation: FieldAnnotation,
-    attribute_name: str,
+    field: AbstractField[Any], annotation: FieldAnnotation, attribute_name: str
 ) -> None:
     """Create a field from a descriptor."""
     if annotation.field_type is not field.__class__:
@@ -1095,7 +1087,6 @@ def initialize_from_annotation(
             )
         # An alias field use the same name as its target
         info["name"] = info["alias_field"].__info__["name"]
-    info["entity"] = parent_class
     info["annotation"] = annotation
     info["name"] = info["name"] or attribute_name
     info["name_in_relation"] = info["name_in_relation"] or info["name"]
@@ -1104,17 +1095,22 @@ def initialize_from_annotation(
     if info["is_relationship"] and len(annotation.entities) == 0:
         raise error.SgInvalidAnnotationError("Expected at least one entity field")
     # Construct a multi target entity
-    lazy_evals = [
-        LazyEntityClassEval(entity, parent_class.__registry__)
-        for entity in annotation.entities
-    ]
+    lazy_evals = [LazyEntityClassEval(entity, {}) for entity in annotation.entities]
     info["lazy_collection"] = LazyEntityCollectionClassEval(lazy_evals)
     if "default_value" not in info:
         info["default_value"] = field.default_value
 
 
+def add_field_to_entity(entity: SgEntityMeta, field: AbstractField[Any]) -> None:
+    """Add the field to the given entity."""
+    info = field.__info__
+    info["entity"] = entity
+    for lazy_col in info["lazy_collection"].lazy_entities:
+        lazy_col.registry = entity.__registry__
+
+
 def update_entity_from_value(
-    field: AbstractField[Any], entity: SgEntity, field_value: Any
+    field: AbstractField[Any], entity: SgBaseEntity, field_value: Any
 ) -> None:
     """Update an entity from a row value.
 

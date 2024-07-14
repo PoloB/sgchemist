@@ -91,8 +91,6 @@ def stringify_subscript(
             return f"{left} {op} {right}"
         elif isinstance(exp, ast.BitOr):
             return "|"
-        elif isinstance(exp, ast.BitAnd):
-            return "&"
         elif isinstance(exp, ast.Subscript):
             value = _stringify(exp.value)
             slice = _stringify(exp.slice)
@@ -164,7 +162,7 @@ def make_union_type(*types: AnnotationScanType) -> type[Any]:
     return cast(Any, Union).__getitem__(types)  # type: ignore
 
 
-def expand_unions(type_: str) -> tuple[str, ...]:
+def expand_unions(type_: Any) -> tuple[Any, ...]:
     """Returns a type as a tuple of individual types, expanding for ``Union`` types.
 
     Args:

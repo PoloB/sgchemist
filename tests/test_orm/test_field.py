@@ -23,7 +23,7 @@ from sgchemist.orm.annotation import LazyEntityClassEval
 from sgchemist.orm.annotation import LazyEntityCollectionClassEval
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import Operator
-from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.field_info import cast_column
 from sgchemist.orm.field_info import get_types
 from sgchemist.orm.field_info import is_alias
@@ -54,7 +54,7 @@ def lazy_collection_eval(
 
 
 def test_lazy_entity_class_eval(
-    lazy_class_eval: LazyEntityClassEval, entity_class: type[SgEntity]
+    lazy_class_eval: LazyEntityClassEval, entity_class: type[SgBaseEntity]
 ) -> None:
     """Test the lazy entity getter."""
     assert lazy_class_eval.get() is entity_class
@@ -62,7 +62,8 @@ def test_lazy_entity_class_eval(
 
 
 def test_lazy_entity_collection_eval(
-    lazy_collection_eval: LazyEntityCollectionClassEval, entity_class: type[SgEntity]
+    lazy_collection_eval: LazyEntityCollectionClassEval,
+    entity_class: type[SgBaseEntity],
 ) -> None:
     """Test the lazy entity collection getter."""
     assert lazy_collection_eval.get_by_type(entity_class.__sg_type__) is entity_class
@@ -90,11 +91,11 @@ def test_lazy_entity_collection_eval(
 def test_field_attributes(
     field: AbstractField[Any],
     exp_name: str,
-    exp_class: type[SgEntity],
+    exp_class: type[SgBaseEntity],
     exp_default: Any,
     exp_primary: bool,
     exp_name_in_rel: str,
-    exp_types: tuple[type[SgEntity], ...],
+    exp_types: tuple[type[SgBaseEntity], ...],
 ) -> None:
     """Tests the fields attributes."""
     assert isinstance(repr(field), str)
@@ -197,7 +198,7 @@ def test_entities_iter_entities_from_field_values(
 )
 def test_cast_column(
     field: AbstractField[Any],
-    func: Callable[[type[SgEntity], dict[str, Any]], Any],
+    func: Callable[[type[SgBaseEntity], dict[str, Any]], Any],
     value: Any,
     exp_value: Any,
 ) -> None:

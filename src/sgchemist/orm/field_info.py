@@ -13,11 +13,11 @@ from typing_extensions import NotRequired
 from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
-    from sgchemist.orm import SgEntity
+    from sgchemist.orm import SgBaseEntity
     from sgchemist.orm.annotation import LazyEntityCollectionClassEval
+    from sgchemist.orm.entity import SgEntityMeta
     from sgchemist.orm.fields import AbstractField
     from sgchemist.orm.fields import FieldAnnotation
-    from sgchemist.orm.meta import SgEntityMeta
 
 T = TypeVar("T")
 
@@ -42,11 +42,6 @@ class FieldInfo(TypedDict, Generic[T]):
 def get_alias(field: AbstractField[Any]) -> AbstractField[Any] | None:
     """Return the alias field of the field or None if there is no alias field."""
     return field.__info__["alias_field"]
-
-
-def get_annotation(field: AbstractField[Any]) -> FieldAnnotation:
-    """Return the annotation of the field."""
-    return field.__info__["annotation"]
 
 
 def get_default_value(field: AbstractField[T]) -> T:
@@ -88,7 +83,7 @@ def get_hash(
     return field_hash
 
 
-def get_types(field: AbstractField[Any]) -> tuple[type[SgEntity], ...]:
+def get_types(field: AbstractField[Any]) -> tuple[type[SgBaseEntity], ...]:
     """Return the Python types of the attribute.
 
     Returns:
@@ -99,7 +94,7 @@ def get_types(field: AbstractField[Any]) -> tuple[type[SgEntity], ...]:
 
 def iter_entities_from_field_value(
     info: FieldInfo[Any], field_value: Any
-) -> Iterator[SgEntity]:
+) -> Iterator[SgBaseEntity]:
     """Iterate entities from a field value.
 
     Used by the Session to get the entities within the field values if any.
@@ -125,7 +120,7 @@ def iter_entities_from_field_value(
 def cast_column(
     info: FieldInfo[Any],
     column_value: Any,
-    model_factory: Callable[[type[SgEntity], dict[str, Any]], Any],
+    model_factory: Callable[[type[SgBaseEntity], dict[str, Any]], Any],
 ) -> Any:
     """Cast the given row value to be used for instancing the entity.
 

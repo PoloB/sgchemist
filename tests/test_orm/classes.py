@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from sgchemist.orm import alias
-from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.fields import DateTimeField
 from sgchemist.orm.fields import EntityField
 from sgchemist.orm.fields import ImageField
 from sgchemist.orm.fields import MultiEntityField
 from sgchemist.orm.fields import TextField
+
+
+class SgEntity(SgBaseEntity):
+    """Base class for entities."""
 
 
 class Project(SgEntity):

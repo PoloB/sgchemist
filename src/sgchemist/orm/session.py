@@ -16,7 +16,7 @@ from . import error
 from . import field_info
 from .constant import BatchRequestType
 from .engine import SgEngine
-from .entity import SgEntity
+from .entity import SgBaseEntity
 from .field_info import cast_column
 from .field_info import iter_entities_from_field_value
 from .fields import update_entity_from_value
@@ -24,7 +24,7 @@ from .query import SgBatchQuery
 from .query import SgFindQuery
 from .typing_alias import EntityHash
 
-T = TypeVar("T", bound=SgEntity)
+T = TypeVar("T", bound=SgBaseEntity)
 
 
 class SgFindResult(Generic[T]):
@@ -81,8 +81,8 @@ class Session:
             engine: engine to use.
         """
         self._engine: SgEngine = engine
-        self._pending_queries: dict[SgEntity, SgBatchQuery] = {}
-        self._entity_map: dict[EntityHash, SgEntity] = {}
+        self._pending_queries: dict[SgBaseEntity, SgBatchQuery] = {}
+        self._entity_map: dict[EntityHash, SgBaseEntity] = {}
 
     def __enter__(self) -> Session:
         """Starts the session context.
@@ -101,7 +101,7 @@ class Session:
         """Ends the session context by commiting all the pending queries."""
         self.commit()
 
-    def __iter__(self) -> Iterator[SgEntity]:
+    def __iter__(self) -> Iterator[SgBaseEntity]:
         """Returns an iterator of all the entities currently managed by the session.
 
         Returns:
@@ -120,9 +120,9 @@ class Session:
 
     def _get_or_create_instance(
         self,
-        entity_cls: type[SgEntity],
+        entity_cls: type[SgBaseEntity],
         row: dict[str, Any],
-    ) -> SgEntity:
+    ) -> SgBaseEntity:
         """Gets or creates the entity from the given row.
 
         Args:
@@ -217,7 +217,7 @@ class Session:
         return SgFindResult(queried_models)
 
     @staticmethod
-    def _check_relationship_commited(entity: SgEntity) -> None:
+    def _check_relationship_commited(entity: SgBaseEntity) -> None:
         """Asserts that a relationship has been commited.
 
         Raises:
@@ -229,7 +229,7 @@ class Session:
                 f"Cannot add relation {entity} because it is not committed"
             )
 
-    def add(self, entity: SgEntity) -> SgBatchQuery:
+    def add(self, entity: SgBaseEntity) -> SgBatchQuery:
         """Adds the given entity to the session.
 
         An entity is added for creation if it is not commited (i.e. its id is None).
@@ -269,7 +269,7 @@ class Session:
         state.pending_add = request_type == BatchRequestType.CREATE
         return query
 
-    def delete(self, entity: SgEntity) -> SgBatchQuery:
+    def delete(self, entity: SgBaseEntity) -> SgBatchQuery:
         """Mark the given entity for deletion.
 
         Args:

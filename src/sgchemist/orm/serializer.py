@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 
 from . import field_info
 from .constant import BatchRequestType
-from .entity import SgEntity
+from .entity import SgBaseEntity
 from .fields import AbstractField
 from .query import SgBatchQuery
 from .queryop import SgFieldCondition
@@ -31,7 +31,7 @@ class SerializedOperator(TypedDict):
     filters: list[Any]
 
 
-def serialize_entity(model: SgEntity) -> SerializedEntity:
+def serialize_entity(model: SgBaseEntity) -> SerializedEntity:
     """Serialize the given sgchemist entity to shotgun-api3 entity.
 
     Args:
@@ -56,7 +56,7 @@ def serialize_condition(
         serialized condition
     """
     right = condition.right
-    if isinstance(condition.right, SgEntity):
+    if isinstance(condition.right, SgBaseEntity):
         right = serialize_entity(condition.right)
     return (
         field_info.get_name(condition.field),
@@ -69,7 +69,7 @@ class ShotgunAPIObjectSerializer:
     """Defines a serializer converting sgchemist objects to shotgun-api3 components."""
 
     def serialize_filter(
-        self, sg_object: SgFilterObject | SgEntity
+        self, sg_object: SgFilterObject | SgBaseEntity
     ) -> list[SerializedEntity | SerializedOperator | list[Any]]:
         """Returns filters for shotgun-api3 from the given sgchemist object.
 
@@ -84,7 +84,7 @@ class ShotgunAPIObjectSerializer:
         return [self.serialize_object(sg_object)]
 
     def serialize_object(
-        self, sg_object: SgFilterObject | SgEntity
+        self, sg_object: SgFilterObject | SgBaseEntity
     ) -> SerializedEntity | SerializedOperator | list[Any]:
         """Serialize the given sgchemist object to shotgun-api3 object.
 
@@ -96,7 +96,7 @@ class ShotgunAPIObjectSerializer:
         """
         if isinstance(sg_object, SgFieldCondition):
             return list(serialize_condition(sg_object))
-        elif isinstance(sg_object, SgEntity):
+        elif isinstance(sg_object, SgBaseEntity):
             return serialize_entity(sg_object)
         elif isinstance(sg_object, SgFilterOperation):
             return self.serialize_operation(sg_object)
@@ -144,7 +144,7 @@ class ShotgunAPIBatchQuerySerializer:
 
     @staticmethod
     def serialize_entity(
-        entity: SgEntity, fields: list[AbstractField[Any]]
+        entity: SgBaseEntity, fields: list[AbstractField[Any]]
     ) -> dict[str, Any]:
         """Serialize the given sgchemist entity to shotgun-api3 batch query.
 
@@ -158,7 +158,7 @@ class ShotgunAPIBatchQuerySerializer:
         model_data = {}
         for field in fields:
             value = entity.__state__.get_value(field)
-            if isinstance(value, SgEntity):
+            if isinstance(value, SgBaseEntity):
                 value = {
                     "type": value.__sg_type__,
                     "id": value.id,

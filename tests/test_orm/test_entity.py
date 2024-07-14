@@ -16,7 +16,8 @@ from classes import Shot
 from classes import Task
 
 from sgchemist.orm import error
-from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.entity import EntityState
+from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.field_info import get_types
 from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.fields import AbstractValueField
@@ -25,7 +26,6 @@ from sgchemist.orm.fields import MultiEntityField
 from sgchemist.orm.fields import NumberField
 from sgchemist.orm.fields import TextField
 from sgchemist.orm.fields import alias
-from sgchemist.orm.meta import EntityState
 
 
 @pytest.fixture
@@ -58,7 +58,6 @@ def test_entity_values(shot_entity: type[Shot]) -> None:
         shot_entity.tasks,
         shot_entity.assets,
     ]
-    assert shot_entity.__abstract__ is False
     assert shot_entity.__attr_per_field_name__ == {
         "assets": "assets",
         "code": "name",
@@ -73,6 +72,10 @@ def test_entity_values(shot_entity: type[Shot]) -> None:
 
 def test_model_creation_missing_sg_type() -> None:
     """Tests a missing __sg_type__ attribute raises an error."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
@@ -81,6 +84,10 @@ def test_model_creation_missing_sg_type() -> None:
 
 def test_model_creation_reserved_attributes() -> None:
     """Tests reserved attributes are protected against modifications."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     # No reserved attributes
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -91,6 +98,10 @@ def test_model_creation_reserved_attributes() -> None:
 
 def test_model_duplicate_field() -> None:
     """Tests it is not possible to duplicate a field."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class WeirdEntity(SgEntity):
@@ -100,113 +111,157 @@ def test_model_duplicate_field() -> None:
 
 def test_model_entity_field_has_no_container() -> None:
     """Tests it is not possible to create an entity field with a container."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityList(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[list[SgEntity]]
+            entity_with_container: EntityField[list[SgBaseEntity]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityListOld(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[List[SgEntity]]
+            entity_with_container: EntityField[List[SgBaseEntity]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityDict(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[dict[str, SgEntity]]
+            entity_with_container: EntityField[dict[str, SgBaseEntity]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityDictOld(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[Dict[str, SgEntity]]
+            entity_with_container: EntityField[Dict[str, SgBaseEntity]]
 
 
 def test_model_multi_entity_field_has_no_container() -> None:
     """Tests it is not possible to create a multi-entity field with a container."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            multi_entity_container: MultiEntityField[list[SgEntity]]
+            multi_entity_container: MultiEntityField[list[SgBaseEntity]]
 
 
 def test_right_mapped_field_per_annotation() -> None:
     """Tests the correct MappedColumn object is used for a given annotation."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class _TestEntity1(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test1"
             field: TextField = EntityField()  # type: ignore[assignment]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class _TestEntity2(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test2"
             field: EntityField[_TestEntity2] = TextField()  # type: ignore[assignment]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class _TestEntity3(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test3"
             field: MultiEntityField[_TestEntity2] = TextField()  # type: ignore[assignment]
+
+
+def test_cannot_create_entity_directly_from_base() -> None:
+    """Test we cannot directly subclass SgBaseEntity class."""
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity(SgBaseEntity):
+            __sg_type__ = "test1"
+
+
+def test_cannot_create_twice_the_same_entity() -> None:
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity(SgEntity):
+            __sg_type__ = "test1"
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity1(SgEntity):
+            __sg_type__ = "test"
 
 
 def test_union_entity_in_entity() -> None:
     """Tests a multi target entity always uses unions."""
 
+    class SgEntity(SgBaseEntity):
+        pass
+
     class TestEntity(SgEntity):
-        __sg_type__ = "test1"
+        __sg_type__ = "test"
 
     class TestWithUnion(SgEntity):
-        __sg_type__ = "test"
-        entity: EntityField[SgEntity | TestEntity]
+        __sg_type__ = "test_with_union"
+        entity: EntityField[SgBaseEntity | TestEntity]
 
     assert isinstance(TestWithUnion.entity, EntityField)
-    assert set(get_types(TestWithUnion.entity)) == {TestEntity, SgEntity}
+    assert set(get_types(TestWithUnion.entity)) == {TestEntity, SgBaseEntity}
 
     class TestWithUnionOld(SgEntity):
-        __sg_type__ = "test"
-        entity: EntityField[Union[SgEntity, TestEntity]]
+        __sg_type__ = "test_with_union_old"
+        entity: EntityField[Union[SgBaseEntity, TestEntity]]
 
     assert isinstance(TestWithUnionOld.entity, EntityField)
-    assert set(get_types(TestWithUnionOld.entity)) == {TestEntity, SgEntity}
+    assert set(get_types(TestWithUnionOld.entity)) == {TestEntity, SgBaseEntity}
 
     # Test union and optional
     class TestWithUnionOptional(SgEntity):
-        __sg_type__ = "test"
-        entity: EntityField[SgEntity | TestEntity | None]
+        __sg_type__ = "test_with_union_optional"
+        entity: EntityField[SgBaseEntity | TestEntity | None]
 
     assert isinstance(TestWithUnionOptional.entity, EntityField)
-    assert set(get_types(TestWithUnionOptional.entity)) == {SgEntity, TestEntity}
+    assert set(get_types(TestWithUnionOptional.entity)) == {SgBaseEntity, TestEntity}
 
     class TestWithUnionOptionalOld(SgEntity):
-        __sg_type__ = "test"
-        entity: EntityField[Optional[Union[SgEntity, TestEntity]]]
+        __sg_type__ = "test_with_union_optional_old"
+        entity: EntityField[Optional[Union[SgBaseEntity, TestEntity]]]
 
     assert isinstance(TestWithUnionOptionalOld.entity, EntityField)
-    assert set(get_types(TestWithUnionOptional.entity)) == {SgEntity, TestEntity}
+    assert set(get_types(TestWithUnionOptional.entity)) == {SgBaseEntity, TestEntity}
 
     class TestWithUnionOptionalMixedUnion(SgEntity):
-        __sg_type__ = "test"
-        entity: EntityField[Optional[SgEntity | TestEntity]]
+        __sg_type__ = "test_with_union_optional_mixed"
+        entity: EntityField[Optional[SgBaseEntity | TestEntity]]
 
     assert isinstance(TestWithUnionOptionalMixedUnion.entity, EntityField)
-    assert set(get_types(TestWithUnionOptional.entity)) == {SgEntity, TestEntity}
+    assert set(get_types(TestWithUnionOptional.entity)) == {SgBaseEntity, TestEntity}
 
     class TestWithUnionOptionalMixedNone(SgEntity):
-        __sg_type__ = "test"
-        entity: EntityField[Union[SgEntity, TestEntity] | None]
+        __sg_type__ = "test_with_union_optional_mixed_none"
+        entity: EntityField[Union[SgBaseEntity, TestEntity] | None]
 
     assert isinstance(TestWithUnionOptionalMixedNone.entity, EntityField)
-    assert set(get_types(TestWithUnionOptional.entity)) == {SgEntity, TestEntity}
+    assert set(get_types(TestWithUnionOptional.entity)) == {SgBaseEntity, TestEntity}
 
 
 def test_alias_field_construction() -> None:
     """Tests the construction of an alias field."""
+
+    class SgEntity(SgBaseEntity):
+        pass
 
     class TestEntity(SgEntity):
         __sg_type__ = "test"
@@ -242,75 +297,91 @@ def test_alias_field_construction() -> None:
 
 def test_various_annotations() -> None:
     """Tests various annotations."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test1"
             test: EntityField[Any] | None
 
     class TestEntity2(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test2"
         test: list[EntityField[Any]]
 
     class TestEntity3(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test3"
         test: list[Any] = EntityField()  # type: ignore[assignment]
 
     class TestEntity4(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test4"
         test: ClassVar[list[Any]]
 
     class TestEntity5(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test5"
         test: list[str]
 
     class Other:
         pass
 
     class TestEntity6(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test6"
         test: ClassVar[list[Other]]
 
     # String annotation
     class TestEntity7(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test7"
         test: "TextField"
 
     class TestEntity8(SgEntity):
-        __sg_type__ = "test"
-        test: EntityField["SgEntity"]
+        __sg_type__ = "test8"
+        test: EntityField["SgBaseEntity"]
 
     class TestEntity9(SgEntity):
-        __sg_type__ = "test"
-        test: "EntityField[SgEntity]"
+        __sg_type__ = "test9"
+        test: "EntityField[SgBaseEntity]"
 
     class TestEntity91(SgEntity):
-        __sg_type__ = "test"
+        __sg_type__ = "test91"
         test: EntityField[Optional[Union[TestEntity7, TestEntity8]]]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity10(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test10"
             test: TextField = 5  # type: ignore
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity11(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test11"
             test: EntityField  # type: ignore
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity12(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test12"
             test: "weird[UnknownField]"  # type: ignore # noqa: F821
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity13(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test13"
             test: MultiEntityField  # type: ignore
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity14(SgEntity):
+            __sg_type__ = "test14"
+            test: "EntityField[1 & 5]"  # type: ignore
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity15(SgEntity):
+            __sg_type__ = "test14"
+            test: EntityField[int]
 
 
 def test_default_init(shot_entity: type[Shot]) -> None:
@@ -368,7 +439,7 @@ def test_instance_with_primary_key_is_committed(shot_commited: Shot) -> None:
     ],
 )
 def test_entity_modified_fields(
-    entity: SgEntity, expected_modified_fields: list[AbstractField[Any]]
+    entity: SgBaseEntity, expected_modified_fields: list[AbstractField[Any]]
 ) -> None:
     """Tests that initialized fields are considered modified expect id."""
     assert entity.__state__.modified_fields == expected_modified_fields

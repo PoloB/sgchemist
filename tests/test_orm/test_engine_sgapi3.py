@@ -9,7 +9,7 @@ from classes import Task
 
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
-from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
 from sgchemist.orm.session import Session
@@ -58,7 +58,7 @@ def filled_engine(
         Task,
     ),
 )
-def test_engine_find(filled_engine: SgEngine, test_model: Type[SgEntity]) -> None:
+def test_engine_find(filled_engine: SgEngine, test_model: Type[SgBaseEntity]) -> None:
     """Test find queries on a filled engine."""
     find_query_state = select(test_model).get_data()
     rows = filled_engine.find(find_query_state)
@@ -76,7 +76,7 @@ def test_engine_find(filled_engine: SgEngine, test_model: Type[SgEntity]) -> Non
         Shot(name="test", project=Project(id=1)),
     ),
 )
-def test_engine_create(engine: SgEngine, test_model_inst: SgEntity) -> None:
+def test_engine_create(engine: SgEngine, test_model_inst: SgBaseEntity) -> None:
     """Test create queries."""
     batch_query = SgBatchQuery(BatchRequestType.CREATE, test_model_inst)
     rows = engine.batch([batch_query])
@@ -99,7 +99,9 @@ def test_engine_create(engine: SgEngine, test_model_inst: SgEntity) -> None:
     ),
 )
 def test_engine_batch_request(
-    engine: SgEngine, test_model_inst: SgEntity, batch_request_type: BatchRequestType
+    engine: SgEngine,
+    test_model_inst: SgBaseEntity,
+    batch_request_type: BatchRequestType,
 ) -> None:
     """Test update queries."""
     session = Session(engine)
