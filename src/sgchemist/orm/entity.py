@@ -1,21 +1,26 @@
 """Defines the base entity class."""
 
+from __future__ import absolute_import
 from __future__ import annotations
 
 import inspect
 import sys
 from collections import defaultdict
 from typing import Any
+from typing import ForwardRef
 from typing import Generic
 from typing import TypeVar
 
 from . import error
 from . import field_info
+from .annotation import FieldAnnotation
+from .annotation import LazyEntityClassEval
+from .annotation import LazyEntityCollectionClassEval
 from .fields import AbstractField
-from .fields import FieldAnnotation
 from .fields import NumberField
-from .fields import add_field_to_entity
-from .fields import initialize_from_annotation
+from .typing_util import cleanup_mapped_str_annotation
+from .typing_util import de_optionalize_union_types
+from .typing_util import expand_unions
 from .typing_util import get_annotations
 
 T = TypeVar("T")
@@ -250,9 +255,9 @@ class SgEntityMeta(type):
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
         cls.__instance_state__: EntityState  # noqa: B032
         cls.__is_root__: bool = len(bases) == 0
+        cls.__is_base__: bool = bases[0].__is_root__ if bases else False
         if cls.__is_root__:
             return
-        cls.__is_base__: bool = bases[0].__is_root__ if bases else False
         # Check if we are initializing a base class
         if cls.__is_base__:
             cls.__registry__: dict[str, SgEntityMeta] = {}
@@ -297,7 +302,7 @@ class SgEntityMeta(type):
         for attr_name, annot in get_annotations(cls).items():
             # Extract entity information from annotation
             try:
-                field_annot = FieldAnnotation.extract(annot, original_scope)
+                field_annot = extract_field_annotation(annot, original_scope)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot extract annotation information for field "
@@ -387,3 +392,134 @@ class SgBaseEntity(metaclass=SgEntityMeta):
     def __repr__(self) -> str:
         """Returns a string representation of the entity."""
         return f"{self.__class__.__name__}(id={self.id})"
+
+
+def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnnotation:
+    """Attempt to extract information from the given annotation.
+
+    This is where all the `magic` really happen but also where it is
+    the most dangerous. Annotations behave very differently between
+    python <3.10 et later.
+    For example, it is not possible to declare specified builtin types
+    like `tuple[str] or dict[str, Any]`.
+    This method tries its best to keep an agnostic approach across
+    all python 3.7+ versions until their EOL.
+    Global and local variables are used to evaluate some of the content of the
+    annotation.
+
+    Args:
+        annotation: the annotation string to extract information from.
+        scope: the variables in the same scope as the annotation.
+
+    Returns:
+        the extracted field information
+
+    Raises:
+        error.SgInvalidAnnotationError: when the reliable information
+            couldn't be extracted from the annotation.
+    """
+    # Check annotation are as string
+    # Otherwise it probably means annotations are not from __future__
+    if not isinstance(annotation, str):
+        raise error.SgInvalidAnnotationError(
+            "sgchemist does not support non string annotations. "
+            "If you are using python <3.10, please add "
+            "`from __future__ import annotations` to your imports."
+        )
+
+    # String un-stringifying the annotation as much as possible.
+    # At least we need to extract the main outer type to check it is a field kind.
+    try:
+        outer_type, cleaned_annot = cleanup_mapped_str_annotation(annotation, scope)
+    except Exception as e:
+        raise error.SgInvalidAnnotationError(
+            f"Cannot evaluate annotation {annotation}"
+        ) from e
+    # We never care about anything but AbstractField
+    if not isinstance(outer_type, type) or not issubclass(outer_type, AbstractField):
+        return FieldAnnotation(outer_type, tuple())
+
+    # Evaluate full annotation
+    # Add ForwardRef in the scope to make sure we can evaluate what was not yet
+    # defined in the scope already
+    eval_scope = scope.copy()
+    eval_scope["ForwardRef"] = ForwardRef
+    annot_eval = eval(cleaned_annot, eval_scope)
+
+    # Extract entity information from the evaluated annotation
+    if not hasattr(annot_eval, "__args__"):
+        return FieldAnnotation(outer_type, tuple())
+
+    inner_annotation = annot_eval.__args__[0]
+    inner_annotation = de_optionalize_union_types(inner_annotation)
+    # Get the container type
+    if hasattr(inner_annotation, "__origin__"):
+        arg_origin = inner_annotation.__origin__
+        if isinstance(arg_origin, type):
+            raise error.SgInvalidAnnotationError("No container class expected")
+    # Unpack the unions
+    entities = expand_unions(inner_annotation)
+    for entity in entities:
+        if isinstance(entity, str):
+            continue
+        elif not issubclass(entity, SgBaseEntity):
+            raise error.SgInvalidAnnotationError(f"{entity} is not an entity")
+        elif entity.__is_base__:
+            raise error.SgInvalidAnnotationError(
+                f"Cannot target {entity} which is a base class"
+            )
+        elif entity.__is_root__:
+            raise error.SgInvalidAnnotationError(
+                f"Cannot target {entity} which is the root class"
+            )
+    return FieldAnnotation(outer_type, entities)
+
+
+def initialize_from_annotation(
+    field: AbstractField[Any], annotation: FieldAnnotation, attribute_name: str
+) -> None:
+    """Create a field from a descriptor."""
+    if annotation.field_type is not field.__class__:
+        raise error.SgInvalidAnnotationError(
+            f"Cannot initialize field of type {field.__class__.__name__} "
+            f"with a {annotation.field_type.__name__}"
+        )
+    info = field.__info__
+    if info["alias_field"]:
+        if len(annotation.entities) != 1:
+            raise error.SgInvalidAnnotationError(
+                "A alias field shall target a single entity"
+            )
+        # Make sure the entity type in annotation is in the target annotation
+        target_entity = annotation.entities[0]
+        target_annotation = info["alias_field"].__info__["annotation"]
+        if target_entity not in target_annotation.entities:
+            raise error.SgInvalidAnnotationError(
+                "An alias field must target a multi target field containing "
+                "its entity"
+            )
+        # An alias field use the same name as its target
+        info["name"] = info["alias_field"].__info__["name"]
+    info["annotation"] = annotation
+    info["name"] = info["name"] or attribute_name
+    info["name_in_relation"] = info["name_in_relation"] or info["name"]
+
+    # Make some checks
+    if info["is_relationship"] and len(annotation.entities) == 0:
+        raise error.SgInvalidAnnotationError("Expected at least one entity field")
+    # Construct a multi target entity
+    for entity in annotation.entities:
+        if isinstance(entity, str) or issubclass(entity, SgBaseEntity):
+            continue
+    lazy_evals = [LazyEntityClassEval(entity, {}) for entity in annotation.entities]
+    info["lazy_collection"] = LazyEntityCollectionClassEval(lazy_evals)
+    if "default_value" not in info:
+        info["default_value"] = field.default_value
+
+
+def add_field_to_entity(entity: SgEntityMeta, field: AbstractField[Any]) -> None:
+    """Add the field to the given entity."""
+    info = field.__info__
+    info["entity"] = entity
+    for lazy_col in info["lazy_collection"].lazy_entities:
+        lazy_col.registry = entity.__registry__
