@@ -308,7 +308,7 @@ class SgEntityMeta(type):
         cls.__fields_by_attr__: dict[str, AbstractField[Any]] = {"id": field_id}
         cls.__attr_per_field_name__: dict[str, str] = {"id": "id"}
         field_names = {"id"}
-        all_fields: list[AbstractField[Any]] = [field_id]
+        all_fields: dict[str, AbstractField[Any]] = {"id": field_id}
 
         # Add the field args from the class we are building
         for attr_name, annot in get_annotations(cls).items():
@@ -350,10 +350,10 @@ class SgEntityMeta(type):
                 cls.__fields_by_attr__[attr_name] = field
                 cls.__fields__.append(field)
             # Create field descriptors
-            all_fields.append(field)
-        for attr_name, field in cls.__fields_by_attr__.items():
+            all_fields[attr_name] = field
+        for attr_name, field in all_fields.items():
             prop = AliasFieldProperty if field_info.is_alias(field) else FieldProperty
-            setattr(cls, attr_name, prop(field, True))
+            setattr(cls, attr_name, prop(field, not field_info.is_primary(field)))
 
         cls.__registry__[cls.__name__] = cls
 
