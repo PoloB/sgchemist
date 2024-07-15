@@ -425,6 +425,12 @@ def test_misc_annotations() -> None:
             __sg_type__ = "test13"
             test: MultiEntityField  # type: ignore
 
+    with pytest.raises(error.SgEntityClassDefinitionError):
+
+        class TestEntity14(SgEntity):
+            __sg_type__ = "test15"
+            test: ""  # type: ignore
+
 
 def test_invalid_expression_in_annotations() -> None:
     class SgEntity(SgBaseEntity):

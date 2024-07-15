@@ -83,6 +83,8 @@ def stringify_subscript(
     subscript: ast.Subscript,
     scope: dict[str, Any],
 ) -> str:
+    """Convert the given subscript to a string."""
+
     def _stringify(exp: ast.AST) -> str:
         if isinstance(exp, ast.BinOp):
             left = _stringify(exp.left)
@@ -124,9 +126,11 @@ def cleanup_mapped_str_annotation(
         the top element of the annotation, the cleaned annotation.
     """
     annotation = annotation.replace('"', "").replace("'", "")
-    expr = ast.parse(annotation).body[0]
-    if not isinstance(expr, ast.Expr):
-        raise TypeError(f"Expected ast.Expr, but got {type(expr)}")
+    expr_body = ast.parse(annotation).body
+    if not expr_body:
+        raise TypeError("No annotation found.")
+    expr = expr_body[0]
+    assert isinstance(expr, ast.Expr)
     subscript = expr.value
     # We only handle subscript
     if isinstance(subscript, ast.Name):
@@ -137,11 +141,7 @@ def cleanup_mapped_str_annotation(
             f"but got {type(subscript)}"
         )
     subscript_value = subscript.value
-    if not isinstance(subscript_value, ast.Name):
-        raise TypeError(
-            f"Expected outer element annotation {annotation} "
-            f"to be a name but got {subscript_value}"
-        )
+    assert isinstance(subscript_value, ast.Name)
     obj = eval_name_only(subscript_value.id, scope)
     annotation = stringify_subscript(subscript, scope)
     return obj, annotation
