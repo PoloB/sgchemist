@@ -188,6 +188,8 @@ def test_cannot_create_entity_directly_from_base() -> None:
 
 
 def test_cannot_create_twice_the_same_entity() -> None:
+    """Test we cannot create an entity twice with the same base class."""
+
     class SgEntity(SgBaseEntity):
         pass
 
@@ -196,13 +198,19 @@ def test_cannot_create_twice_the_same_entity() -> None:
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class TestEntity(SgEntity):
+        class TestEntity(SgEntity):  # type: ignore # noqa: F811
             __sg_type__ = "test1"
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
+
+    class OtherSgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity2(OtherSgEntity):
+        __sg_type__ = "test"
 
 
 def test_union_entity_in_entity() -> None:
@@ -432,7 +440,7 @@ def test_field_uses_field_as_initializer() -> None:
 
 
 def test_misc_annotations() -> None:
-    """Test other corner cases"""
+    """Test other corner cases."""
 
     class SgEntity(SgBaseEntity):
         pass
@@ -453,7 +461,7 @@ def test_misc_annotations() -> None:
 
         class TestEntity14(SgEntity):
             __sg_type__ = "test15"
-            test: ""  # type: ignore
+            test: ""  # type: ignore # noqa: F722
 
 
 def test_invalid_expression_in_annotations() -> None:

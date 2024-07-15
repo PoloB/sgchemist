@@ -51,7 +51,7 @@ class _InScopeTestClass:
 def test_eval_name_only() -> None:
     """Test eval_name_only."""
     value = typing_util.eval_name_only("int", {"int": int})
-    assert value == int
+    assert value is int
     value = typing_util.eval_name_only(
         "_InScopeTestClass", {"_InScopeTestClass": _InScopeTestClass}
     )

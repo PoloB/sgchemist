@@ -7,9 +7,11 @@ import inspect
 import sys
 from collections import defaultdict
 from typing import Any
+from typing import ClassVar
 from typing import ForwardRef
 from typing import Generic
 from typing import TypeVar
+from typing import overload
 
 from . import error
 from . import field_info
@@ -40,6 +42,12 @@ class FieldProperty(Generic[T]):
         """
         self._field = field
         self._settable = settable
+
+    @overload
+    def __get__(self, instance: None, obj_type: Any) -> AbstractField[T]: ...
+
+    @overload
+    def __get__(self, instance: SgBaseEntity, obj_type: Any) -> Any: ...
 
     def __get__(self, instance: SgBaseEntity | None, obj_type: Any = None) -> Any:
         """Return the value of the attribute from the internal state of the instance.
@@ -220,7 +228,7 @@ class SgEntityMeta(type):
         class_name: str,
         bases: tuple[type[Any], ...],
         dict_: dict[str, Any],
-    ):
+    ) -> SgEntityMeta:
         """Initialize the new class.
 
         Args:
@@ -247,7 +255,13 @@ class SgEntityMeta(type):
             )
         return type.__new__(cls, class_name, bases, dict_)
 
-    def __init__(cls, class_name, bases, dict_):
+    def __init__(
+        cls,
+        class_name: str,
+        bases: tuple[type[Any], ...],
+        dict_: dict[str, Any],
+    ):
+        """Initialize the entity class."""
         super().__init__(class_name, bases, dict_)
         # Get the registry back from parent class
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
@@ -293,8 +307,8 @@ class SgEntityMeta(type):
         cls.__fields__: list[AbstractField[Any]] = [field_id]
         cls.__fields_by_attr__: dict[str, AbstractField[Any]] = {"id": field_id}
         cls.__attr_per_field_name__: dict[str, str] = {"id": "id"}
-        cls.id = FieldProperty(field_id, False)
         field_names = {"id"}
+        all_fields: list[AbstractField[Any]] = [field_id]
 
         # Add the field args from the class we are building
         for attr_name, annot in get_annotations(cls).items():
@@ -336,6 +350,8 @@ class SgEntityMeta(type):
                 cls.__fields_by_attr__[attr_name] = field
                 cls.__fields__.append(field)
             # Create field descriptors
+            all_fields.append(field)
+        for attr_name, field in cls.__fields_by_attr__.items():
             prop = AliasFieldProperty if field_info.is_alias(field) else FieldProperty
             setattr(cls, attr_name, prop(field, True))
 
@@ -349,7 +365,14 @@ class SgBaseEntity(metaclass=SgEntityMeta):
     It provides only the "id" field which is common to all Shotgrid entities.
     """
 
-    def __init_subclass__(cls, **kwargs) -> None:
+    id: NumberField
+    __sg_type__: str
+    __fields__: ClassVar[list[AbstractField[Any]]]
+    __fields_by_attr__: ClassVar[dict[str, AbstractField[Any]]]
+    __attr_per_field_name__: ClassVar[dict[str, str]]
+    __state__: ClassVar[EntityState]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Initialize the entity subclass."""
         # If we are directly subclassing, we shall not have any __sg_type__
         if SgBaseEntity in cls.__bases__:
