@@ -12,9 +12,9 @@ from typing import Union
 import pytest
 from classes import Asset
 from classes import Project
+from classes import SgEntity as GlobalSgEntity
 from classes import Shot
 from classes import Task
-from tests.test_orm.classes import SgEntity
 
 from sgchemist.orm import error
 from sgchemist.orm.entity import EntityState
@@ -383,9 +383,33 @@ def test_targeting_base_class_fails() -> None:
     """Make sure that we cannot target the base class."""
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class TestEntity2(SgEntity):
+        class TestEntity2(GlobalSgEntity):
             __sg_type__ = "test2"
-            test: EntityField[SgEntity]
+            test: EntityField[GlobalSgEntity]
+
+
+def test_targeting_invalid_entity_fails_lazily() -> None:
+    """Test using invalid entity even lazily raises an error."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity2(SgEntity):
+        __sg_type__ = "test2"
+        test: EntityField[OtherBaseEntity]
+
+    class OtherBaseEntity(SgBaseEntity):
+        pass
+
+    with pytest.raises(error.SgEntityClassDefinitionError):
+        get_types(TestEntity2.test)
+
+    class TestEntity3(SgEntity):
+        __sg_type__ = "test3"
+        test: EntityField[Test]
+
+    class Test:
+        pass
 
 
 def test_field_uses_field_as_initializer() -> None:
@@ -433,6 +457,8 @@ def test_misc_annotations() -> None:
 
 
 def test_invalid_expression_in_annotations() -> None:
+    """Test invalid expression in annotation."""
+
     class SgEntity(SgBaseEntity):
         pass
 

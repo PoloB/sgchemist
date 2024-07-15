@@ -19,10 +19,10 @@ from sgchemist.orm import MultiEntityField
 from sgchemist.orm import NumberField
 from sgchemist.orm import TextField
 from sgchemist.orm import error
-from sgchemist.orm.annotation import LazyEntityClassEval
-from sgchemist.orm.annotation import LazyEntityCollectionClassEval
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import Operator
+from sgchemist.orm.entity import LazyEntityClassEval
+from sgchemist.orm.entity import LazyEntityCollectionClassEval
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.field_info import cast_column
 from sgchemist.orm.field_info import get_types

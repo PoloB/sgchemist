@@ -15,7 +15,7 @@ from typing_extensions import TypedDict
 if TYPE_CHECKING:
     from sgchemist.orm import SgBaseEntity
     from sgchemist.orm.annotation import FieldAnnotation
-    from sgchemist.orm.annotation import LazyEntityCollectionClassEval
+    from sgchemist.orm.entity import LazyEntityCollectionClassEval
     from sgchemist.orm.entity import SgEntityMeta
     from sgchemist.orm.fields import AbstractField
 
