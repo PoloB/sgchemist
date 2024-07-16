@@ -381,13 +381,6 @@ class SgBaseEntity(metaclass=SgEntityMeta):
                     "Cannot subclass SgBaseEntity directly to create an entity. "
                     "Please subclass SgBaseEntity in your own base class."
                 )
-        else:
-            # Check we are not defining a class in the same class container
-            if cls.__name__ in cls.__registry__:
-                module_file = inspect.getfile(cls)
-                raise error.SgEntityClassDefinitionError(
-                    f"Class {cls.__name__} already defined in module at {module_file}."
-                )
         cls.__is_base__ = True
         super().__init_subclass__(**kwargs)
 

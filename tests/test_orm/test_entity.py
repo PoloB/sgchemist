@@ -195,15 +195,13 @@ def test_cannot_create_twice_the_same_entity() -> None:
     class TestEntity(SgEntity):
         __sg_type__ = "test"
 
-    with pytest.raises(error.SgEntityClassDefinitionError):
-
-        class TestEntity(SgEntity):  # type: ignore # noqa: F811
-            __sg_type__ = "test1"
+    class TestEntity(SgEntity):  # type: ignore  # noqa
+        __sg_type__ = "test1"
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity1(SgEntity):
-            __sg_type__ = "test"
+            __sg_type__ = "test1"
 
     class OtherSgEntity(SgBaseEntity):
         pass
