@@ -3,13 +3,9 @@
 from __future__ import absolute_import
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from typing import Any
 
 from .fields import AbstractField
-
-if TYPE_CHECKING:
-    from .entity import SgBaseEntity
 
 
 class FieldAnnotation:
@@ -17,9 +13,7 @@ class FieldAnnotation:
 
     __slots__ = ("_field_type", "_entities")
 
-    def __init__(
-        self, field_type: type[Any], entities: tuple[str | type[SgBaseEntity], ...]
-    ) -> None:
+    def __init__(self, field_type: type[Any], entities: tuple[str, ...]) -> None:
         """Initialize an instance of field annotation."""
         self._field_type = field_type
         self._entities = entities
@@ -30,7 +24,7 @@ class FieldAnnotation:
         return self._field_type
 
     @property
-    def entities(self) -> tuple[str | type[SgBaseEntity], ...]:
+    def entities(self) -> tuple[str, ...]:
         """Return the entities."""
         return self._entities
 

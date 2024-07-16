@@ -8,7 +8,6 @@ import sys
 from collections import defaultdict
 from typing import Any
 from typing import ClassVar
-from typing import ForwardRef
 from typing import Generic
 from typing import TypeVar
 from typing import overload
@@ -296,6 +295,7 @@ class SgEntityMeta(type):
         cls_namespace.setdefault(cls.__name__, cls)
         original_scope = sys.modules[cls.__module__].__dict__.copy()
         original_scope.update(cls_namespace)
+        original_scope.update(cls.__registry__)
 
         # Add the common id field
         field_id = NumberField()
@@ -463,9 +463,16 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
     # Evaluate full annotation
     # Add ForwardRef in the scope to make sure we can evaluate what was not yet
     # defined in the scope already
-    eval_scope = scope.copy()
-    eval_scope["ForwardRef"] = ForwardRef
-    annot_eval = eval(cleaned_annot, eval_scope)
+    try:
+        annot_eval = eval(cleaned_annot, scope)
+    except Exception:
+        # As a last resort, try with original annotation
+        try:
+            annot_eval = eval(annotation, scope)
+        except Exception as e:
+            raise error.SgInvalidAnnotationError(
+                f"Unable to evaluate annotation {annotation}"
+            ) from e
 
     # Extract entity information from the evaluated annotation
     if not hasattr(annot_eval, "__args__"):
@@ -480,20 +487,9 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
             raise error.SgInvalidAnnotationError("No container class expected")
     # Unpack the unions
     entities = expand_unions(inner_annotation)
-    for entity in entities:
-        if isinstance(entity, str):
-            continue
-        elif not issubclass(entity, SgBaseEntity):
-            raise error.SgInvalidAnnotationError(f"{entity} is not an entity")
-        elif entity.__is_base__:
-            raise error.SgInvalidAnnotationError(
-                f"Cannot target {entity} which is a base class"
-            )
-        elif entity.__is_root__:
-            raise error.SgInvalidAnnotationError(
-                f"Cannot target {entity} which is the root class"
-            )
-    return FieldAnnotation(outer_type, entities)
+    # Try to evaluate the entities right away to check the type of the entity if they
+    # are not lazy
+    return FieldAnnotation(outer_type, tuple(entities))
 
 
 def initialize_from_annotation(
@@ -548,9 +544,7 @@ class LazyEntityClassEval:
 
     _entity: type[SgBaseEntity]
 
-    def __init__(
-        self, class_: str | type[SgBaseEntity], registry: dict[str, SgEntityMeta]
-    ) -> None:
+    def __init__(self, class_: str, registry: dict[str, SgEntityMeta]) -> None:
         """Initialize an instance.
 
         Args:
@@ -558,12 +552,7 @@ class LazyEntityClassEval:
             registry: registry where all classes are defined
         """
         self._resolved: bool = False
-        if not isinstance(class_, str):
-            self.class_name = class_.__name__
-            self._entity = class_
-            self._resolved = True
-        else:
-            self.class_name = class_
+        self.class_name = class_
         self.registry = registry
 
     def get(self) -> type[SgBaseEntity]:
@@ -579,6 +568,11 @@ class LazyEntityClassEval:
                 raise error.SgEntityClassDefinitionError(
                     f"{self.class_name} is not defined in the registry of base class"
                 ) from e
+            if not issubclass(entity, SgBaseEntity):
+                raise error.SgEntityClassDefinitionError(
+                    f"Lazy class {self.class_name} is an entity. "
+                    f"Please check the target of your entities."
+                )
             self._entity = entity
             self._resolved = True
         return self._entity

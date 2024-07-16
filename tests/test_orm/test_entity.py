@@ -12,7 +12,6 @@ from typing import Union
 import pytest
 from classes import Asset
 from classes import Project
-from classes import SgEntity as GlobalSgEntity
 from classes import Shot
 from classes import Task
 
@@ -374,28 +373,6 @@ def test_string_annotation() -> None:
         test: EntityField["TestEntity1" | None]
 
 
-def test_targeting_root_class_fails() -> None:
-    """Make sure that we cannot target the root class."""
-
-    class SgEntity(SgBaseEntity):
-        pass
-
-    with pytest.raises(error.SgEntityClassDefinitionError):
-
-        class TestEntity1(SgEntity):
-            __sg_type__ = "test1"
-            test: EntityField[SgBaseEntity]
-
-
-def test_targeting_base_class_fails() -> None:
-    """Make sure that we cannot target the base class."""
-    with pytest.raises(error.SgEntityClassDefinitionError):
-
-        class TestEntity2(GlobalSgEntity):
-            __sg_type__ = "test2"
-            test: EntityField[GlobalSgEntity]
-
-
 def test_targeting_invalid_entity_fails_lazily() -> None:
     """Test using invalid entity even lazily raises an error."""
 
@@ -483,11 +460,12 @@ def test_explicit_target_is_entity() -> None:
     class SgEntity(SgBaseEntity):
         pass
 
-    with pytest.raises(error.SgEntityClassDefinitionError):
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+        test: EntityField[int]
 
-        class TestEntity15(SgEntity):
-            __sg_type__ = "test14"
-            test: EntityField[int]
+    with pytest.raises(error.SgEntityClassDefinitionError):
+        get_types(TestEntity.test)
 
 
 def test_default_init(shot_entity: type[Shot]) -> None:

@@ -6,7 +6,7 @@ from __future__ import annotations
 import ast
 import builtins
 import re
-from types import UnionType
+import sys
 from typing import Any
 from typing import ForwardRef
 from typing import Mapping
@@ -79,37 +79,30 @@ def eval_name_only(
     raise NameError(f"{name} is not defined.")
 
 
-def stringify_subscript(
-    subscript: ast.Subscript,
-    scope: dict[str, Any],
+def stringify_ast(
+    exp: ast.AST,
 ) -> str:
     """Convert the given subscript to a string."""
-
-    def _stringify(exp: ast.AST) -> str:
-        if isinstance(exp, ast.BinOp):
-            left = _stringify(exp.left)
-            op = _stringify(exp.op)
-            right = _stringify(exp.right)
-            return f"{left} {op} {right}"
-        elif isinstance(exp, ast.BitOr):
-            return "|"
-        elif isinstance(exp, ast.Subscript):
-            value = _stringify(exp.value)
-            slice = _stringify(exp.slice)
-            return f"{value}[{slice}]"
-        elif isinstance(exp, ast.Name):
-            try:
-                eval_name_only(exp.id, scope)
-            except NameError:
-                return f"ForwardRef({exp.id!r})"
-            return exp.id
-        elif isinstance(exp, ast.Constant):
-            return f"{exp.value!r}"
-        elif isinstance(exp, ast.Tuple):
-            return ", ".join(map(_stringify, exp.elts))
-        raise TypeError(f"Cannot parse element {type(exp)} from {subscript}")
-
-    return _stringify(subscript)
+    if isinstance(exp, ast.BinOp):
+        left = stringify_ast(exp.left).replace("'", "")
+        op = stringify_ast(exp.op)
+        right = stringify_ast(exp.right).replace("'", "")
+        return f"'{left} {op} {right}'"
+    elif isinstance(exp, ast.BitOr):
+        return "|"
+    elif isinstance(exp, ast.Subscript):
+        value = stringify_ast(exp.value).replace("'", "")
+        slice = stringify_ast(exp.slice)
+        return f"{value}[{slice}]"
+    elif isinstance(exp, ast.Name):
+        return f"{exp.id!r}"
+    elif isinstance(exp, (ast.Constant, ast.NameConstant)):
+        return f"{exp.value!r}"
+    elif isinstance(exp, ast.Tuple):
+        return ", ".join(map(stringify_ast, exp.elts))
+    elif isinstance(exp, ast.Index):
+        return stringify_ast(exp.value)  # type: ignore # this is for python 3.7 compat
+    raise TypeError(f"Cannot parse element {type(exp)}")
 
 
 def cleanup_mapped_str_annotation(
@@ -143,8 +136,8 @@ def cleanup_mapped_str_annotation(
     subscript_value = subscript.value
     assert isinstance(subscript_value, ast.Name)
     obj = eval_name_only(subscript_value.id, scope)
-    annotation = stringify_subscript(subscript, scope)
-    return obj, annotation
+    annotation = stringify_ast(subscript.slice)
+    return obj, f"{subscript_value.id}[{annotation}]"
 
 
 def make_union_type(*types: AnnotationScanType) -> type[Any]:
@@ -183,6 +176,14 @@ def expand_unions(type_: Any) -> tuple[Any, ...]:
     )
 
 
+if sys.version_info < (3, 10):
+    TYPES_TO_DE_OPTIONALIZE = {Optional, Union}
+else:
+    from types import UnionType
+
+    TYPES_TO_DE_OPTIONALIZE = {Optional, Union, UnionType}
+
+
 def de_optionalize_union_types(
     type_: AnnotationScanType,
 ) -> AnnotationScanType:
@@ -202,7 +203,7 @@ def de_optionalize_union_types(
         except ValueError:
             pass
         return " | ".join(splits)
-    if get_origin(type_) in {Optional, Union, UnionType}:
+    if get_origin(type_) in TYPES_TO_DE_OPTIONALIZE:
         typ = set(get_args(type_))
         typ.discard(NoneFwd)
         typ.discard(type(None))
