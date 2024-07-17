@@ -145,7 +145,7 @@ Any changes made to this file may be lost.
     # Add the minimal required imports
     imports = [
         "from __future__ import annotations",
-        "from sgchemist.orm import SgEntity",
+        "from sgchemist.orm import SgBaseEntity",
     ]
     if create_field_aliases:
         imports.append(
@@ -170,7 +170,9 @@ Any changes made to this file may be lost.
     header += "\n".join(sorted(imports))
     header += "\n\n\n"
 
-    entity_scripts = []
+    entity_scripts = [
+        'class SgEntity(SgBaseEntity):\n\t"""Base class for all the entities."""'
+    ]
     # Start generating the script for each entity
     for entity_schema in sorted(entity_schemas, key=lambda x: x.entity_name.value):
         if entity_schema.entity_type in skip_entities:

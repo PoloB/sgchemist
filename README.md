@@ -15,25 +15,28 @@ You can declare all the entities and fields using a dataclass like structure:
 ```python
 from __future__ import annotations
 
-from sgchemist.orm import SgEntity 
-from sgchemist.orm import TextField 
+from sgchemist.orm import SgBaseEntity
+from sgchemist.orm import TextField
 from sgchemist.orm import EntityField
 from sgchemist.orm import MultiEntityField
-from sgchemist.orm import mapped_field
 
 
+class SgEntity(SgBaseEntity):
+    """Base class for all the entities."""
+
+    
 class Project(SgEntity):
     __sg_type__ = "Project"
-    
-    name: TextField = mapped_field(name="code")
+
+    name: TextField = TextField(name="code")
     title: TextField
-    assets: MultiEntityField[list[Asset]]
-    
-    
+    assets: MultiEntityField[Asset]
+
+
 class Asset(SgEntity):
     __sg_type__ = "Asset"
 
-    name: TextField = mapped_field(name="code")
+    name: TextField = TextField(name="code")
     description: TextField
     project: EntityField[Project]
 
@@ -54,7 +57,7 @@ from sgchemist.orm import ShotgunAPIEngine
 from sgchemist.orm import select
 from sgchemist.orm import Session
 
-from myentities import Asset
+from myentities import Asset, Project
 
 # Create the engine
 shotgun = Shotgun("https://mysite.shotgunstudio.com", script_name="xyz", api_key="abc")
@@ -64,7 +67,7 @@ engine = ShotgunAPIEngine(shotgun)
 session = Session(engine)
 
 # Create the query
-query = select(Asset).where(Asset.project.name.eq("myproject"))
+query = select(Asset).where(Asset.project.f(Project.name).eq("myproject"))
 
 # Perform the query using the session
 assets = list(session.exec(query))

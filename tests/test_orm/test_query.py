@@ -1,7 +1,8 @@
 """Tests the query objects."""
 
+from __future__ import annotations
+
 from typing import Any
-from typing import Type
 
 import pytest
 from classes import Asset
@@ -23,31 +24,31 @@ from sgchemist.orm.queryop import SgNullCondition
 
 
 @pytest.fixture
-def project_entity() -> Type[Project]:
+def project_entity() -> type[Project]:
     """Returns the Project entity."""
     return Project
 
 
 @pytest.fixture
-def shot_entity() -> Type[Shot]:
+def shot_entity() -> type[Shot]:
     """Returns the Shot entity."""
     return Shot
 
 
 @pytest.fixture
-def asset_entity() -> Type[Asset]:
+def asset_entity() -> type[Asset]:
     """Returns the Asset entity."""
     return Asset
 
 
 @pytest.fixture
-def find_query_data(shot_entity: Type[Shot]) -> SgFindQueryData[Type[Shot]]:
+def find_query_data(shot_entity: type[Shot]) -> SgFindQueryData[type[Shot]]:
     """Returns the find query state."""
     return SgFindQueryData(shot_entity, tuple(shot_entity.__fields__))
 
 
 @pytest.fixture
-def summarize_query_data(shot_entity: Type[Shot]) -> SgSummarizeQueryData[Type[Shot]]:
+def summarize_query_data(shot_entity: type[Shot]) -> SgSummarizeQueryData[type[Shot]]:
     """Returns the summarize query state."""
     return SgSummarizeQueryData(shot_entity)
 
@@ -67,12 +68,12 @@ def summarize_query(
 
 
 @pytest.fixture
-def test_shot(shot_entity: Type[Shot]) -> Shot:
+def test_shot(shot_entity: type[Shot]) -> Shot:
     """Returns the test shot."""
     return shot_entity(name="test_shot")
 
 
-def test_state(shot_entity: Type[Shot], find_query_data: SgFindQueryData[Any]) -> None:
+def test_state(shot_entity: type[Shot], find_query_data: SgFindQueryData[Any]) -> None:
     """Tests the find query state init attributes."""
     assert find_query_data.model is shot_entity
     assert isinstance(find_query_data.condition, SgNullCondition)
@@ -87,7 +88,7 @@ def test_state(shot_entity: Type[Shot], find_query_data: SgFindQueryData[Any]) -
 
 
 def test_summarize_state(
-    shot_entity: Type[Shot], summarize_query_data: SgSummarizeQueryData[Any]
+    shot_entity: type[Shot], summarize_query_data: SgSummarizeQueryData[Any]
 ) -> None:
     """Tests the summarize query state init attributes."""
     assert summarize_query_data.model is shot_entity
@@ -97,7 +98,7 @@ def test_summarize_state(
     assert summarize_query_data.include_archived_projects is True
 
 
-def test_where(shot_entity: Type[Shot], find_query: SgFindQuery[Any]) -> None:
+def test_where(shot_entity: type[Shot], find_query: SgFindQuery[Any]) -> None:
     """Tests the where clause."""
     condition = shot_entity.name.eq("foo")
     new_query = find_query.where(condition)
@@ -105,7 +106,7 @@ def test_where(shot_entity: Type[Shot], find_query: SgFindQuery[Any]) -> None:
     new_query.where(shot_entity.id.eq(42))
 
 
-def test_order_by(shot_entity: Type[Shot], find_query: SgFindQuery[Any]) -> None:
+def test_order_by(shot_entity: type[Shot], find_query: SgFindQuery[Any]) -> None:
     """Tests the order_by clause."""
     new_query = find_query.order_by(shot_entity.name, "asc")
     assert new_query.get_data().order_fields == ((shot_entity.name, Order.ASC),)
@@ -160,7 +161,7 @@ def test_summarize_state_copy(
 
 
 def test_summarize_where(
-    shot_entity: Type[Shot], summarize_query: SgSummarizeQuery[Any]
+    shot_entity: type[Shot], summarize_query: SgSummarizeQuery[Any]
 ) -> None:
     """Tests the summarize where clause."""
     condition = shot_entity.name.eq("foo")
@@ -170,7 +171,7 @@ def test_summarize_where(
 
 
 def test_summarize_group_by(
-    shot_entity: Type[Shot], summarize_query: SgSummarizeQuery[Any]
+    shot_entity: type[Shot], summarize_query: SgSummarizeQuery[Any]
 ) -> None:
     """Tests the summarize group by clause."""
     new_query = summarize_query.group_by(shot_entity.name, GroupingType.HUNDREDS)
@@ -199,21 +200,21 @@ def test_batch_query(test_shot: Shot) -> None:
     assert batch_query.entity is test_shot
 
 
-def test_select(shot_entity: Type[Shot]) -> None:
+def test_select(shot_entity: type[Shot]) -> None:
     """Tests the select method."""
     query = select(shot_entity)
     assert isinstance(query, SgFindQuery)
     assert isinstance(query.get_data().condition, SgNullCondition)
 
 
-def test_summarize(shot_entity: Type[Shot]) -> None:
+def test_summarize(shot_entity: type[Shot]) -> None:
     """Tests the summarize method."""
     query = summarize(shot_entity)
     assert isinstance(query, SgSummarizeQuery)
 
 
 def test_select_any_field(
-    shot_entity: Type[Shot], project_entity: Type[Project]
+    shot_entity: type[Shot], project_entity: type[Project]
 ) -> None:
     """Tests select of any fields."""
     query = select(shot_entity, shot_entity.id, shot_entity.name)
@@ -227,7 +228,7 @@ def test_select_any_field(
         select(shot_entity, shot_entity.id, shot_entity.project.f(Project.name))
 
 
-def test_select_loading(shot_entity: Type[Shot], project_entity: Type[Project]) -> None:
+def test_select_loading(shot_entity: type[Shot], project_entity: type[Project]) -> None:
     """Test the select loading feature."""
     shot_fields = (shot_entity.id, shot_entity.project)
     shot_project_name_field = shot_entity.project.f(Project.name)
@@ -239,7 +240,7 @@ def test_select_loading(shot_entity: Type[Shot], project_entity: Type[Project]) 
         select(shot_entity).load(project_entity.name)
 
 
-def test_select_loading_all(shot_entity: Type[Shot], asset_entity: Type[Asset]) -> None:
+def test_select_loading_all(shot_entity: type[Shot], asset_entity: type[Asset]) -> None:
     """Test the select loading all feature."""
     shot_fields = (shot_entity.id, shot_entity.project)
     query = select(shot_entity, *shot_fields).load_all(shot_entity.project)

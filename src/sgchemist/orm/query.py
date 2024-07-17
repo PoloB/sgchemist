@@ -14,13 +14,13 @@ from . import field_info
 from .constant import BatchRequestType
 from .constant import GroupingType
 from .constant import Order
-from .entity import SgEntity
+from .entity import SgBaseEntity
+from .entity import SgEntityMeta
 from .field_info import get_hash
 from .field_info import get_types
 from .field_info import is_alias
 from .fields import AbstractEntityField
 from .fields import AbstractField
-from .meta import SgEntityMeta
 from .queryop import SgFilterObject
 from .queryop import SgNullCondition
 from .typing_alias import GroupingField
@@ -409,7 +409,7 @@ class SgSummarizeQuery(Generic[T_meta]):
 class SgBatchQuery(object):
     """Defines a batch query."""
 
-    def __init__(self, request_type: BatchRequestType, entity: SgEntity):
+    def __init__(self, request_type: BatchRequestType, entity: SgBaseEntity):
         """Initializes the batch query.
 
         Args:
@@ -425,7 +425,7 @@ class SgBatchQuery(object):
         return self._request_type
 
     @property
-    def entity(self) -> SgEntity:
+    def entity(self) -> SgBaseEntity:
         """Returns the entity to query on."""
         return self._entity
 

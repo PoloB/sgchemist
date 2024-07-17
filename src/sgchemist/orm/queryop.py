@@ -5,7 +5,6 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import List
 from typing import TypeVar
 
 from typing_extensions import Self
@@ -76,7 +75,7 @@ class SgNullCondition(SgFilterObject):
 class SgFilterOperation(SgFilterObject):
     """Defines a filter operation between different SgFilterObjects."""
 
-    def __init__(self, operator: LogicalOperator, sg_objects: List[SgFilterObject]):
+    def __init__(self, operator: LogicalOperator, sg_objects: list[SgFilterObject]):
         """Initialize the filter operation.
 
         Args:
@@ -96,7 +95,7 @@ class SgFilterOperation(SgFilterObject):
         Returns:
             combined object.
         """
-        objects: List[SgFilterObject] = [self, other]
+        objects: list[SgFilterObject] = [self, other]
 
         # Concatenate filters if possible to decrease nesting
         if isinstance(other, SgFilterOperation):

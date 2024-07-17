@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Union
 
 from typing_extensions import TypedDict
 
 from . import field_info
 from .constant import BatchRequestType
-from .entity import SgEntity
+from .entity import SgBaseEntity
 from .fields import AbstractField
 from .query import SgBatchQuery
 from .queryop import SgFieldCondition
@@ -19,15 +16,22 @@ from .queryop import SgFilterObject
 from .queryop import SgFilterOperation
 from .queryop import SgNullCondition
 
-SerializedEntity = TypedDict("SerializedEntity", {"id": int, "type": str})
-SerializedOperator = TypedDict(
-    "SerializedOperator", {"filter_operator": str, "filters": List[Any]}
-)
-SerializedCondition = List[Any]
-SerializedObject = Union[SerializedEntity, SerializedOperator, SerializedCondition]
+
+class SerializedEntity(TypedDict):
+    """Defines a serialized entity dict."""
+
+    id: int
+    type: str
 
 
-def serialize_entity(model: SgEntity) -> SerializedEntity:
+class SerializedOperator(TypedDict):
+    """Defines a serialized operator dict."""
+
+    filter_operator: str
+    filters: list[Any]
+
+
+def serialize_entity(model: SgBaseEntity) -> SerializedEntity:
     """Serialize the given sgchemist entity to shotgun-api3 entity.
 
     Args:
@@ -40,7 +44,9 @@ def serialize_entity(model: SgEntity) -> SerializedEntity:
     return {"id": model.id, "type": model.__sg_type__}
 
 
-def serialize_condition(condition: SgFieldCondition) -> SerializedCondition:
+def serialize_condition(
+    condition: SgFieldCondition,
+) -> tuple[str, str, Any]:
     """Serialize the given sgchemist condition to shotgun-api3 filter condition.
 
     Args:
@@ -50,21 +56,21 @@ def serialize_condition(condition: SgFieldCondition) -> SerializedCondition:
         serialized condition
     """
     right = condition.right
-    if isinstance(condition.right, SgEntity):
+    if isinstance(condition.right, SgBaseEntity):
         right = serialize_entity(condition.right)
-    return [
+    return (
         field_info.get_name(condition.field),
         condition.operator.value,
         right,
-    ]
+    )
 
 
 class ShotgunAPIObjectSerializer:
     """Defines a serializer converting sgchemist objects to shotgun-api3 components."""
 
     def serialize_filter(
-        self, sg_object: Union[SgFilterObject, SgEntity]
-    ) -> List[SerializedObject]:
+        self, sg_object: SgFilterObject | SgBaseEntity
+    ) -> list[SerializedEntity | SerializedOperator | list[Any]]:
         """Returns filters for shotgun-api3 from the given sgchemist object.
 
         Args:
@@ -78,8 +84,8 @@ class ShotgunAPIObjectSerializer:
         return [self.serialize_object(sg_object)]
 
     def serialize_object(
-        self, sg_object: Union[SgFilterObject, SgEntity]
-    ) -> SerializedObject:
+        self, sg_object: SgFilterObject | SgBaseEntity
+    ) -> SerializedEntity | SerializedOperator | list[Any]:
         """Serialize the given sgchemist object to shotgun-api3 object.
 
         Args:
@@ -89,8 +95,8 @@ class ShotgunAPIObjectSerializer:
             serialized object
         """
         if isinstance(sg_object, SgFieldCondition):
-            return serialize_condition(sg_object)
-        elif isinstance(sg_object, SgEntity):
+            return list(serialize_condition(sg_object))
+        elif isinstance(sg_object, SgBaseEntity):
             return serialize_entity(sg_object)
         elif isinstance(sg_object, SgFilterOperation):
             return self.serialize_operation(sg_object)
@@ -117,13 +123,20 @@ class ShotgunAPIObjectSerializer:
         }
 
 
-SerializedBatchQueryCreate = TypedDict(
-    "SerializedBatchQueryCreate", {"request_type": str, "entity_type": str}
-)
-SerializedBatchQueryUpdate = TypedDict(
-    "SerializedBatchQueryUpdate",
-    {"request_type": str, "entity_type": str, "entity_id": int, "data": Dict[str, Any]},
-)
+class SerializedBatchQueryCreate(TypedDict):
+    """Defines the content of a batch query create."""
+
+    request_type: str
+    entity_type: str
+
+
+class SerializedBatchQueryUpdate(TypedDict):
+    """Defines the content of a batch query update."""
+
+    request_type: str
+    entity_type: str
+    entity_id: int
+    data: dict[str, Any]
 
 
 class ShotgunAPIBatchQuerySerializer:
@@ -131,8 +144,8 @@ class ShotgunAPIBatchQuerySerializer:
 
     @staticmethod
     def serialize_entity(
-        entity: SgEntity, fields: List[AbstractField[Any]]
-    ) -> Dict[str, Any]:
+        entity: SgBaseEntity, fields: list[AbstractField[Any]]
+    ) -> dict[str, Any]:
         """Serialize the given sgchemist entity to shotgun-api3 batch query.
 
         Args:
@@ -145,7 +158,7 @@ class ShotgunAPIBatchQuerySerializer:
         model_data = {}
         for field in fields:
             value = entity.__state__.get_value(field)
-            if isinstance(value, SgEntity):
+            if isinstance(value, SgBaseEntity):
                 value = {
                     "type": value.__sg_type__,
                     "id": value.id,
@@ -154,7 +167,7 @@ class ShotgunAPIBatchQuerySerializer:
         model_data.pop("id", None)
         return model_data
 
-    def serialize(self, batch_queries: List[SgBatchQuery]) -> List[Dict[str, Any]]:
+    def serialize(self, batch_queries: list[SgBatchQuery]) -> list[dict[str, Any]]:
         """Serialize the given sgchemist batch queries to shotgun-api3 batch queries.
 
         Args:
@@ -167,7 +180,7 @@ class ShotgunAPIBatchQuerySerializer:
         for query in batch_queries:
             request_type = query.request_type
             entity = query.entity
-            batch_data: Dict[str, Any] = {
+            batch_data: dict[str, Any] = {
                 "request_type": request_type.value,
                 "entity_type": entity.__sg_type__,
             }

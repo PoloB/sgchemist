@@ -1,11 +1,14 @@
 """Tests query operators."""
+
+from __future__ import annotations
+
 from typing import Any
 
 import pytest
 
 from sgchemist.orm.constant import LogicalOperator
 from sgchemist.orm.constant import Operator
-from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.fields import AbstractValueField
 from sgchemist.orm.fields import TextField
 from sgchemist.orm.queryop import SgFieldCondition
@@ -16,6 +19,9 @@ from sgchemist.orm.queryop import SgNullCondition
 @pytest.fixture
 def field() -> AbstractValueField[Any]:
     """Returns the test field."""
+
+    class SgEntity(SgBaseEntity):
+        pass
 
     class _TestModel(SgEntity):
         __sg_type__ = "test"

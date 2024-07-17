@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Optional
-from typing import Union
-
 from sgchemist.orm import alias
-from sgchemist.orm.entity import SgEntity
+from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.fields import DateTimeField
 from sgchemist.orm.fields import EntityField
 from sgchemist.orm.fields import ImageField
 from sgchemist.orm.fields import MultiEntityField
 from sgchemist.orm.fields import TextField
+
+
+class SgEntity(SgBaseEntity):
+    """Base class for entities."""
 
 
 class Project(SgEntity):
@@ -48,8 +49,8 @@ class Task(SgEntity):
 
     __sg_type__ = "Task"
     name: TextField = TextField(name="content")
-    entity: EntityField[Optional[Union[Asset, Shot]]] = EntityField()
-    shot: EntityField[Optional[Shot]] = alias(entity)
-    asset: EntityField[Optional[Asset]] = alias(entity)
+    entity: EntityField[Asset | Shot | None] = EntityField()
+    shot: EntityField[Shot | None] = alias(entity)
+    asset: EntityField[Asset | None] = alias(entity)
     created_at: DateTimeField
     image: ImageField = ImageField()

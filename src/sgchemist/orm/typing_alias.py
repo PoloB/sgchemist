@@ -1,5 +1,6 @@
 """Defines multiple typing alias used across sgchemist."""
 
+from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import Any

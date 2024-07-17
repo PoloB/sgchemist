@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Type
-
 import pytest
 from classes import Asset
 from classes import Project
@@ -11,7 +9,7 @@ from classes import Shot
 from classes import Task
 
 from sgchemist.orm import Session
-from sgchemist.orm import SgEntity
+from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import error
 from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
@@ -20,7 +18,7 @@ from sgchemist.orm.session import SgFindResult
 
 
 @pytest.fixture
-def shot_entity() -> Type[Shot]:
+def shot_entity() -> type[Shot]:
     """Returns the Shot entity."""
     return Shot
 
@@ -68,14 +66,14 @@ def test_db(
     test_asset: Asset,
     test_task_shot: Task,
     test_task_asset: Task,
-) -> list[SgEntity]:
+) -> list[SgBaseEntity]:
     """Returns a database content."""
     return [test_project, test_shot, test_asset, test_task_shot, test_task_asset]
 
 
 @pytest.fixture
 def filled_engine(
-    session: Session, engine: SgEngine, test_db: list[SgEntity]
+    session: Session, engine: SgEngine, test_db: list[SgBaseEntity]
 ) -> SgEngine:
     """Returns an engine filled with database content."""
     for inst in test_db:
@@ -84,7 +82,7 @@ def filled_engine(
     return engine
 
 
-def test_find_result(session: Session, shot_entity: Type[Shot]) -> None:
+def test_find_result(session: Session, shot_entity: type[Shot]) -> None:
     """Tests the find result object."""
     test_shot1 = shot_entity()
     test_shot2 = shot_entity()
@@ -219,7 +217,7 @@ def test_delete_already_deleted(session: Session, test_project: Project) -> None
 def test_execute_query_find(
     filled_engine: SgEngine,
     session: Session,
-    model: Type[SgEntity],
+    model: type[SgBaseEntity],
     expected_count: int,
 ) -> None:
     """Tests query find returns the expected number of results."""
@@ -248,7 +246,7 @@ def test_execute_query_find_shot_entity(
 
 
 def test_execute_query_find_loading(
-    filled_engine: SgEngine, session: Session, shot_entity: Type[Shot], test_shot: Shot
+    filled_engine: SgEngine, session: Session, shot_entity: type[Shot], test_shot: Shot
 ) -> None:
     """Test querying with loading option."""
     shot_fields = (shot_entity.id, shot_entity.project)
@@ -278,7 +276,7 @@ def test_execute_query_find_loading(
 
 
 def test_execute_query_select_any_fields(
-    filled_engine: SgEngine, session: Session, shot_entity: Type[Shot], test_shot: Shot
+    filled_engine: SgEngine, session: Session, shot_entity: type[Shot], test_shot: Shot
 ) -> None:
     """Test querying only some fields."""
     shot = session.exec(select(shot_entity, shot_entity.id, shot_entity.name)).first()
