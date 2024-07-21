@@ -15,7 +15,6 @@ from sgchemist.orm import DateTimeField
 from sgchemist.orm import EntityField
 from sgchemist.orm import ImageField
 from sgchemist.orm import ListField
-from sgchemist.orm import MultiEntityField
 from sgchemist.orm import NumberField
 from sgchemist.orm import TextField
 from sgchemist.orm import error
@@ -228,13 +227,6 @@ def test_cast_column(
         (EntityField().type_is_not(Shot), Operator.TYPE_IS_NOT, "Shot"),
         (EntityField().is_in([]), Operator.IN, []),
         (EntityField().is_not_in([]), Operator.NOT_IN, []),
-        (MultiEntityField().name_contains("test"), Operator.NAME_CONTAINS, "test"),
-        (
-            MultiEntityField().name_not_contains("test"),
-            Operator.NAME_NOT_CONTAINS,
-            "test",
-        ),
-        (MultiEntityField().name_is("test"), Operator.NAME_IS, "test"),
         (DateTimeField().in_last(2, DateType.DAY), Operator.IN_LAST, [2, DateType.DAY]),
         (
             DateTimeField().not_in_last(2, DateType.DAY),

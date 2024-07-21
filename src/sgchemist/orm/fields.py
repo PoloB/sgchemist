@@ -445,45 +445,6 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.TYPE_IS_NOT, entity_cls.__sg_type__)
 
-    def name_contains(self, text: str) -> SgFieldCondition:
-        """Filter entities where this entity name contains the given text.
-
-        This is the equivalent of the "name_contains" filter of Shotgrid.
-
-        Args:
-            text: text to test
-
-        Returns:
-            The field condition.
-        """
-        return SgFieldCondition(self, Operator.NAME_CONTAINS, text)
-
-    def name_not_contains(self, text: str) -> SgFieldCondition:
-        """Filter entities where this entity name does not contain the given text.
-
-        This is the equivalent of the "name_contains" filter of Shotgrid.
-
-        Args:
-            text: text to test
-
-        Returns:
-            The field condition.
-        """
-        return SgFieldCondition(self, Operator.NAME_NOT_CONTAINS, text)
-
-    def name_is(self, text: str) -> SgFieldCondition:
-        """Filter entities where this entity name is the given text.
-
-        This is the equivalent of the "name_is" filter of Shotgrid.
-
-        Args:
-            text: text to test
-
-        Returns:
-            The field condition.
-        """
-        return SgFieldCondition(self, Operator.NAME_IS, text)
-
     def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
