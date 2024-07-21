@@ -19,6 +19,7 @@ from sgchemist.orm import MultiEntityField
 from sgchemist.orm import NumberField
 from sgchemist.orm import TextField
 from sgchemist.orm import error
+from sgchemist.orm import field_info
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import LazyEntityClassEval
@@ -262,3 +263,23 @@ def test_condition(
     """Tests the filter methods."""
     assert field_condition.operator is exp_op
     assert field_condition.right == exp_right
+
+
+@pytest.mark.parametrize(
+    "field, expected",
+    [
+        (Project.id, [Project.id]),
+        (Asset.id, [Asset.id]),
+        (Asset.project.f(Project.id), [Asset.project, Project.id]),
+        (Task.asset.f(Asset.id), [Task.asset, Asset.id]),
+        (
+            Task.asset.f(Asset.project).f(Project.name),
+            [Task.asset, Asset.project, Project.name],
+        ),
+    ],
+)
+def test_get_field_hierarchy(
+    field: AbstractField[Any], expected: list[AbstractField[Any]]
+) -> None:
+    """Test the field hierarchy."""
+    assert field_info.get_field_hierarchy(field) == expected

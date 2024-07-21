@@ -78,6 +78,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
             "name_in_relation": name_in_relation,
             "alias_field": alias_field,
             "parent_field": parent_field,
+            "original_field": self,
             "primary": primary,
             "is_relationship": is_relationship,
             "is_list": as_list,
@@ -96,11 +97,11 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
             f"({self.__info__['entity'].__name__}.{self.__info__['name']})"
         )
 
-    def _relative_to(self, relative_attribute: AbstractField[Any]) -> Self:
+    def _relative_to(self, relative_field: AbstractField[Any]) -> Self:
         """Build a new instrumented field relative to the given attribute.
 
         Args:
-            relative_attribute: the relative attribute
+            relative_field: the relative attribute
 
         Returns:
             the attribute relative to the given attribute
@@ -108,7 +109,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         field_info = self.__info__
         new_field_name = ".".join(
             [
-                relative_attribute.__info__["name"],
+                relative_field.__info__["name"],
                 field_info["entity"].__sg_type__,
                 field_info["name"],
             ]
@@ -118,8 +119,9 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         new_field_info = field_info.copy()
         new_field_info["name"] = new_field_name
         new_field_info["field"] = new_field
-        new_field_info["parent_field"] = relative_attribute
+        new_field_info["parent_field"] = relative_field
         new_field_info["name_in_relation"] = new_field_name
+        new_field_info["original_field"] = self
         new_field.__info__ = new_field_info
         return new_field
 

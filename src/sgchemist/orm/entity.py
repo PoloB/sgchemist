@@ -407,6 +407,33 @@ class SgBaseEntity(metaclass=SgEntityMeta):
         """Returns a string representation of the entity."""
         return f"{self.__class__.__name__}(id={self.id})"
 
+    def get_value(self, field: AbstractField[Any]) -> T:
+        """Return the value of the given field.
+
+        Args:
+            field: the field for which to get the value.
+
+        Raises:
+            error.SgMissingFieldError: the value is not available because it has never
+                been queried.
+            error.SgInvalidFieldError: raised if the given field is not a field of the
+                entity.
+        """
+        all_fields = field_info.get_field_hierarchy(field)
+        if all_fields[0].__info__["entity"] is not self.__class__:
+            raise error.SgInvalidFieldError(
+                f"{field} is not a field of {self.__class__}"
+            )
+        # Get the fields in order
+        value = getattr(
+            self, self.__attr_per_field_name__[field_info.get_name(all_fields[0])]
+        )
+        for ordered_field in all_fields[1:]:
+            value = getattr(
+                value, value.__attr_per_field_name__[field_info.get_name(ordered_field)]
+            )
+        return value
+
 
 def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnnotation:
     """Attempt to extract information from the given annotation.

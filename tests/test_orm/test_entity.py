@@ -564,3 +564,21 @@ def test_alias_field_descriptor() -> None:
     assert task_asset.entity is asset
     assert task_asset.shot is None
     assert task_asset.asset is asset
+
+
+def test_get_value() -> None:
+    """Test the get_value method."""
+    project = Project(name="project")
+    asset = Asset(name="asset", project=project)
+    task = Task(name="task", entity=asset)
+    assert project.get_value(Project.name) == "project"
+    assert asset.get_value(Asset.name) == "asset"
+    assert asset.get_value(Asset.project) is project
+    assert asset.get_value(Asset.project.f(Project.name)) == "project"
+    assert task.get_value(Task.name) == "task"
+    assert task.get_value(Task.entity) is asset
+    assert task.get_value(Task.entity.f(Asset.name)) == "asset"
+    assert task.get_value(Task.entity.f(Asset.project).f(Project.name)) == "project"
+
+    with pytest.raises(error.SgInvalidFieldError):
+        task.get_value(Asset.project)
