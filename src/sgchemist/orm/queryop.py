@@ -7,19 +7,358 @@ import datetime
 import operator
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Generic
 from typing import TypeVar
 
 from typing_extensions import Self
 
 from .constant import DateType
 from .constant import LogicalOperator
-from .constant import Operator
+from .entity import SgEntityMeta
 
 if TYPE_CHECKING:
     from . import SgBaseEntity
     from .fields import AbstractField
 
 T = TypeVar("T")
+
+
+class FilterOperator(Generic[T], abc.ABC):
+    """A Shotgrid operator."""
+
+    __sg_op__: str
+
+    def eval(self, value: T) -> bool:
+        """Evaluate the filter on the given value."""
+
+
+class FilterOperatorBetween(FilterOperator[T]):
+    """A between filter."""
+
+    __sg_op__ = "between"
+
+    def __init__(self, low_bound: T, high_bound: T) -> None:
+        """Initialize the filter operator."""
+        self.__low_bound = low_bound
+        self.__high_bound = high_bound
+
+    def eval(self, value: T) -> bool:
+        return self.__low_bound <= value <= self.__high_bound
+
+
+class FilterOperatorContains(FilterOperator[str]):
+    """A contains filter."""
+
+    __sg_op__ = "contains"
+
+    def __init__(self, string: str) -> None:
+        """Initialize the filter operator."""
+        self.__string = string
+
+    def eval(self, value: str) -> bool:
+        return self.__string in value
+
+
+class FilterOperatorEndsWith(FilterOperator[str]):
+    """A endswith filter."""
+
+    __sg_op__ = "end_with"
+
+    def __init__(self, string: str) -> None:
+        """Initialize the filter operator."""
+        self.__string = string
+
+    def eval(self, value: str) -> bool:
+        return value.endswith(self.__string)
+
+
+class FilterOperatorGreaterThan(FilterOperator[T]):
+    """A endswith filter."""
+
+    __sg_op__ = "greater_than"
+
+    def __init__(self, value: T) -> None:
+        """Initialize the filter operator."""
+        self.__value = value
+
+    def eval(self, value: T) -> bool:
+        return value > self.__value
+
+
+class FilterOperatorIn(FilterOperator[T]):
+    """An in filter."""
+
+    __sg_op__ = "in"
+
+    def __init__(self, container: list[T]) -> None:
+        """Initialize the filter operator."""
+        self.__value = container
+
+    def eval(self, value: T) -> bool:
+        return value in self.__value
+
+
+class FilterOperatorInCalendarDay(FilterOperator[datetime.datetime]):
+    """An in_calendar_day filter."""
+
+    __sg_op__ = "in_calendar_day"
+
+    def __init__(self, offset: int) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+
+    def eval(self, value: datetime.datetime) -> bool:
+        op = operator.le if self.__offset >= 0 else operator.gt
+        today = datetime.datetime.now(value.tzinfo)
+        offset_today = today + datetime.timedelta(days=self.__offset)
+        return op(today, value) and op(value, offset_today)
+
+
+class FilterOperatorInCalendarMonth(FilterOperator[datetime.datetime]):
+    """An in_calendar_month filter."""
+
+    __sg_op__ = "in_calendar_month"
+
+    def __init__(self, offset: int) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+
+    def eval(self, value: datetime.datetime) -> bool:
+        # There are not always the same number of days between two months
+        op = operator.le if self.__offset >= 0 else operator.gt
+        today = datetime.datetime.now(value.tzinfo)
+        year_offset, month = divmod(today.month + self.__offset, 12)
+        calendar_month = today.replace(year=today.year + year_offset, month=month)
+        return op(today, value) and op(value, calendar_month)
+
+
+class FilterOperatorInCalendarWeek(FilterOperator[datetime.datetime]):
+    """An in_calendar_week filter."""
+
+    __sg_op__ = "in_calendar_week"
+
+    def __init__(self, offset: int) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+
+    def eval(self, value: datetime.datetime) -> bool:
+        op = operator.le if self.right >= 0 else operator.gt
+        today = datetime.datetime.now(value.tzinfo)
+        offset_today = today + datetime.timedelta(weeks=self.right)
+        return op(today, value) and op(value, offset_today)
+
+
+class FilterOperatorInCalendarYear(FilterOperator[datetime.datetime]):
+    """An in_calendar_year filter."""
+
+    __sg_op__ = "in_calendar_year"
+
+    def __init__(self, offset: int) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+
+    def eval(self, value: datetime.datetime) -> bool:
+        # There are not always the same number of days between two years
+        op = operator.le if self.__offset >= 0 else operator.gt
+        today = datetime.datetime.now(value.tzinfo)
+        calendar_year = today.replace(year=today.year + self.__offset)
+        return op(today, value) and op(value, calendar_year)
+
+
+class FilterOperatorInLast(FilterOperator[datetime.datetime]):
+    """An in_last filter."""
+
+    __sg_op__ = "in_last"
+
+    def __init__(self, offset: int, date_type: DateType) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+        self.__date_type = date_type
+
+    def eval(self, value: datetime.datetime) -> bool:
+        today = datetime.datetime.now(value.tzinfo)
+        if self.__date_type == DateType.YEAR:
+            compare = today.replace(year=today.year - self.__offset)
+        elif self.__date_type == DateType.MONTH:
+            year_offset, month = divmod(today.month - self.__offset, 12)
+            compare = today.replace(year=today.year + year_offset, month=month)
+        else:
+            time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
+            compare = today - datetime.timedelta(**time_value)
+        return today > value > compare
+
+
+class FilterOperatorInNext(FilterOperator[datetime.datetime]):
+    """An in_next filter."""
+
+    __sg_op__ = "in_next"
+
+    def __init__(self, offset: int, date_type: DateType) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+        self.__date_type = date_type
+
+    def eval(self, value: datetime.datetime) -> bool:
+        today = datetime.datetime.now(value.tzinfo)
+        if self.__date_type == DateType.YEAR:
+            compare = today.replace(year=today.year + self.__offset)
+        elif self.__date_type == DateType.MONTH:
+            year_offset, month = divmod(today.month + self.__offset, 12)
+            compare = today.replace(year=today.year + year_offset, month=month)
+        else:
+            time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
+            compare = today + datetime.timedelta(**time_value)
+        return today < value < compare
+
+
+class FilterOperatorIS(FilterOperator[T]):
+    """An in_last filter."""
+
+    __sg_op__ = "is"
+
+    def __init__(self, value: T) -> None:
+        """Initialize the filter operator."""
+        self.__value = value
+
+    def eval(self, value: T) -> bool:
+        return value == self.__value
+
+
+class FilterOperatorIsNot(FilterOperator[T]):
+    """An in_last filter."""
+
+    __sg_op__ = "is_not"
+
+    def __init__(self, value: T) -> None:
+        """Initialize the filter operator."""
+        self.__value = value
+
+    def eval(self, value: T) -> bool:
+        return value != self.__value
+
+
+class FilterOperatorLessThan(FilterOperator[T]):
+    """An in_last filter."""
+
+    __sg_op__ = "less_than"
+
+    def __init__(self, value: T) -> None:
+        """Initialize the filter operator."""
+        self.__value = value
+
+    def eval(self, value: T) -> bool:
+        return value < self.__value
+
+
+class FilterOperatorNotContains(FilterOperator[str]):
+    """A not_contains filter."""
+
+    __sg_op__ = "not_contains"
+
+    def __init__(self, string: str) -> None:
+        """Initialize the filter operator."""
+        self.__string = string
+
+    def eval(self, value: str) -> bool:
+        return self.__string not in value
+
+
+class FilterOperatorNotIn(FilterOperator[T]):
+    """A not_in filter."""
+
+    __sg_op__ = "not_in"
+
+    def __init__(self, container: list[T]) -> None:
+        """Initialize the filter operator."""
+        self.__container = container
+
+    def eval(self, value: T) -> bool:
+        return value not in self.__container
+
+
+class FilterOperatorNotInLast(FilterOperator[datetime.datetime]):
+    """A not_in_last filter."""
+
+    __sg_op__ = "not_in_last"
+
+    def __init__(self, offset: int, date_type: DateType) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+        self.__date_type = date_type
+
+    def eval(self, value: datetime.datetime) -> bool:
+        today = datetime.datetime.now(value.tzinfo)
+        if self.__date_type == DateType.YEAR:
+            compare = today.replace(year=today.year - self.__offset)
+        elif self.__date_type == DateType.MONTH:
+            year_offset, month = divmod(today.month - self.__offset, 12)
+            compare = today.replace(year=today.year + year_offset, month=month)
+        else:
+            time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
+            compare = today - datetime.timedelta(**time_value)
+        return today < value or value < compare
+
+
+class FilterOperatorNotInNext(FilterOperator[datetime.datetime]):
+    """A not_in_next filter."""
+
+    __sg_op__ = "not_in_next"
+
+    def __init__(self, offset: int, date_type: DateType) -> None:
+        """Initialize the filter operator."""
+        self.__offset = offset
+        self.__date_type = date_type
+
+    def eval(self, value: datetime.datetime) -> bool:
+        today = datetime.datetime.now(value.tzinfo)
+        if self.__date_type == DateType.YEAR:
+            compare = today.replace(year=today.year + self.__offset)
+        elif self.__date_type == DateType.MONTH:
+            year_offset, month = divmod(today.month + self.__offset, 12)
+            compare = today.replace(year=today.year + year_offset, month=month)
+        else:
+            time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
+            compare = today + datetime.timedelta(**time_value)
+        return today > value or value > compare
+
+
+class FilterOperatorStartsWith(FilterOperator[str]):
+    """A endswith filter."""
+
+    __sg_op__ = "start_with"
+
+    def __init__(self, string: str) -> None:
+        """Initialize the filter operator."""
+        self.__string = string
+
+    def eval(self, value: str) -> bool:
+        return value.startswith(self.__string)
+
+
+class FilterOperatorTypeIs(FilterOperator[SgBaseEntity]):
+    """A type_is filter."""
+
+    __sg_op__ = "type_is"
+
+    def __init__(self, entity: SgEntityMeta) -> None:
+        """Initialize the filter operator."""
+        self.__entity = entity
+
+    def eval(self, value: SgBaseEntity) -> bool:
+        return value.__sg_type__ == self.__entity.__sg_type__
+
+
+class FilterOperatorTypeIsNot(FilterOperator[SgBaseEntity]):
+    """A type_is_not filter."""
+
+    __sg_op__ = "type_is_not"
+
+    def __init__(self, entity: SgEntityMeta) -> None:
+        """Initialize the filter operator."""
+        self.__entity = entity
+
+    def eval(self, value: SgBaseEntity) -> bool:
+        return value.__sg_type__ != self.__entity.__sg_type__
 
 
 class SgFilterObject(object):
@@ -153,21 +492,16 @@ class SgFieldCondition(SgFilterObject):
     """Defines a field condition."""
 
     def __init__(
-        self,
-        field: AbstractField[T],
-        operator: Operator,
-        right: Any,
+        self, field: AbstractField[T], filter_operator: FilterOperator
     ) -> None:
         """Initialize the field condition.
 
         Args:
             field: field attribute to create the condition on
-            operator: operator to use.
-            right: value to compare the field against.
+            filter_operator: operator to use.
         """
         self.field = field
-        self.op = operator
-        self.right = right
+        self.op = filter_operator
 
     def __and__(self, other: SgFilterObject) -> SgFilterOperation:
         """Combines this operation with another object with a and operator.
@@ -188,123 +522,4 @@ class SgFieldCondition(SgFilterObject):
     def matches(self, entity: SgBaseEntity) -> bool:
         """Return True if the given entity matches the filter."""
         value: Any = entity.get_value(self.field)
-
-        if self.op == Operator.BETWEEN:
-            return self.right[0] <= value <= self.right[1]
-
-        elif self.op == Operator.CONTAINS:
-            return self.right in value
-
-        elif self.op == Operator.ENDS_WITH:
-            return value.endswith(self.right)
-
-        elif self.op == Operator.GREATER_THAN:
-            return value > self.right
-
-        elif self.op == Operator.IN:
-            return value in self.right
-
-        elif self.op == Operator.IN_CALENDAR_DAY:
-            op = operator.le if self.right >= 0 else operator.gt
-            today = datetime.datetime.now(value.tzinfo)
-            return op(today, value) and op(
-                value, today + datetime.timedelta(days=self.right)
-            )
-
-        elif self.op == Operator.IN_CALENDAR_MONTH:
-            # There are not always the same number of days between two months
-            op = operator.le if self.right >= 0 else operator.gt
-            today = datetime.datetime.now(value.tzinfo)
-            year_offset, month = divmod(today.month + self.right, 12)
-            calendar_month = today.replace(year=today.year + year_offset, month=month)
-            return op(today, value) and op(value, calendar_month)
-
-        elif self.op == Operator.IN_CALENDAR_WEEK:
-            op = operator.le if self.right >= 0 else operator.gt
-            today = datetime.datetime.now(value.tzinfo)
-            return op(today, value) and op(
-                value, today + datetime.timedelta(weeks=self.right)
-            )
-
-        elif self.op == Operator.IN_CALENDAR_YEAR:
-            # There are not always the same number of days between two years
-            op = operator.le if self.right >= 0 else operator.gt
-            today = datetime.datetime.now(value.tzinfo)
-            calendar_year = today.replace(year=today.year + self.right)
-            return op(today, value) and op(value, calendar_year)
-
-        elif self.op == Operator.IN_LAST:
-            date_type = self.right[1]
-            today = datetime.datetime.now(value.tzinfo)
-            if date_type == DateType.YEAR:
-                compare = today.replace(year=today.year - self.right[0])
-            elif date_type == DateType.MONTH:
-                year_offset, month = divmod(today.month - self.right[0], 12)
-                compare = today.replace(year=today.year + year_offset, month=month)
-            else:
-                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-                compare = today - datetime.timedelta(**time_value)
-            return today > value > compare
-
-        elif self.op == Operator.IN_NEXT:
-            date_type = self.right[1]
-            today = datetime.datetime.now(value.tzinfo)
-            if date_type == DateType.YEAR:
-                compare = today.replace(year=today.year + self.right[0])
-            elif date_type == DateType.MONTH:
-                year_offset, month = divmod(today.month + self.right[0], 12)
-                compare = today.replace(year=today.year + year_offset, month=month)
-            else:
-                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-                compare = today + datetime.timedelta(**time_value)
-            return today < value < compare
-
-        elif self.op == Operator.IS:
-            return value == self.right
-
-        elif self.op == Operator.IS_NOT:
-            return value != self.right
-
-        elif self.op == Operator.LESS_THAN:
-            return value < self.right
-
-        elif self.op == Operator.NOT_CONTAINS:
-            return self.right not in value
-
-        elif self.op == Operator.NOT_IN:
-            return value not in self.right
-
-        elif self.op == Operator.NOT_IN_LAST:
-            date_type = self.right[1]
-            today = datetime.datetime.now(value.tzinfo)
-            if date_type == DateType.YEAR:
-                compare = today.replace(year=today.year - self.right[0])
-            elif date_type == DateType.MONTH:
-                year_offset, month = divmod(today.month - self.right[0], 12)
-                compare = today.replace(year=today.year + year_offset, month=month)
-            else:
-                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-                compare = today - datetime.timedelta(**time_value)
-            return today < value or value < compare
-
-        elif self.op == Operator.NOT_IN_NEXT:
-            date_type = self.right[1]
-            today = datetime.datetime.now(value.tzinfo)
-            if date_type == DateType.YEAR:
-                compare = today.replace(year=today.year + self.right[0])
-            elif date_type == DateType.MONTH:
-                year_offset, month = divmod(today.month + self.right[0], 12)
-                compare = today.replace(year=today.year + year_offset, month=month)
-            else:
-                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-                compare = today + datetime.timedelta(**time_value)
-            return today > value or value > compare
-
-        elif self.op == Operator.STARTS_WITH:
-            return value.startswith(self.right)
-
-        elif self.op == Operator.TYPE_IS:
-            return value.__sg_type__ == self.right
-
-        elif self.op == Operator.TYPE_IS_NOT:
-            return value.__sg_type__ != self.right
+        return self.op.eval(value)

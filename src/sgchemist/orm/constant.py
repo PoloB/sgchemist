@@ -5,32 +5,6 @@ from __future__ import annotations
 from enum import Enum
 
 
-class Operator(str, Enum):
-    """Available operators for field filters."""
-
-    BETWEEN = "between"
-    CONTAINS = "contains"
-    ENDS_WITH = "end_with"
-    GREATER_THAN = "greater_than"
-    IN = "in"
-    IN_CALENDAR_DAY = "in_calendary_day"
-    IN_CALENDAR_MONTH = "in_calendary_month"
-    IN_CALENDAR_WEEK = "in_calendary_week"
-    IN_CALENDAR_YEAR = "in_calendary_year"
-    IN_LAST = "in_last"
-    IN_NEXT = "in_next"
-    IS = "is"
-    IS_NOT = "is_not"
-    LESS_THAN = "less_than"
-    NOT_CONTAINS = "not_contains"
-    NOT_IN = "not_in"
-    NOT_IN_LAST = "not_in_last"
-    NOT_IN_NEXT = "not_in_next"
-    STARTS_WITH = "start_with"
-    TYPE_IS = "type_is"
-    TYPE_IS_NOT = "type_is_not"
-
-
 class DateType(str, Enum):
     """Available date types."""
 

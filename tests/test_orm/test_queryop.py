@@ -96,7 +96,9 @@ def test_null_condition(field: AbstractValueField[Any]) -> None:
     assert cond_null is cond1
 
 
-def test_matches() -> None:
+def test_field_condition_matches() -> None:
+    """Test the field condition matches method."""
+
     class SgEntity(SgBaseEntity):
         pass
 
@@ -375,3 +377,39 @@ def test_matches() -> None:
     cond = TestEntity.entity.type_is_not(RefEntity)
     assert cond.matches(TestEntity(entity=TestEntity()))
     assert not cond.matches(TestEntity(entity=RefEntity()))
+
+
+def test_filter_operator_matches() -> None:
+    """Test the filter operator matches method."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+
+        name: TextField
+
+    cond = TestEntity.id.eq(1) & TestEntity.name.eq("foo")
+    assert cond.matches(TestEntity(id=1, name="foo"))
+    assert not cond.matches(TestEntity(id=1, name="bar"))
+    assert not cond.matches(TestEntity(id=0, name="foo"))
+    assert not cond.matches(TestEntity(id=0, name="bar"))
+
+    cond = TestEntity.id.eq(1) | TestEntity.name.eq("foo")
+    assert cond.matches(TestEntity(id=1, name="foo"))
+    assert cond.matches(TestEntity(id=1, name="bar"))
+    assert cond.matches(TestEntity(id=0, name="foo"))
+    assert not cond.matches(TestEntity(id=0, name="bar"))
+
+
+def test_null_condition_matches() -> None:
+    """Test the null condition matches method."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+
+    assert SgNullCondition().matches(TestEntity())
