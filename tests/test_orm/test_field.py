@@ -214,7 +214,6 @@ def test_cast_column(
         (NumberField().gt(5), Operator.GREATER_THAN, 5),
         (NumberField().lt(5), Operator.LESS_THAN, 5),
         (NumberField().between(5, 10), Operator.BETWEEN, [5, 10]),
-        (NumberField().not_between(5, 10), Operator.NOT_BETWEEN, [5, 10]),
         (NumberField().is_in([5, 10]), Operator.IN, [5, 10]),
         (NumberField().is_not_in([5, 10]), Operator.NOT_IN, [5, 10]),
         (TextField().startswith("test"), Operator.STARTS_WITH, "test"),
@@ -253,7 +252,7 @@ def test_condition(
     field_condition: SgFieldCondition, exp_op: Operator, exp_right: Any
 ) -> None:
     """Tests the filter methods."""
-    assert field_condition.operator is exp_op
+    assert field_condition.op is exp_op
     assert field_condition.right == exp_right
 
 

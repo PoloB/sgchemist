@@ -60,7 +60,7 @@ def serialize_condition(
         right = serialize_entity(condition.right)
     return (
         field_info.get_name(condition.field),
-        condition.operator.value,
+        condition.op.value,
         right,
     )
 

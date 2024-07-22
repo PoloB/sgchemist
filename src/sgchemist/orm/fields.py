@@ -225,20 +225,6 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, Operator.BETWEEN, [low, high])
 
-    def not_between(self, low: T, high: T) -> SgFieldCondition:
-        """Filter entities where this field is not between the low and high values.
-
-        This is the equivalent of the "not_between" filter of Shotgrid.
-
-        Args:
-            low: low value of the range
-            high: high value of the range
-
-        Returns:
-            The field condition.
-        """
-        return SgFieldCondition(self, Operator.NOT_BETWEEN, [low, high])
-
     def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 

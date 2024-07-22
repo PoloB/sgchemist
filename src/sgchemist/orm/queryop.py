@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import abc
 import datetime
+import operator
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeVar
 
 from typing_extensions import Self
 
+from .constant import DateType
 from .constant import LogicalOperator
 from .constant import Operator
 
@@ -164,7 +166,7 @@ class SgFieldCondition(SgFilterObject):
             right: value to compare the field against.
         """
         self.field = field
-        self.operator = operator
+        self.op = operator
         self.right = right
 
     def __and__(self, other: SgFilterObject) -> SgFilterOperation:
@@ -185,70 +187,124 @@ class SgFieldCondition(SgFilterObject):
 
     def matches(self, entity: SgBaseEntity) -> bool:
         """Return True if the given entity matches the filter."""
-        value = entity.get_value(self.field)
-        if self.operator == Operator.BETWEEN:
-            # TODO: check if the shotgrid implementation is strict or not
-            return self.right[0] >= value >= self.right[1]
-        elif self.operator == Operator.CONTAINS:
+        value: Any = entity.get_value(self.field)
+
+        if self.op == Operator.BETWEEN:
+            return self.right[0] <= value <= self.right[1]
+
+        elif self.op == Operator.CONTAINS:
             return self.right in value
-        elif self.operator == Operator.ENDS_WITH:
+
+        elif self.op == Operator.ENDS_WITH:
             return value.endswith(self.right)
-        elif self.operator == Operator.GREATER_THAN:
-            # TODO: check if the shotgrid implementation is strict or not
-            return value >= self.right
-        elif self.operator == Operator.IN:
+
+        elif self.op == Operator.GREATER_THAN:
+            return value > self.right
+
+        elif self.op == Operator.IN:
             return value in self.right
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.IN_CALENDAR_DAY:
-            return value - datetime.date.today() <= datetime.timedelta(days=self.right)
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.IN_CALENDAR_MONTH:
+
+        elif self.op == Operator.IN_CALENDAR_DAY:
+            op = operator.le if self.right >= 0 else operator.gt
+            today = datetime.datetime.now(value.tzinfo)
+            return op(today, value) and op(
+                value, today + datetime.timedelta(days=self.right)
+            )
+
+        elif self.op == Operator.IN_CALENDAR_MONTH:
             # There are not always the same number of days between two months
-            today = datetime.date.today()
-            calendar_month = today.replace(month=today.month + self.right)
-            return value <= calendar_month
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.IN_CALENDAR_WEEK:
-            return value - datetime.date.today() <= datetime.timedelta(weeks=self.right)
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.IN_CALENDAR_YEAR:
+            op = operator.le if self.right >= 0 else operator.gt
+            today = datetime.datetime.now(value.tzinfo)
+            year_offset, month = divmod(today.month + self.right, 12)
+            calendar_month = today.replace(year=today.year + year_offset, month=month)
+            return op(today, value) and op(value, calendar_month)
+
+        elif self.op == Operator.IN_CALENDAR_WEEK:
+            op = operator.le if self.right >= 0 else operator.gt
+            today = datetime.datetime.now(value.tzinfo)
+            return op(today, value) and op(
+                value, today + datetime.timedelta(weeks=self.right)
+            )
+
+        elif self.op == Operator.IN_CALENDAR_YEAR:
             # There are not always the same number of days between two years
-            today = datetime.date.today()
+            op = operator.le if self.right >= 0 else operator.gt
+            today = datetime.datetime.now(value.tzinfo)
             calendar_year = today.replace(year=today.year + self.right)
-            return value <= calendar_year
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.IN_LAST:
-            time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-            return datetime.date.today() - value >= datetime.timedelta(**time_value)
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.IN_NEXT:
-            time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-            return value - datetime.date.today() >= datetime.timedelta(**time_value)
-        elif self.operator == Operator.IS:
+            return op(today, value) and op(value, calendar_year)
+
+        elif self.op == Operator.IN_LAST:
+            date_type = self.right[1]
+            today = datetime.datetime.now(value.tzinfo)
+            if date_type == DateType.YEAR:
+                compare = today.replace(year=today.year - self.right[0])
+            elif date_type == DateType.MONTH:
+                year_offset, month = divmod(today.month - self.right[0], 12)
+                compare = today.replace(year=today.year + year_offset, month=month)
+            else:
+                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
+                compare = today - datetime.timedelta(**time_value)
+            return today > value > compare
+
+        elif self.op == Operator.IN_NEXT:
+            date_type = self.right[1]
+            today = datetime.datetime.now(value.tzinfo)
+            if date_type == DateType.YEAR:
+                compare = today.replace(year=today.year + self.right[0])
+            elif date_type == DateType.MONTH:
+                year_offset, month = divmod(today.month + self.right[0], 12)
+                compare = today.replace(year=today.year + year_offset, month=month)
+            else:
+                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
+                compare = today + datetime.timedelta(**time_value)
+            return today < value < compare
+
+        elif self.op == Operator.IS:
             return value == self.right
-        elif self.operator == Operator.IS_NOT:
+
+        elif self.op == Operator.IS_NOT:
             return value != self.right
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.LESS_THAN:
-            return value <= self.right
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.NOT_BETWEEN:
-            return value < self.right[0] or value > self.right[1]
-        elif self.operator == Operator.NOT_CONTAINS:
+
+        elif self.op == Operator.LESS_THAN:
+            return value < self.right
+
+        elif self.op == Operator.NOT_CONTAINS:
             return self.right not in value
-        elif self.operator == Operator.NOT_IN:
+
+        elif self.op == Operator.NOT_IN:
             return value not in self.right
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.NOT_IN_LAST:
-            time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-            return datetime.date.today() - value < datetime.timedelta(**time_value)
-        # TODO: check if the shotgrid implementation is strict or not
-        elif self.operator == Operator.NOT_IN_NEXT:
-            time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
-            return value - datetime.date.today() < datetime.timedelta(**time_value)
-        elif self.operator == Operator.STARTS_WITH:
+
+        elif self.op == Operator.NOT_IN_LAST:
+            date_type = self.right[1]
+            today = datetime.datetime.now(value.tzinfo)
+            if date_type == DateType.YEAR:
+                compare = today.replace(year=today.year - self.right[0])
+            elif date_type == DateType.MONTH:
+                year_offset, month = divmod(today.month - self.right[0], 12)
+                compare = today.replace(year=today.year + year_offset, month=month)
+            else:
+                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
+                compare = today - datetime.timedelta(**time_value)
+            return today < value or value < compare
+
+        elif self.op == Operator.NOT_IN_NEXT:
+            date_type = self.right[1]
+            today = datetime.datetime.now(value.tzinfo)
+            if date_type == DateType.YEAR:
+                compare = today.replace(year=today.year + self.right[0])
+            elif date_type == DateType.MONTH:
+                year_offset, month = divmod(today.month + self.right[0], 12)
+                compare = today.replace(year=today.year + year_offset, month=month)
+            else:
+                time_value = {f"{self.right[1].value.lower()}s": self.right[0]}
+                compare = today + datetime.timedelta(**time_value)
+            return today > value or value > compare
+
+        elif self.op == Operator.STARTS_WITH:
             return value.startswith(self.right)
-        elif self.operator == Operator.TYPE_IS:
+
+        elif self.op == Operator.TYPE_IS:
             return value.__sg_type__ == self.right
-        elif self.operator == Operator.TYPE_IS_NOT:
+
+        elif self.op == Operator.TYPE_IS_NOT:
             return value.__sg_type__ != self.right

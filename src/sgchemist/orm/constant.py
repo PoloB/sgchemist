@@ -22,8 +22,6 @@ class Operator(str, Enum):
     IS = "is"
     IS_NOT = "is_not"
     LESS_THAN = "less_than"
-    NAME_CONTAINS = "name_contains"
-    NOT_BETWEEN = "not_between"
     NOT_CONTAINS = "not_contains"
     NOT_IN = "not_in"
     NOT_IN_LAST = "not_in_last"

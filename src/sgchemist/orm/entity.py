@@ -407,7 +407,7 @@ class SgBaseEntity(metaclass=SgEntityMeta):
         """Returns a string representation of the entity."""
         return f"{self.__class__.__name__}(id={self.id})"
 
-    def get_value(self, field: AbstractField[Any]) -> T:
+    def get_value(self, field: AbstractField[Any]) -> Any:
         """Return the value of the given field.
 
         Args:
