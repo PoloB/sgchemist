@@ -18,7 +18,6 @@ from typing import Union
 from typing import cast
 
 from typing_extensions import NewType
-from typing_extensions import Protocol
 from typing_extensions import TypeAliasType
 from typing_extensions import _SpecialForm
 from typing_extensions import get_args
