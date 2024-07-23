@@ -205,13 +205,6 @@ class EntityState(object):
         self.modified_fields = []
 
 
-_all_fields = {
-    name: field_cls
-    for name, field_cls in inspect.getmembers(sys.modules[AbstractField.__module__])
-    if isinstance(field_cls, type) and issubclass(field_cls, AbstractField)
-}
-
-
 class SgEntityMeta(type):
     """Base metaclass for all entity types.
 

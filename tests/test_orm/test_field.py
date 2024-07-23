@@ -20,7 +20,6 @@ from sgchemist.orm import TextField
 from sgchemist.orm import error
 from sgchemist.orm import field_info
 from sgchemist.orm.constant import DateType
-from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import LazyEntityClassEval
 from sgchemist.orm.entity import LazyEntityCollectionClassEval
 from sgchemist.orm.entity import SgBaseEntity
@@ -30,6 +29,28 @@ from sgchemist.orm.field_info import is_alias
 from sgchemist.orm.field_info import iter_entities_from_field_value
 from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.fields import update_entity_from_value
+from sgchemist.orm.queryop import FilterOperator
+from sgchemist.orm.queryop import FilterOperatorBetween
+from sgchemist.orm.queryop import FilterOperatorContains
+from sgchemist.orm.queryop import FilterOperatorEndsWith
+from sgchemist.orm.queryop import FilterOperatorGreaterThan
+from sgchemist.orm.queryop import FilterOperatorIn
+from sgchemist.orm.queryop import FilterOperatorInCalendarDay
+from sgchemist.orm.queryop import FilterOperatorInCalendarMonth
+from sgchemist.orm.queryop import FilterOperatorInCalendarWeek
+from sgchemist.orm.queryop import FilterOperatorInCalendarYear
+from sgchemist.orm.queryop import FilterOperatorInLast
+from sgchemist.orm.queryop import FilterOperatorInNext
+from sgchemist.orm.queryop import FilterOperatorIs
+from sgchemist.orm.queryop import FilterOperatorIsNot
+from sgchemist.orm.queryop import FilterOperatorLessThan
+from sgchemist.orm.queryop import FilterOperatorNotContains
+from sgchemist.orm.queryop import FilterOperatorNotIn
+from sgchemist.orm.queryop import FilterOperatorNotInLast
+from sgchemist.orm.queryop import FilterOperatorNotInNext
+from sgchemist.orm.queryop import FilterOperatorStartsWith
+from sgchemist.orm.queryop import FilterOperatorTypeIs
+from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
 
 
@@ -207,53 +228,44 @@ def test_cast_column(
 
 
 @pytest.mark.parametrize(
-    "field_condition, exp_op, exp_right",
+    "field_condition, exp_op",
     [
-        (NumberField().eq(5), Operator.IS, 5),
-        (NumberField().neq(5), Operator.IS_NOT, 5),
-        (NumberField().gt(5), Operator.GREATER_THAN, 5),
-        (NumberField().lt(5), Operator.LESS_THAN, 5),
-        (NumberField().between(5, 10), Operator.BETWEEN, [5, 10]),
-        (NumberField().is_in([5, 10]), Operator.IN, [5, 10]),
-        (NumberField().is_not_in([5, 10]), Operator.NOT_IN, [5, 10]),
-        (TextField().startswith("test"), Operator.STARTS_WITH, "test"),
-        (TextField().endswith("test"), Operator.ENDS_WITH, "test"),
-        (TextField().contains("test"), Operator.CONTAINS, "test"),
-        (TextField().not_contains("test"), Operator.NOT_CONTAINS, "test"),
-        (TextField().is_in(["test"]), Operator.IN, ["test"]),
-        (TextField().is_not_in(["test"]), Operator.NOT_IN, ["test"]),
-        (EntityField().type_is(Shot), Operator.TYPE_IS, "Shot"),
-        (EntityField().type_is_not(Shot), Operator.TYPE_IS_NOT, "Shot"),
-        (EntityField().is_in([]), Operator.IN, []),
-        (EntityField().is_not_in([]), Operator.NOT_IN, []),
-        (DateTimeField().in_last(2, DateType.DAY), Operator.IN_LAST, [2, DateType.DAY]),
-        (
-            DateTimeField().not_in_last(2, DateType.DAY),
-            Operator.NOT_IN_LAST,
-            [2, DateType.DAY],
-        ),
-        (DateTimeField().in_next(2, DateType.DAY), Operator.IN_NEXT, [2, DateType.DAY]),
-        (
-            DateTimeField().not_in_next(2, DateType.DAY),
-            Operator.NOT_IN_NEXT,
-            [2, DateType.DAY],
-        ),
-        (DateTimeField().in_calendar_day(2), Operator.IN_CALENDAR_DAY, 2),
-        (DateTimeField().in_calendar_week(2), Operator.IN_CALENDAR_WEEK, 2),
-        (DateTimeField().in_calendar_month(2), Operator.IN_CALENDAR_MONTH, 2),
-        (DateTimeField().in_calendar_year(2), Operator.IN_CALENDAR_YEAR, 2),
-        (ImageField().exists(), Operator.IS_NOT, None),
-        (ImageField().not_exists(), Operator.IS, None),
-        (ListField().is_in(["a", "b"]), Operator.IN, ["a", "b"]),
-        (ListField().is_not_in(["a", "b"]), Operator.NOT_IN, ["a", "b"]),
+        (NumberField().eq(5), FilterOperatorIs),
+        (NumberField().neq(5), FilterOperatorIsNot),
+        (NumberField().gt(5), FilterOperatorGreaterThan),
+        (NumberField().lt(5), FilterOperatorLessThan),
+        (NumberField().between(5, 10), FilterOperatorBetween),
+        (NumberField().is_in([5, 10]), FilterOperatorIn),
+        (NumberField().is_not_in([5, 10]), FilterOperatorNotIn),
+        (TextField().startswith("test"), FilterOperatorStartsWith),
+        (TextField().endswith("test"), FilterOperatorEndsWith),
+        (TextField().contains("test"), FilterOperatorContains),
+        (TextField().not_contains("test"), FilterOperatorNotContains),
+        (TextField().is_in(["test"]), FilterOperatorIn),
+        (TextField().is_not_in(["test"]), FilterOperatorNotIn),
+        (EntityField().type_is(Shot), FilterOperatorTypeIs),
+        (EntityField().type_is_not(Shot), FilterOperatorTypeIsNot),
+        (EntityField().is_in([]), FilterOperatorIn),
+        (EntityField().is_not_in([]), FilterOperatorNotIn),
+        (DateTimeField().in_last(2, DateType.DAY), FilterOperatorInLast),
+        (DateTimeField().not_in_last(2, DateType.DAY), FilterOperatorNotInLast),
+        (DateTimeField().in_next(2, DateType.DAY), FilterOperatorInNext),
+        (DateTimeField().not_in_next(2, DateType.DAY), FilterOperatorNotInNext),
+        (DateTimeField().in_calendar_day(2), FilterOperatorInCalendarDay),
+        (DateTimeField().in_calendar_week(2), FilterOperatorInCalendarWeek),
+        (DateTimeField().in_calendar_month(2), FilterOperatorInCalendarMonth),
+        (DateTimeField().in_calendar_year(2), FilterOperatorInCalendarYear),
+        (ImageField().exists(), FilterOperatorIsNot),
+        (ImageField().not_exists(), FilterOperatorIs),
+        (ListField().is_in(["a", "b"]), FilterOperatorIn),
+        (ListField().is_not_in(["a", "b"]), FilterOperatorNotIn),
     ],
 )
 def test_condition(
-    field_condition: SgFieldCondition, exp_op: Operator, exp_right: Any
+    field_condition: SgFieldCondition, exp_op: type[FilterOperator]
 ) -> None:
     """Tests the filter methods."""
-    assert field_condition.op is exp_op
-    assert field_condition.right == exp_right
+    assert isinstance(field_condition.op, exp_op)
 
 
 @pytest.mark.parametrize(

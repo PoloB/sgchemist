@@ -6,15 +6,37 @@ import datetime
 from typing import Any
 
 import pytest
+from tests.test_orm.classes import Project
 
 from sgchemist.orm import DateField
 from sgchemist.orm import EntityField
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import LogicalOperator
-from sgchemist.orm.constant import Operator
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.fields import AbstractValueField
 from sgchemist.orm.fields import TextField
+from sgchemist.orm.queryop import FilterOperator
+from sgchemist.orm.queryop import FilterOperatorBetween
+from sgchemist.orm.queryop import FilterOperatorContains
+from sgchemist.orm.queryop import FilterOperatorEndsWith
+from sgchemist.orm.queryop import FilterOperatorGreaterThan
+from sgchemist.orm.queryop import FilterOperatorIn
+from sgchemist.orm.queryop import FilterOperatorInCalendarDay
+from sgchemist.orm.queryop import FilterOperatorInCalendarMonth
+from sgchemist.orm.queryop import FilterOperatorInCalendarWeek
+from sgchemist.orm.queryop import FilterOperatorInCalendarYear
+from sgchemist.orm.queryop import FilterOperatorInLast
+from sgchemist.orm.queryop import FilterOperatorInNext
+from sgchemist.orm.queryop import FilterOperatorIs
+from sgchemist.orm.queryop import FilterOperatorIsNot
+from sgchemist.orm.queryop import FilterOperatorLessThan
+from sgchemist.orm.queryop import FilterOperatorNotContains
+from sgchemist.orm.queryop import FilterOperatorNotIn
+from sgchemist.orm.queryop import FilterOperatorNotInLast
+from sgchemist.orm.queryop import FilterOperatorNotInNext
+from sgchemist.orm.queryop import FilterOperatorStartsWith
+from sgchemist.orm.queryop import FilterOperatorTypeIs
+from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.queryop import SgFilterOperation
 from sgchemist.orm.queryop import SgNullCondition
@@ -36,8 +58,8 @@ def field() -> AbstractValueField[Any]:
 
 def test_field_condition(field: AbstractValueField[Any]) -> None:
     """Tests field condition."""
-    cond1 = SgFieldCondition(field, Operator.IS, "foo")
-    cond2 = SgFieldCondition(field, Operator.IS, "name")
+    cond1 = SgFieldCondition(field, FilterOperatorIs("foo"))
+    cond2 = SgFieldCondition(field, FilterOperatorIs("name"))
     and_cond = cond1 & cond2
     assert isinstance(and_cond, SgFilterOperation)
     assert and_cond.operator is LogicalOperator.ALL
@@ -50,8 +72,8 @@ def test_field_condition(field: AbstractValueField[Any]) -> None:
 
 def test_filter_operator(field: AbstractValueField[Any]) -> None:
     """Tests filter operator."""
-    cond1 = SgFieldCondition(field, Operator.IS, "foo")
-    cond2 = SgFieldCondition(field, Operator.IS, "name")
+    cond1 = SgFieldCondition(field, FilterOperatorIs("foo"))
+    cond2 = SgFieldCondition(field, FilterOperatorIs("name"))
     and_cond = cond1 & cond2
     or_cond = cond1 | cond2
     and_log = and_cond & or_cond
@@ -89,7 +111,7 @@ def test_null_condition(field: AbstractValueField[Any]) -> None:
     assert isinstance(self_null, SgNullCondition)
     self_null = null_cond | SgNullCondition()
     assert isinstance(self_null, SgNullCondition)
-    cond1 = SgFieldCondition(field, Operator.IS, "foo")
+    cond1 = SgFieldCondition(field, FilterOperatorIs("foo"))
     cond_null = null_cond & cond1
     assert cond_null is cond1
     cond_null = null_cond | cond1
@@ -377,6 +399,37 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.entity.type_is_not(RefEntity)
     assert cond.matches(TestEntity(entity=TestEntity()))
     assert not cond.matches(TestEntity(entity=RefEntity()))
+
+
+@pytest.mark.parametrize(
+    "operator, expected_value",
+    [
+        (FilterOperatorBetween(0, 2), [0, 2]),
+        (FilterOperatorContains("foo"), "foo"),
+        (FilterOperatorEndsWith("foo"), "foo"),
+        (FilterOperatorGreaterThan(7), 7),
+        (FilterOperatorIn(["foo", "bar"]), ["foo", "bar"]),
+        (FilterOperatorInCalendarDay(4), 4),
+        (FilterOperatorInCalendarMonth(4), 4),
+        (FilterOperatorInCalendarWeek(4), 4),
+        (FilterOperatorInCalendarYear(4), 4),
+        (FilterOperatorInLast(4, DateType.MONTH), [4, DateType.MONTH.value]),
+        (FilterOperatorInNext(4, DateType.MONTH), [4, DateType.MONTH.value]),
+        (FilterOperatorIs("foo"), "foo"),
+        (FilterOperatorIsNot("foo"), "foo"),
+        (FilterOperatorLessThan(5), 5),
+        (FilterOperatorNotContains("foo"), "foo"),
+        (FilterOperatorNotIn([0, 2]), [0, 2]),
+        (FilterOperatorNotInLast(5, DateType.YEAR), [5, DateType.YEAR.value]),
+        (FilterOperatorNotInNext(5, DateType.YEAR), [5, DateType.YEAR.value]),
+        (FilterOperatorStartsWith("foo"), "foo"),
+        (FilterOperatorTypeIs(Project), Project.__sg_type__),
+        (FilterOperatorTypeIsNot(Project), Project.__sg_type__),
+    ],
+)
+def test_operator_serialize(operator: FilterOperator[Any], expected_value: Any) -> None:
+    """Test serialization of filter operators."""
+    assert operator.serialize() == expected_value
 
 
 def test_filter_operator_matches() -> None:

@@ -23,8 +23,28 @@ from typing_extensions import Self
 
 from . import error
 from .constant import DateType
-from .constant import Operator
 from .field_info import get_types
+from .queryop import FilterOperatorBetween
+from .queryop import FilterOperatorContains
+from .queryop import FilterOperatorEndsWith
+from .queryop import FilterOperatorGreaterThan
+from .queryop import FilterOperatorIn
+from .queryop import FilterOperatorInCalendarDay
+from .queryop import FilterOperatorInCalendarMonth
+from .queryop import FilterOperatorInCalendarWeek
+from .queryop import FilterOperatorInCalendarYear
+from .queryop import FilterOperatorInLast
+from .queryop import FilterOperatorInNext
+from .queryop import FilterOperatorIs
+from .queryop import FilterOperatorIsNot
+from .queryop import FilterOperatorLessThan
+from .queryop import FilterOperatorNotContains
+from .queryop import FilterOperatorNotIn
+from .queryop import FilterOperatorNotInLast
+from .queryop import FilterOperatorNotInNext
+from .queryop import FilterOperatorStartsWith
+from .queryop import FilterOperatorTypeIs
+from .queryop import FilterOperatorTypeIsNot
 from .queryop import SgFieldCondition
 
 if TYPE_CHECKING:
@@ -136,7 +156,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition
         """
-        return SgFieldCondition(self, Operator.IS, other)
+        return SgFieldCondition(self, FilterOperatorIs(other))
 
     def neq(self, other: T) -> SgFieldCondition:
         """Filter entities where this field is not equal to the given value.
@@ -149,7 +169,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition
         """
-        return SgFieldCondition(self, Operator.IS_NOT, other)
+        return SgFieldCondition(self, FilterOperatorIsNot(other))
 
 
 T_field = TypeVar("T_field", bound=AbstractField[Any])
@@ -196,7 +216,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition
         """
-        return SgFieldCondition(self, Operator.GREATER_THAN, other)
+        return SgFieldCondition(self, FilterOperatorGreaterThan(other))
 
     def lt(self, other: T) -> SgFieldCondition:
         """Filter entities where this field is less than the given value.
@@ -209,7 +229,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition
         """
-        return SgFieldCondition(self, Operator.LESS_THAN, other)
+        return SgFieldCondition(self, FilterOperatorLessThan(other))
 
     def between(self, low: T, high: T) -> SgFieldCondition:
         """Filter entities where this field is between the low and high values.
@@ -223,7 +243,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.BETWEEN, [low, high])
+        return SgFieldCondition(self, FilterOperatorBetween(low, high))
 
     def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
@@ -236,7 +256,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN, others)
+        return SgFieldCondition(self, FilterOperatorIn(others))
 
     def is_not_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
@@ -249,7 +269,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_IN, others)
+        return SgFieldCondition(self, FilterOperatorNotIn(others))
 
 
 class NumberField(NumericField[Optional[int]]):
@@ -310,7 +330,7 @@ class TextField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.CONTAINS, text)
+        return SgFieldCondition(self, FilterOperatorContains(text))
 
     def not_contains(self, text: str) -> SgFieldCondition:
         """Filter entities where this text field does not contain the given string.
@@ -323,7 +343,7 @@ class TextField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_CONTAINS, text)
+        return SgFieldCondition(self, FilterOperatorNotContains(text))
 
     def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
@@ -336,7 +356,7 @@ class TextField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN, others)
+        return SgFieldCondition(self, FilterOperatorIn(others))
 
     def is_not_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
@@ -349,7 +369,7 @@ class TextField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_IN, others)
+        return SgFieldCondition(self, FilterOperatorNotIn(others))
 
     def startswith(self, text: str) -> SgFieldCondition:
         """Filter entities where this text field starts with the given text.
@@ -362,7 +382,7 @@ class TextField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.STARTS_WITH, text)
+        return SgFieldCondition(self, FilterOperatorStartsWith(text))
 
     def endswith(self, text: str) -> SgFieldCondition:
         """Filter entities where this text field ends with the given text.
@@ -375,7 +395,7 @@ class TextField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.ENDS_WITH, text)
+        return SgFieldCondition(self, FilterOperatorEndsWith(text))
 
     if TYPE_CHECKING:
 
@@ -416,7 +436,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.TYPE_IS, entity_cls.__sg_type__)
+        return SgFieldCondition(self, FilterOperatorTypeIs(entity_cls))
 
     def type_is_not(self, entity_cls: type[SgBaseEntity]) -> SgFieldCondition:
         """Filter entities where this entity is not of the given type.
@@ -429,7 +449,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.TYPE_IS_NOT, entity_cls.__sg_type__)
+        return SgFieldCondition(self, FilterOperatorTypeIsNot(entity_cls))
 
     def is_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
@@ -442,7 +462,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN, others)
+        return SgFieldCondition(self, FilterOperatorIn(others))
 
     def is_not_in(self, others: list[T]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
@@ -455,7 +475,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_IN, others)
+        return SgFieldCondition(self, FilterOperatorNotIn(others))
 
 
 class EntityField(AbstractEntityField[Optional[T]]):
@@ -543,7 +563,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN_LAST, [count, date_element])
+        return SgFieldCondition(self, FilterOperatorInLast(count, date_element))
 
     def not_in_last(self, count: int, date_element: DateType) -> SgFieldCondition:
         """Filter entities where this date is not within the last given quantities.
@@ -557,7 +577,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_IN_LAST, [count, date_element])
+        return SgFieldCondition(self, FilterOperatorNotInLast(count, date_element))
 
     def in_next(self, count: int, date_element: DateType) -> SgFieldCondition:
         """Filter entities where this date is within the next given quantities.
@@ -571,7 +591,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN_NEXT, [count, date_element])
+        return SgFieldCondition(self, FilterOperatorInNext(count, date_element))
 
     def not_in_next(self, count: int, date_element: DateType) -> SgFieldCondition:
         """Filter entities where this date is not within the next given quantities.
@@ -585,7 +605,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_IN_NEXT, [count, date_element])
+        return SgFieldCondition(self, FilterOperatorNotInNext(count, date_element))
 
     def in_calendar_day(self, offset: int) -> SgFieldCondition:
         """Filter entities where this date is equal to the offset current day.
@@ -598,7 +618,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN_CALENDAR_DAY, offset)
+        return SgFieldCondition(self, FilterOperatorInCalendarDay(offset))
 
     def in_calendar_week(self, offset: int) -> SgFieldCondition:
         """Filter entities where this date is equal to the offset current week.
@@ -611,7 +631,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN_CALENDAR_WEEK, offset)
+        return SgFieldCondition(self, FilterOperatorInCalendarWeek(offset))
 
     def in_calendar_month(self, offset: int) -> SgFieldCondition:
         """Filter entities where this date is equal to the offset current month.
@@ -624,7 +644,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN_CALENDAR_MONTH, offset)
+        return SgFieldCondition(self, FilterOperatorInCalendarMonth(offset))
 
     def in_calendar_year(self, offset: int) -> SgFieldCondition:
         """Filter entities where this date is equal to the offset current year.
@@ -637,7 +657,7 @@ class AbstractDateField(NumericField[T]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN_CALENDAR_YEAR, offset)
+        return SgFieldCondition(self, FilterOperatorInCalendarYear(offset))
 
 
 class DateField(AbstractDateField[Optional[date]]):
@@ -714,7 +734,7 @@ class ImageField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IS_NOT, None)
+        return SgFieldCondition(self, FilterOperatorIsNot(None))
 
     def not_exists(self) -> SgFieldCondition:
         """Filter entities where this image does not exist.
@@ -724,7 +744,7 @@ class ImageField(AbstractValueField[Optional[str]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IS, None)
+        return SgFieldCondition(self, FilterOperatorIs(None))
 
     if TYPE_CHECKING:
 
@@ -756,7 +776,7 @@ class ListField(AbstractValueField[Optional[List[str]]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.IN, others)
+        return SgFieldCondition(self, FilterOperatorIn(others))
 
     def is_not_in(self, others: list[str]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
@@ -769,7 +789,7 @@ class ListField(AbstractValueField[Optional[List[str]]]):
         Returns:
             The field condition.
         """
-        return SgFieldCondition(self, Operator.NOT_IN, others)
+        return SgFieldCondition(self, FilterOperatorNotIn(others))
 
     if TYPE_CHECKING:
 

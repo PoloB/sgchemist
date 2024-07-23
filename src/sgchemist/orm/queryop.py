@@ -4,23 +4,41 @@ from __future__ import annotations
 
 import abc
 import datetime
-import operator
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
+from typing import Protocol
 from typing import TypeVar
 
 from typing_extensions import Self
 
 from .constant import DateType
 from .constant import LogicalOperator
-from .entity import SgEntityMeta
 
 if TYPE_CHECKING:
-    from . import SgBaseEntity
+    from .entity import SgBaseEntity
     from .fields import AbstractField
 
 T = TypeVar("T")
+
+
+class Comparable(Protocol):
+    """Protocol for annotating comparable types."""
+
+    def __lt__(self, other: CT) -> bool:
+        """Return the comparison of two elements."""
+
+    def __le__(self, other: CT) -> bool:
+        """Return the comparison of two elements."""
+
+
+class WithSgType(Protocol):
+    """Defines an element which has an str __sg_type__ attribute."""
+
+    __sg_type__: str
+
+
+CT = TypeVar("CT", bound=Comparable)
 
 
 class FilterOperator(Generic[T], abc.ABC):
@@ -28,22 +46,32 @@ class FilterOperator(Generic[T], abc.ABC):
 
     __sg_op__: str
 
+    @abc.abstractmethod
     def eval(self, value: T) -> bool:
         """Evaluate the filter on the given value."""
 
+    @abc.abstractmethod
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
 
-class FilterOperatorBetween(FilterOperator[T]):
+
+class FilterOperatorBetween(FilterOperator[CT]):
     """A between filter."""
 
     __sg_op__ = "between"
 
-    def __init__(self, low_bound: T, high_bound: T) -> None:
+    def __init__(self, low_bound: CT, high_bound: CT) -> None:
         """Initialize the filter operator."""
         self.__low_bound = low_bound
         self.__high_bound = high_bound
 
-    def eval(self, value: T) -> bool:
+    def eval(self, value: CT) -> bool:
+        """Evaluate the filter on the given value."""
         return self.__low_bound <= value <= self.__high_bound
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return [self.__low_bound, self.__high_bound]
 
 
 class FilterOperatorContains(FilterOperator[str]):
@@ -56,7 +84,12 @@ class FilterOperatorContains(FilterOperator[str]):
         self.__string = string
 
     def eval(self, value: str) -> bool:
+        """Evaluate the filter on the given value."""
         return self.__string in value
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__string
 
 
 class FilterOperatorEndsWith(FilterOperator[str]):
@@ -69,20 +102,30 @@ class FilterOperatorEndsWith(FilterOperator[str]):
         self.__string = string
 
     def eval(self, value: str) -> bool:
+        """Evaluate the filter on the given value."""
         return value.endswith(self.__string)
 
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__string
 
-class FilterOperatorGreaterThan(FilterOperator[T]):
+
+class FilterOperatorGreaterThan(FilterOperator[CT]):
     """A endswith filter."""
 
     __sg_op__ = "greater_than"
 
-    def __init__(self, value: T) -> None:
+    def __init__(self, value: CT) -> None:
         """Initialize the filter operator."""
         self.__value = value
 
-    def eval(self, value: T) -> bool:
+    def eval(self, value: CT) -> bool:
+        """Evaluate the filter on the given value."""
         return value > self.__value
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__value
 
 
 class FilterOperatorIn(FilterOperator[T]):
@@ -95,7 +138,12 @@ class FilterOperatorIn(FilterOperator[T]):
         self.__value = container
 
     def eval(self, value: T) -> bool:
+        """Evaluate the filter on the given value."""
         return value in self.__value
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__value
 
 
 class FilterOperatorInCalendarDay(FilterOperator[datetime.datetime]):
@@ -108,10 +156,16 @@ class FilterOperatorInCalendarDay(FilterOperator[datetime.datetime]):
         self.__offset = offset
 
     def eval(self, value: datetime.datetime) -> bool:
-        op = operator.le if self.__offset >= 0 else operator.gt
+        """Evaluate the filter on the given value."""
         today = datetime.datetime.now(value.tzinfo)
         offset_today = today + datetime.timedelta(days=self.__offset)
-        return op(today, value) and op(value, offset_today)
+        if self.__offset >= 0:
+            return today < value < offset_today
+        return today > value > offset_today
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__offset
 
 
 class FilterOperatorInCalendarMonth(FilterOperator[datetime.datetime]):
@@ -124,12 +178,18 @@ class FilterOperatorInCalendarMonth(FilterOperator[datetime.datetime]):
         self.__offset = offset
 
     def eval(self, value: datetime.datetime) -> bool:
+        """Evaluate the filter on the given value."""
         # There are not always the same number of days between two months
-        op = operator.le if self.__offset >= 0 else operator.gt
         today = datetime.datetime.now(value.tzinfo)
         year_offset, month = divmod(today.month + self.__offset, 12)
         calendar_month = today.replace(year=today.year + year_offset, month=month)
-        return op(today, value) and op(value, calendar_month)
+        if self.__offset >= 0:
+            return today < value < calendar_month
+        return today > value > calendar_month
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__offset
 
 
 class FilterOperatorInCalendarWeek(FilterOperator[datetime.datetime]):
@@ -142,10 +202,16 @@ class FilterOperatorInCalendarWeek(FilterOperator[datetime.datetime]):
         self.__offset = offset
 
     def eval(self, value: datetime.datetime) -> bool:
-        op = operator.le if self.right >= 0 else operator.gt
+        """Evaluate the filter on the given value."""
         today = datetime.datetime.now(value.tzinfo)
-        offset_today = today + datetime.timedelta(weeks=self.right)
-        return op(today, value) and op(value, offset_today)
+        offset_today = today + datetime.timedelta(weeks=self.__offset)
+        if self.__offset >= 0:
+            return today < value < offset_today
+        return today > value > offset_today
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__offset
 
 
 class FilterOperatorInCalendarYear(FilterOperator[datetime.datetime]):
@@ -158,11 +224,17 @@ class FilterOperatorInCalendarYear(FilterOperator[datetime.datetime]):
         self.__offset = offset
 
     def eval(self, value: datetime.datetime) -> bool:
+        """Evaluate the filter on the given value."""
         # There are not always the same number of days between two years
-        op = operator.le if self.__offset >= 0 else operator.gt
         today = datetime.datetime.now(value.tzinfo)
         calendar_year = today.replace(year=today.year + self.__offset)
-        return op(today, value) and op(value, calendar_year)
+        if self.__offset >= 0:
+            return today < value < calendar_year
+        return today > value > calendar_year
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__offset
 
 
 class FilterOperatorInLast(FilterOperator[datetime.datetime]):
@@ -176,6 +248,7 @@ class FilterOperatorInLast(FilterOperator[datetime.datetime]):
         self.__date_type = date_type
 
     def eval(self, value: datetime.datetime) -> bool:
+        """Evaluate the filter on the given value."""
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year - self.__offset)
@@ -186,6 +259,10 @@ class FilterOperatorInLast(FilterOperator[datetime.datetime]):
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today - datetime.timedelta(**time_value)
         return today > value > compare
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return [self.__offset, self.__date_type.value]
 
 
 class FilterOperatorInNext(FilterOperator[datetime.datetime]):
@@ -199,6 +276,7 @@ class FilterOperatorInNext(FilterOperator[datetime.datetime]):
         self.__date_type = date_type
 
     def eval(self, value: datetime.datetime) -> bool:
+        """Evaluate the filter on the given value."""
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year + self.__offset)
@@ -210,8 +288,12 @@ class FilterOperatorInNext(FilterOperator[datetime.datetime]):
             compare = today + datetime.timedelta(**time_value)
         return today < value < compare
 
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return [self.__offset, self.__date_type.value]
 
-class FilterOperatorIS(FilterOperator[T]):
+
+class FilterOperatorIs(FilterOperator[T]):
     """An in_last filter."""
 
     __sg_op__ = "is"
@@ -221,7 +303,12 @@ class FilterOperatorIS(FilterOperator[T]):
         self.__value = value
 
     def eval(self, value: T) -> bool:
+        """Evaluate the filter on the given value."""
         return value == self.__value
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__value
 
 
 class FilterOperatorIsNot(FilterOperator[T]):
@@ -234,20 +321,30 @@ class FilterOperatorIsNot(FilterOperator[T]):
         self.__value = value
 
     def eval(self, value: T) -> bool:
+        """Evaluate the filter on the given value."""
         return value != self.__value
 
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__value
 
-class FilterOperatorLessThan(FilterOperator[T]):
+
+class FilterOperatorLessThan(FilterOperator[CT]):
     """An in_last filter."""
 
     __sg_op__ = "less_than"
 
-    def __init__(self, value: T) -> None:
+    def __init__(self, value: CT) -> None:
         """Initialize the filter operator."""
         self.__value = value
 
-    def eval(self, value: T) -> bool:
+    def eval(self, value: CT) -> bool:
+        """Evaluate the filter on the given value."""
         return value < self.__value
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__value
 
 
 class FilterOperatorNotContains(FilterOperator[str]):
@@ -260,7 +357,12 @@ class FilterOperatorNotContains(FilterOperator[str]):
         self.__string = string
 
     def eval(self, value: str) -> bool:
+        """Evaluate the filter on the given value."""
         return self.__string not in value
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__string
 
 
 class FilterOperatorNotIn(FilterOperator[T]):
@@ -273,7 +375,12 @@ class FilterOperatorNotIn(FilterOperator[T]):
         self.__container = container
 
     def eval(self, value: T) -> bool:
+        """Evaluate the filter on the given value."""
         return value not in self.__container
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__container
 
 
 class FilterOperatorNotInLast(FilterOperator[datetime.datetime]):
@@ -287,6 +394,7 @@ class FilterOperatorNotInLast(FilterOperator[datetime.datetime]):
         self.__date_type = date_type
 
     def eval(self, value: datetime.datetime) -> bool:
+        """Evaluate the filter on the given value."""
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year - self.__offset)
@@ -297,6 +405,10 @@ class FilterOperatorNotInLast(FilterOperator[datetime.datetime]):
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today - datetime.timedelta(**time_value)
         return today < value or value < compare
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return [self.__offset, self.__date_type.value]
 
 
 class FilterOperatorNotInNext(FilterOperator[datetime.datetime]):
@@ -310,6 +422,7 @@ class FilterOperatorNotInNext(FilterOperator[datetime.datetime]):
         self.__date_type = date_type
 
     def eval(self, value: datetime.datetime) -> bool:
+        """Evaluate the filter on the given value."""
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year + self.__offset)
@@ -320,6 +433,10 @@ class FilterOperatorNotInNext(FilterOperator[datetime.datetime]):
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today + datetime.timedelta(**time_value)
         return today > value or value > compare
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return [self.__offset, self.__date_type.value]
 
 
 class FilterOperatorStartsWith(FilterOperator[str]):
@@ -332,33 +449,48 @@ class FilterOperatorStartsWith(FilterOperator[str]):
         self.__string = string
 
     def eval(self, value: str) -> bool:
+        """Evaluate the filter on the given value."""
         return value.startswith(self.__string)
 
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__string
 
-class FilterOperatorTypeIs(FilterOperator[SgBaseEntity]):
+
+class FilterOperatorTypeIs(FilterOperator[WithSgType]):
     """A type_is filter."""
 
     __sg_op__ = "type_is"
 
-    def __init__(self, entity: SgEntityMeta) -> None:
+    def __init__(self, entity: WithSgType) -> None:
         """Initialize the filter operator."""
         self.__entity = entity
 
-    def eval(self, value: SgBaseEntity) -> bool:
+    def eval(self, value: WithSgType) -> bool:
+        """Evaluate the filter on the given value."""
         return value.__sg_type__ == self.__entity.__sg_type__
 
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__entity.__sg_type__
 
-class FilterOperatorTypeIsNot(FilterOperator[SgBaseEntity]):
+
+class FilterOperatorTypeIsNot(FilterOperator[WithSgType]):
     """A type_is_not filter."""
 
     __sg_op__ = "type_is_not"
 
-    def __init__(self, entity: SgEntityMeta) -> None:
+    def __init__(self, entity: WithSgType) -> None:
         """Initialize the filter operator."""
         self.__entity = entity
 
-    def eval(self, value: SgBaseEntity) -> bool:
+    def eval(self, value: WithSgType) -> bool:
+        """Evaluate the filter on the given value."""
         return value.__sg_type__ != self.__entity.__sg_type__
+
+    def serialize(self) -> Any:
+        """Serialize the filter value."""
+        return self.__entity.__sg_type__
 
 
 class SgFilterObject(object):
@@ -492,7 +624,7 @@ class SgFieldCondition(SgFilterObject):
     """Defines a field condition."""
 
     def __init__(
-        self, field: AbstractField[T], filter_operator: FilterOperator
+        self, field: AbstractField[T], filter_operator: FilterOperator[Any]
     ) -> None:
         """Initialize the field condition.
 
