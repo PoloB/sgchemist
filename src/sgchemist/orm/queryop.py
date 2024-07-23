@@ -14,7 +14,7 @@ from typing_extensions import Self
 
 from .constant import DateType
 from .constant import LogicalOperator
-from .typing_alias import OptionalCompare
+from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
     from .entity import SgBaseEntity

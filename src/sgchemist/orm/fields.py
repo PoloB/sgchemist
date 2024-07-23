@@ -46,7 +46,7 @@ from .queryop import FilterOperatorStartsWith
 from .queryop import FilterOperatorTypeIs
 from .queryop import FilterOperatorTypeIsNot
 from .queryop import SgFieldCondition
-from .typing_alias import OptionalCompare
+from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
     from .entity import SgBaseEntity
