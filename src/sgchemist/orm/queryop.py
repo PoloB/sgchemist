@@ -7,9 +7,9 @@ import datetime
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
-from typing import Protocol
 from typing import TypeVar
 
+from typing_extensions import Protocol
 from typing_extensions import Self
 
 from .constant import DateType
