@@ -46,12 +46,14 @@ from .queryop import FilterOperatorStartsWith
 from .queryop import FilterOperatorTypeIs
 from .queryop import FilterOperatorTypeIsNot
 from .queryop import SgFieldCondition
+from .typing_alias import OptionalCompare
 
 if TYPE_CHECKING:
     from .entity import SgBaseEntity
     from .field_info import FieldInfo
 
 T = TypeVar("T")
+Tcomp = TypeVar("Tcomp", bound=OptionalCompare)
 T2 = TypeVar("T2")
 
 
@@ -200,12 +202,12 @@ class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
         )
 
 
-class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
+class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
     """Definition of an abstract numerical field."""
 
-    cast_type: type[T]
+    cast_type: type[Tcomp]
 
-    def gt(self, other: T) -> SgFieldCondition:
+    def gt(self, other: Tcomp) -> SgFieldCondition:
         """Filter entities where this field is greater than the given value.
 
         This is the equivalent of the "greater_than" filter of Shotgrid.
@@ -218,7 +220,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorGreaterThan(other))
 
-    def lt(self, other: T) -> SgFieldCondition:
+    def lt(self, other: Tcomp) -> SgFieldCondition:
         """Filter entities where this field is less than the given value.
 
         This is the equivalent of the "less_than" filter of Shotgrid.
@@ -231,7 +233,7 @@ class NumericField(AbstractValueField[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorLessThan(other))
 
-    def between(self, low: T, high: T) -> SgFieldCondition:
+    def between(self, low: Tcomp, high: Tcomp) -> SgFieldCondition:
         """Filter entities where this field is between the low and high values.
 
         This is the equivalent of the "between" filter of Shotgrid.
@@ -548,7 +550,7 @@ class BooleanField(AbstractValueField[Optional[bool]]):
             """Return the value of the field."""
 
 
-class AbstractDateField(NumericField[T]):
+class AbstractDateField(NumericField[Tcomp]):
     """Definition an abstract date field."""
 
     def in_last(self, count: int, date_element: DateType) -> SgFieldCondition:

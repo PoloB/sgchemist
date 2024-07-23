@@ -6,7 +6,7 @@ import datetime
 from typing import Any
 
 import pytest
-from tests.test_orm.classes import Project
+from classes import Project
 
 from sgchemist.orm import DateField
 from sgchemist.orm import EntityField

@@ -14,6 +14,7 @@ from typing_extensions import Self
 
 from .constant import DateType
 from .constant import LogicalOperator
+from .typing_alias import OptionalCompare
 
 if TYPE_CHECKING:
     from .entity import SgBaseEntity
@@ -22,23 +23,10 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class Comparable(Protocol):
-    """Protocol for annotating comparable types."""
-
-    def __lt__(self, other: CT) -> bool:
-        """Return the comparison of two elements."""
-
-    def __le__(self, other: CT) -> bool:
-        """Return the comparison of two elements."""
-
-
 class WithSgType(Protocol):
-    """Defines an element which has an str __sg_type__ attribute."""
+    """Defines an element which has a str __sg_type__ attribute."""
 
     __sg_type__: str
-
-
-CT = TypeVar("CT", bound=Comparable)
 
 
 class FilterOperator(Generic[T], abc.ABC):
@@ -55,18 +43,20 @@ class FilterOperator(Generic[T], abc.ABC):
         """Serialize the filter value."""
 
 
-class FilterOperatorBetween(FilterOperator[CT]):
+class FilterOperatorBetween(FilterOperator[OptionalCompare]):
     """A between filter."""
 
     __sg_op__ = "between"
 
-    def __init__(self, low_bound: CT, high_bound: CT) -> None:
+    def __init__(self, low_bound: OptionalCompare, high_bound: OptionalCompare) -> None:
         """Initialize the filter operator."""
         self.__low_bound = low_bound
         self.__high_bound = high_bound
 
-    def eval(self, value: CT) -> bool:
+    def eval(self, value: OptionalCompare) -> bool:
         """Evaluate the filter on the given value."""
+        if value is None or self.__low_bound is None or self.__high_bound is None:
+            return False
         return self.__low_bound <= value <= self.__high_bound
 
     def serialize(self) -> Any:
@@ -110,17 +100,19 @@ class FilterOperatorEndsWith(FilterOperator[str]):
         return self.__string
 
 
-class FilterOperatorGreaterThan(FilterOperator[CT]):
+class FilterOperatorGreaterThan(FilterOperator[OptionalCompare]):
     """A endswith filter."""
 
     __sg_op__ = "greater_than"
 
-    def __init__(self, value: CT) -> None:
+    def __init__(self, value: OptionalCompare) -> None:
         """Initialize the filter operator."""
         self.__value = value
 
-    def eval(self, value: CT) -> bool:
+    def eval(self, value: OptionalCompare) -> bool:
         """Evaluate the filter on the given value."""
+        if value is None or self.__value is None:
+            return False
         return value > self.__value
 
     def serialize(self) -> Any:
@@ -329,17 +321,19 @@ class FilterOperatorIsNot(FilterOperator[T]):
         return self.__value
 
 
-class FilterOperatorLessThan(FilterOperator[CT]):
+class FilterOperatorLessThan(FilterOperator[OptionalCompare]):
     """An in_last filter."""
 
     __sg_op__ = "less_than"
 
-    def __init__(self, value: CT) -> None:
+    def __init__(self, value: OptionalCompare) -> None:
         """Initialize the filter operator."""
         self.__value = value
 
-    def eval(self, value: CT) -> bool:
+    def eval(self, value: OptionalCompare) -> bool:
         """Evaluate the filter on the given value."""
+        if value is None or self.__value is None:
+            return False
         return value < self.__value
 
     def serialize(self) -> Any:

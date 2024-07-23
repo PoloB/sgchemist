@@ -33,7 +33,7 @@ class FieldInfo(TypedDict, Generic[T]):
     name_in_relation: str
     alias_field: AbstractField[Any] | None
     parent_field: AbstractField[Any] | None
-    original_field: AbstractField[Any] | None
+    original_field: AbstractField[Any]
     primary: bool
     is_relationship: bool
     is_list: bool
@@ -108,7 +108,8 @@ def get_field_hierarchy(field: AbstractField[Any]) -> list[AbstractField[Any]]:
     while current_field:
         fields.append(current_field.__info__["original_field"])
         current_field = current_field.__info__["parent_field"]
-    return list(reversed(fields))
+    fields.reverse()
+    return fields
 
 
 def iter_entities_from_field_value(
