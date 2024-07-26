@@ -23,6 +23,7 @@ from .typing_util import expand_unions
 from .typing_util import get_annotations
 
 T = TypeVar("T")
+Tcov = TypeVar("Tcov", covariant=True)
 
 
 class FieldProperty(Generic[T]):
@@ -63,7 +64,7 @@ class FieldProperty(Generic[T]):
         if instance is None:
             return self._field
         state = instance.__state__
-        if not state.is_available(self._field):
+        if not state._available[self._field]:
             raise error.SgMissingFieldError(f"{self._field} has not been queried")
         return state.get_value(self._field)
 
@@ -88,7 +89,7 @@ class FieldProperty(Generic[T]):
         else:
             if self._field in state.modified_fields:
                 state.modified_fields.remove(self._field)
-        instance.__state__.set_value(self._field, value)
+        instance.__state__.values[self._field] = value
 
 
 class AliasFieldProperty(FieldProperty[T]):
@@ -118,7 +119,7 @@ class AliasFieldProperty(FieldProperty[T]):
         return target_value
 
 
-class EntityState(object):
+class EntityState(Generic[Tcov]):
     """Defines the internal state of the instance field values."""
 
     __slots__ = (
@@ -126,14 +127,14 @@ class EntityState(object):
         "pending_add",
         "pending_deletion",
         "deleted",
-        "_values",
+        "values",
         "_available",
         "modified_fields",
         "_original_values",
     )
 
     def __init__(
-        self, instance: SgBaseEntity, values_per_field: dict[AbstractField[T], T]
+        self, instance: SgBaseEntity, values_per_field: dict[AbstractField[Tcov], Tcov]
     ):
         """Initialize the internal state of the instance.
 
@@ -147,12 +148,12 @@ class EntityState(object):
         self.pending_add = False
         self.pending_deletion = False
         self.deleted = False
-        self._values: dict[AbstractField[Any], T] = values_per_field
-        self._available: dict[AbstractField[Any], bool] = defaultdict(lambda: True)
+        self.values: dict[AbstractField[Tcov], Tcov] = values_per_field
+        self._available: dict[AbstractField[Tcov], bool] = defaultdict(lambda: True)
         self.modified_fields: list[AbstractField[Any]] = list(
             filter(lambda f: not field_info.is_primary(f), values_per_field)
         )
-        self._original_values: dict[AbstractField[T], T] = {}
+        self._original_values: dict[AbstractField[Tcov], Tcov] = {}
 
     def is_modified(self) -> bool:
         """Return whether the entity is modified for its initial state.
@@ -172,7 +173,7 @@ class EntityState(object):
         """
         return self._entity.id is not None
 
-    def get_original_value(self, field: AbstractField[T]) -> T | None:
+    def get_original_value(self, field: AbstractField[Tcov]) -> Tcov | None:
         """Return the entity initial value of the given attribute.
 
         Args:
@@ -183,25 +184,25 @@ class EntityState(object):
         """
         return self._original_values.get(field)
 
-    def get_value(self, field: AbstractField[T]) -> T:
+    def get_value(self, field: AbstractField[Tcov]) -> Tcov:
         """Return the value of the field."""
-        return self._values.get(field, field_info.get_default_value(field))
+        return self.values.get(field, field_info.get_default_value(field))
 
-    def set_value(self, field: AbstractField[T], value: T) -> None:
+    def set_value(self, field: AbstractField[Any], value: Any) -> None:
         """Sets the value of the field."""
-        self._values[field] = value
+        self.values[field] = value
 
     def is_available(self, field: AbstractField[Any]) -> bool:
         """Return True if the field is available."""
         return self._available[field]
 
-    def set_available(self, field: AbstractField[Any], available: bool) -> None:
+    def set_available(self, field: AbstractField[Tcov], available: bool) -> None:
         """Sets the availability of the field value."""
         self._available[field] = available
 
     def set_as_original(self) -> None:
         """Set the current state of the entity as its original state."""
-        self._original_values = self._values.copy()
+        self._original_values = self.values.copy()
         self.modified_fields = []
 
 
@@ -257,7 +258,7 @@ class SgEntityMeta(type):
         super().__init__(class_name, bases, dict_)
         # Get the registry back from parent class
         cls.__sg_type__: str = dict_.get("__sg_type__", "")
-        cls.__instance_state__: EntityState  # noqa: B032
+        cls.__instance_state__: EntityState[Any]  # noqa: B032
         cls.__is_root__: bool = len(bases) == 0
         cls.__is_base__: bool = bases[0].__is_root__ if bases else False
         if cls.__is_root__:
@@ -363,7 +364,7 @@ class SgBaseEntity(metaclass=SgEntityMeta):
     __fields__: ClassVar[list[AbstractField[Any]]]
     __fields_by_attr__: ClassVar[dict[str, AbstractField[Any]]]
     __attr_per_field_name__: ClassVar[dict[str, str]]
-    __state__: ClassVar[EntityState]
+    __state__: ClassVar[EntityState[Any]]
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Initialize the entity subclass."""
