@@ -140,6 +140,7 @@ def test_field_condition_matches() -> None:
     assert cond.matches(TestEntity(id=5))
     assert not cond.matches(TestEntity(id=-1))
     assert not cond.matches(TestEntity(id=11))
+    assert not cond.matches(TestEntity())
 
     # CONTAINS
     cond = TestEntity.name.contains("foo")

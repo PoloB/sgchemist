@@ -64,7 +64,7 @@ class FieldProperty(Generic[T]):
         if instance is None:
             return self._field
         state = instance.__state__
-        if not state._available[self._field]:
+        if not state.is_available(self._field):
             raise error.SgMissingFieldError(f"{self._field} has not been queried")
         return state.get_value(self._field)
 
