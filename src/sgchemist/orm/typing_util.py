@@ -11,13 +11,13 @@ from typing import Any
 from typing import ForwardRef
 from typing import Mapping
 from typing import Optional
-from typing import Protocol
 from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import cast
 
 from typing_extensions import NewType
+from typing_extensions import Protocol
 from typing_extensions import TypeAliasType
 from typing_extensions import _SpecialForm
 from typing_extensions import get_args
