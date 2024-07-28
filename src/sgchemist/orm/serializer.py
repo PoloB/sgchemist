@@ -55,12 +55,12 @@ def serialize_condition(
     Returns:
         serialized condition
     """
-    right = condition.right
-    if isinstance(condition.right, SgBaseEntity):
-        right = serialize_entity(condition.right)
+    right = condition.op.serialize()
+    if isinstance(right, SgBaseEntity):
+        right = serialize_entity(right)
     return (
         field_info.get_name(condition.field),
-        condition.operator.value,
+        condition.op.__sg_op__,
         right,
     )
 

@@ -210,3 +210,16 @@ def de_optionalize_union_types(
 
         return make_union_type(*typ)
     return type_
+
+
+class Comparable(Protocol):
+    """Protocol for annotating comparable types."""
+
+    def __lt__(self, other: Any) -> bool:
+        """Return the comparison of two elements."""
+
+    def __le__(self, other: Any) -> bool:
+        """Return the comparison of two elements."""
+
+
+OptionalCompare = Optional[Comparable]

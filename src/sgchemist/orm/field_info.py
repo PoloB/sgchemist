@@ -33,6 +33,7 @@ class FieldInfo(TypedDict, Generic[T]):
     name_in_relation: str
     alias_field: AbstractField[Any] | None
     parent_field: AbstractField[Any] | None
+    original_field: AbstractField[Any]
     primary: bool
     is_relationship: bool
     is_list: bool
@@ -90,6 +91,25 @@ def get_types(field: AbstractField[Any]) -> tuple[type[SgBaseEntity], ...]:
         tuple[Type[Any], ...]: Python types of the attribute
     """
     return tuple(field.__info__["lazy_collection"].get_all())
+
+
+def get_field_hierarchy(field: AbstractField[Any]) -> list[AbstractField[Any]]:
+    """Return the fields from root to leaf.
+
+    Examples:
+        If the input field in `Asset.project.f(Project.id), the function will return
+        `[Asset.project, Project.id]`.
+
+    Args:
+        field: Field to get hierarchy from.
+    """
+    fields = []
+    current_field: AbstractField[Any] | None = field
+    while current_field:
+        fields.append(current_field.__info__["original_field"])
+        current_field = current_field.__info__["parent_field"]
+    fields.reverse()
+    return fields
 
 
 def iter_entities_from_field_value(
