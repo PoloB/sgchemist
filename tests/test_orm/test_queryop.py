@@ -162,6 +162,7 @@ def test_field_condition_matches() -> None:
     assert cond.matches(TestEntity(id=6))
     assert not cond.matches(TestEntity(id=5))
     assert not cond.matches(TestEntity(id=0))
+    assert not cond.matches(TestEntity())
 
     # IN
     cond = TestEntity.id.is_in([1, 4])
@@ -310,6 +311,7 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(id=6))
     assert not cond.matches(TestEntity(id=5))
     assert cond.matches(TestEntity(id=0))
+    assert not cond.matches(TestEntity())
 
     # NOT_CONTAINS
     cond = TestEntity.name.not_contains("foo")
