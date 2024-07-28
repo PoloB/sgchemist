@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import time
 from typing import Any
 
 import pytest
@@ -170,6 +171,8 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(id=3))
 
     now = datetime.datetime.now(datetime.timezone.utc)
+    # Add a small delay to avoid clock issues between windows and linux
+    time.sleep(0.01)
 
     # IN_CALENDAR_DAY
     cond = TestEntity.date.in_calendar_day(1)
