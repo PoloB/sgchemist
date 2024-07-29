@@ -12,16 +12,11 @@ from .entity import SgBaseEntity
 from .fields import AbstractField
 from .query import SgBatchQuery
 from .queryop import SgFieldCondition
-from .queryop import SgFilterObject
 from .queryop import SgFilterOperation
 from .queryop import SgNullCondition
-
-
-class SerializedEntity(TypedDict):
-    """Defines a serialized entity dict."""
-
-    id: int
-    type: str
+from .queryop import SgSerializable
+from .queryop import SgSummaryField
+from .typing_alias import SerializedEntity
 
 
 class SerializedOperator(TypedDict):
@@ -31,17 +26,24 @@ class SerializedOperator(TypedDict):
     filters: list[Any]
 
 
-def serialize_entity(model: SgBaseEntity) -> SerializedEntity:
+class SerializedSummaryField(TypedDict):
+    """Defines a serialized summary field dict."""
+
+    field: str
+    type: str
+
+
+def serialize_entity(entity: SgBaseEntity) -> SerializedEntity:
     """Serialize the given sgchemist entity to shotgun-api3 entity.
 
     Args:
-        model: sgchemist entity to serialize
+        entity: sgchemist entity to serialize
 
     Returns:
         serialized entity
     """
-    assert model.id is not None
-    return {"id": model.id, "type": model.__sg_type__}
+    assert entity.id is not None
+    return {"id": entity.id, "type": entity.__sg_type__}
 
 
 def serialize_condition(
@@ -65,12 +67,31 @@ def serialize_condition(
     )
 
 
+def serialize_summary_field(
+    summary_field: SgSummaryField[Any, Any],
+) -> SerializedSummaryField:
+    """Serialize the given sgchemist summary field to shotgun-api3 summary field.
+
+    Args:
+        summary_field: sgchemist summary field to serialize
+
+    Returns:
+        serialized summary field
+    """
+    return {
+        "field": field_info.get_name(summary_field.field),
+        "type": summary_field.op.__sg_op__,
+    }
+
+
 class ShotgunAPIObjectSerializer:
     """Defines a serializer converting sgchemist objects to shotgun-api3 components."""
 
     def serialize_filter(
-        self, sg_object: SgFilterObject | SgBaseEntity
-    ) -> list[SerializedEntity | SerializedOperator | list[Any]]:
+        self, sg_object: SgSerializable | SgBaseEntity
+    ) -> list[
+        SerializedEntity | SerializedOperator | SerializedSummaryField | list[Any]
+    ]:
         """Returns filters for shotgun-api3 from the given sgchemist object.
 
         Args:
@@ -84,8 +105,8 @@ class ShotgunAPIObjectSerializer:
         return [self.serialize_object(sg_object)]
 
     def serialize_object(
-        self, sg_object: SgFilterObject | SgBaseEntity
-    ) -> SerializedEntity | SerializedOperator | list[Any]:
+        self, sg_object: SgSerializable | SgBaseEntity
+    ) -> SerializedEntity | SerializedOperator | SerializedSummaryField | list[Any]:
         """Serialize the given sgchemist object to shotgun-api3 object.
 
         Args:
@@ -100,6 +121,8 @@ class ShotgunAPIObjectSerializer:
             return serialize_entity(sg_object)
         elif isinstance(sg_object, SgFilterOperation):
             return self.serialize_operation(sg_object)
+        elif isinstance(sg_object, SgSummaryField):
+            return serialize_summary_field(sg_object)
         raise AssertionError(
             f"Cannot serialize object of type {type(sg_object)}"
         )  # pragma: no cover

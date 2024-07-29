@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from .engine import ShotgunAPIEngine as ShotgunAPIEngine
 from .entity import SgBaseEntity as SgBaseEntity
 from .fields import BooleanField as BooleanField
 from .fields import DateField as DateField

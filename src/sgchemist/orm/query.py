@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import dataclasses
 from typing import Any
 from typing import Generic
+from typing import Tuple
 from typing import TypeVar
 
 from typing_extensions import Self
@@ -12,7 +12,6 @@ from typing_extensions import Self
 from . import error
 from . import field_info
 from .constant import BatchRequestType
-from .constant import GroupingType
 from .constant import Order
 from .entity import SgBaseEntity
 from .entity import SgEntityMeta
@@ -22,11 +21,12 @@ from .field_info import is_alias
 from .fields import AbstractEntityField
 from .fields import AbstractField
 from .queryop import SgFilterObject
+from .queryop import SgGroupingField
 from .queryop import SgNullCondition
-from .typing_alias import GroupingField
-from .typing_alias import OrderField
+from .queryop import SgSummaryField
 
 T_meta = TypeVar("T_meta", bound=SgEntityMeta)
+OrderField = Tuple[AbstractField[Any], Order]
 
 
 class SgFindQueryData(Generic[T_meta]):
@@ -36,7 +36,7 @@ class SgFindQueryData(Generic[T_meta]):
     """
 
     __slots__ = (
-        "_model",
+        "_entity",
         "_fields",
         "_condition",
         "_order_fields",
@@ -50,7 +50,7 @@ class SgFindQueryData(Generic[T_meta]):
 
     def __init__(
         self,
-        model: T_meta,
+        entity: T_meta,
         fields: tuple[AbstractField[Any], ...],
         condition: SgFilterObject | None = None,
         order_fields: tuple[OrderField, ...] = tuple(),
@@ -62,7 +62,7 @@ class SgFindQueryData(Generic[T_meta]):
         loading_fields: tuple[AbstractField[Any], ...] = tuple(),
     ):
         """Initializes a find query data object."""
-        self._model = model
+        self._entity = entity
         self._fields = fields
         self._condition = condition or SgNullCondition()
         self._order_fields = order_fields
@@ -75,7 +75,7 @@ class SgFindQueryData(Generic[T_meta]):
 
     def copy(
         self,
-        model: T_meta | None = None,
+        entity: T_meta | None = None,
         fields: tuple[AbstractField[Any], ...] | None = None,
         condition: SgFilterObject | None = None,
         order_fields: tuple[OrderField, ...] | None = None,
@@ -87,7 +87,7 @@ class SgFindQueryData(Generic[T_meta]):
         loading_fields: tuple[AbstractField[Any], ...] | None = None,
     ) -> SgFindQueryData[T_meta]:
         """Returns a copy of the object with the given modified attributes."""
-        model = model if model is not None else self._model
+        entity = entity if entity is not None else self._entity
         fields = fields if fields is not None else self._fields
         condition = condition if condition is not None else self._condition
         order_fields = order_fields if order_fields is not None else self._order_fields
@@ -104,7 +104,7 @@ class SgFindQueryData(Generic[T_meta]):
             loading_fields if loading_fields is not None else self._loading_fields
         )
         return SgFindQueryData(
-            model=model,
+            entity=entity,
             fields=fields,
             condition=condition,
             order_fields=order_fields,
@@ -117,9 +117,9 @@ class SgFindQueryData(Generic[T_meta]):
         )
 
     @property
-    def model(self) -> T_meta:
+    def entity(self) -> T_meta:
         """Return on which the query applies."""
-        return self._model
+        return self._entity
 
     @property
     def fields(self) -> tuple[AbstractField[Any], ...]:
@@ -322,14 +322,87 @@ class SgFindQuery(Generic[T_meta]):
         return self.load(*all_fields)
 
 
-@dataclasses.dataclass
 class SgSummarizeQueryData(Generic[T_meta]):
-    """Defines a data container for summary query data."""
+    """Defines a data container for find query data.
 
-    model: SgEntityMeta
-    condition: SgFilterObject | None = None
-    grouping: tuple[GroupingField, ...] = tuple()
-    include_archived_projects: bool = True
+    It is transferred between different SgFindQuery objects.
+    """
+
+    __slots__ = (
+        "_entity",
+        "_fields",
+        "_condition",
+        "_grouping_fields",
+        "_include_archived_projects",
+    )
+
+    def __init__(
+        self,
+        entity: T_meta,
+        fields: tuple[SgSummaryField[Any, Any], ...] = tuple(),
+        condition: SgFilterObject | None = None,
+        grouping_fields: tuple[SgGroupingField[Any, Any], ...] = tuple(),
+        include_archived_projects: bool = True,
+    ):
+        """Initializes a find query data object."""
+        self._entity = entity
+        self._fields = fields
+        self._condition = condition or SgNullCondition()
+        self._grouping_fields = grouping_fields
+        self._include_archived_projects = include_archived_projects
+
+    def copy(
+        self,
+        entity: T_meta | None = None,
+        fields: tuple[SgSummaryField[Any, Any], ...] | None = None,
+        condition: SgFilterObject | None = None,
+        grouping_fields: tuple[SgGroupingField[Any, Any], ...] | None = None,
+        include_archived_projects: bool | None = None,
+    ) -> SgSummarizeQueryData[T_meta]:
+        """Returns a copy of the object with the given modified attributes."""
+        entity = entity if entity is not None else self._entity
+        fields = fields if fields is not None else self._fields
+        condition = condition if condition is not None else self._condition
+        grouping_fields = (
+            grouping_fields if grouping_fields is not None else self._grouping_fields
+        )
+        include_archived_projects = (
+            include_archived_projects
+            if include_archived_projects is not None
+            else self._include_archived_projects
+        )
+        return self.__class__(
+            entity=entity,
+            fields=fields,
+            condition=condition,
+            grouping_fields=grouping_fields,
+            include_archived_projects=include_archived_projects,
+        )
+
+    @property
+    def entity(self) -> T_meta:
+        """Return on which the query applies."""
+        return self._entity
+
+    @property
+    def fields(self) -> tuple[SgSummaryField[Any, Any], ...]:
+        """Return the fields of the query."""
+        return self._fields
+
+    @property
+    def condition(self) -> SgFilterObject:
+        """Return the condition of the query."""
+        return self._condition
+
+    @property
+    def grouping_fields(self) -> tuple[SgGroupingField[Any, Any], ...]:
+        """Return the order fields of the query."""
+        return self._grouping_fields
+
+    @property
+    def include_archived_projects(self) -> bool:
+        """Return the include_archived_projects."""
+        return self._include_archived_projects
 
 
 class SgSummarizeQuery(Generic[T_meta]):
@@ -344,7 +417,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         Args:
             state: the query state.
         """
-        self._state = state
+        self._data = state
 
     def get_data(self) -> SgSummarizeQueryData[T_meta]:
         """Returns the query data managed by the query.
@@ -352,7 +425,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         Returns:
             the query data managed by the query.
         """
-        return dataclasses.replace(self._state)
+        return self._data
 
     def where(self, condition: SgFilterObject) -> Self:
         """Filters the query result to the given condition.
@@ -363,38 +436,24 @@ class SgSummarizeQuery(Generic[T_meta]):
         Returns:
             a new query with the condition added.
         """
-        if self._state.condition is None:
-            new_condition = condition
-        else:
-            new_condition = self._state.condition & condition
-        new_state = dataclasses.replace(self._state, condition=new_condition)
+        new_condition = self._data.condition & condition
+        new_state = self._data.copy(condition=new_condition)
         return self.__class__(new_state)
 
     def group_by(
         self,
-        field: AbstractField[Any],
-        group_type: GroupingType,
-        direction: Order | str = Order.ASC,
+        grouping_field: SgGroupingField[Any, Any],
     ) -> Self:
         """Groups the query results by the given field.
 
         Args:
-            field: the field to group by.
-            group_type: the group type to group by.
-            direction: the direction to group by.
+            grouping_field: the field to group by.
 
         Returns:
             a new query with the group type added.
         """
-        if isinstance(direction, str):
-            direction = Order(direction)
-        new_state = dataclasses.replace(self._state)
-        # Concat ordered fields
-        new_state.grouping = (
-            *new_state.grouping,
-            (field, group_type, direction),
-        )
-        return self.__class__(new_state)
+        grouping = (*self._data.grouping_fields, grouping_field)
+        return self.__class__(self._data.copy(grouping_fields=grouping))
 
     def reject_archived_projects(self) -> Self:
         """Rejects the archived projects from the query.
@@ -402,8 +461,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         Returns:
             a new query with rejected archived projects.
         """
-        new_state = dataclasses.replace(self._state, include_archived_projects=False)
-        return self.__class__(new_state)
+        return self.__class__(self._data.copy(include_archived_projects=False))
 
 
 class SgBatchQuery(object):
@@ -430,35 +488,38 @@ class SgBatchQuery(object):
         return self._entity
 
 
-def select(model: T_meta, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
+def select(entity: T_meta, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
     """Returns a new query for the given entity class.
 
     Args:
-        model: the entity class.
+        entity: the entity class.
         fields: fields to query. Query all the fields of the entity by default.
 
     Returns:
         the query for the given entity.
     """
     if not fields:
-        fields = tuple(model.__fields_by_attr__.values())
+        fields = tuple(entity.__fields_by_attr__.values())
     # Checking the given fields belong to the given model
-    model_fields = list(model.__fields_by_attr__.values())
+    entity_fields = list(entity.__fields_by_attr__.values())
     for field in fields:
-        if field not in model_fields:
-            raise error.SgQueryError(f"{field} is not a field of {model}")
-    state = SgFindQueryData[T_meta](model, fields=fields, condition=SgNullCondition())
+        if field not in entity_fields:
+            raise error.SgQueryError(f"{field} is not a field of {entity}")
+    state = SgFindQueryData[T_meta](entity, fields=fields, condition=SgNullCondition())
     return SgFindQuery[T_meta](state)
 
 
-def summarize(model: T_meta) -> SgSummarizeQuery[T_meta]:
+def summarize(
+    entity: T_meta, *summary_fields: SgSummaryField[Any, Any]
+) -> SgSummarizeQuery[T_meta]:
     """Returns a new summarize query for the given entity class.
 
     Args:
-        model: the entity class.
+        entity: the entity class.
+        summary_fields: summary fields to query
 
     Returns:
         the query for the given entity.
     """
-    state = SgSummarizeQueryData[T_meta](model)
+    state = SgSummarizeQueryData(entity, fields=summary_fields)
     return SgSummarizeQuery[T_meta](state)

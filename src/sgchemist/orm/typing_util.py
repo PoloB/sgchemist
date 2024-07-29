@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import annotations
 
+import abc
 import ast
 import builtins
 import re
@@ -215,11 +216,14 @@ def de_optionalize_union_types(
 class Comparable(Protocol):
     """Protocol for annotating comparable types."""
 
-    def __lt__(self, other: Any) -> bool:
+    @abc.abstractmethod
+    def __lt__(self: _Tcomp, other: _Tcomp) -> bool:
         """Return the comparison of two elements."""
 
-    def __le__(self, other: Any) -> bool:
+    @abc.abstractmethod
+    def __le__(self: _Tcomp, other: _Tcomp) -> bool:
         """Return the comparison of two elements."""
 
 
+_Tcomp = TypeVar("_Tcomp", bound=Comparable)
 OptionalCompare = Optional[Comparable]

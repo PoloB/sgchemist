@@ -5,13 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from classes import Asset
-from classes import Project
-from classes import Shot
 
 from sgchemist.orm import error
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.constant import GroupingType
 from sgchemist.orm.constant import Order
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import SgFindQuery
@@ -21,6 +17,10 @@ from sgchemist.orm.query import SgSummarizeQueryData
 from sgchemist.orm.query import select
 from sgchemist.orm.query import summarize
 from sgchemist.orm.queryop import SgNullCondition
+
+from .classes import Asset
+from .classes import Project
+from .classes import Shot
 
 
 @pytest.fixture
@@ -75,7 +75,7 @@ def test_shot(shot_entity: type[Shot]) -> Shot:
 
 def test_state(shot_entity: type[Shot], find_query_data: SgFindQueryData[Any]) -> None:
     """Tests the find query state init attributes."""
-    assert find_query_data.model is shot_entity
+    assert find_query_data.entity is shot_entity
     assert isinstance(find_query_data.condition, SgNullCondition)
     assert isinstance(find_query_data.order_fields, tuple)
     assert len(find_query_data.order_fields) == 0
@@ -91,10 +91,10 @@ def test_summarize_state(
     shot_entity: type[Shot], summarize_query_data: SgSummarizeQueryData[Any]
 ) -> None:
     """Tests the summarize query state init attributes."""
-    assert summarize_query_data.model is shot_entity
-    assert summarize_query_data.condition is None
-    assert isinstance(summarize_query_data.grouping, tuple)
-    assert len(summarize_query_data.grouping) == 0
+    assert summarize_query_data.entity is shot_entity
+    assert isinstance(summarize_query_data.condition, SgNullCondition)
+    assert isinstance(summarize_query_data.grouping_fields, tuple)
+    assert len(summarize_query_data.grouping_fields) == 0
     assert summarize_query_data.include_archived_projects is True
 
 
@@ -151,13 +151,24 @@ def test_filter_preset(find_query: SgFindQuery[Any]) -> None:
     ]
 
 
+def test_summarize_data_attributes(
+    summarize_query_data: SgSummarizeQueryData[Any],
+) -> None:
+    """Test summarize attributes."""
+    assert summarize_query_data.entity is Shot
+    assert summarize_query_data.fields is tuple()
+    assert isinstance(summarize_query_data.condition, SgNullCondition)
+    assert summarize_query_data.grouping_fields == tuple()
+    assert summarize_query_data.include_archived_projects
+
+
 def test_summarize_state_copy(
     summarize_query: SgSummarizeQuery[Any],
     summarize_query_data: SgSummarizeQueryData[Any],
 ) -> None:
     """Tests the summarize query state copy."""
     # A copy is made in the getter
-    assert summarize_query.get_data() is not summarize_query_data
+    assert summarize_query.get_data() is summarize_query_data
 
 
 def test_summarize_where(
@@ -168,21 +179,6 @@ def test_summarize_where(
     new_query = summarize_query.where(condition)
     assert new_query.get_data().condition is condition
     new_query.where(shot_entity.id.eq(42))
-
-
-def test_summarize_group_by(
-    shot_entity: type[Shot], summarize_query: SgSummarizeQuery[Any]
-) -> None:
-    """Tests the summarize group by clause."""
-    new_query = summarize_query.group_by(shot_entity.name, GroupingType.HUNDREDS)
-    assert new_query.get_data().grouping == (
-        (shot_entity.name, GroupingType.HUNDREDS, Order.ASC),
-    )
-    new_query = new_query.group_by(shot_entity.id, GroupingType.EXACT, Order.DESC)
-    assert new_query.get_data().grouping == (
-        (shot_entity.name, GroupingType.HUNDREDS, Order.ASC),
-        (shot_entity.id, GroupingType.EXACT, Order.DESC),
-    )
 
 
 def test_summarize_reject_archived_projects(
@@ -210,6 +206,12 @@ def test_select(shot_entity: type[Shot]) -> None:
 def test_summarize(shot_entity: type[Shot]) -> None:
     """Tests the summarize method."""
     query = summarize(shot_entity)
+    assert isinstance(query, SgSummarizeQuery)
+
+
+def test_summarize_group_by(shot_entity: type[Shot]) -> None:
+    """Tests the summarize group by."""
+    query = summarize(shot_entity).group_by(shot_entity.id.group_exact())
     assert isinstance(query, SgSummarizeQuery)
 
 

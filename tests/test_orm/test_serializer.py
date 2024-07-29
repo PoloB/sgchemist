@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from classes import Project
-from classes import Shot
 
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.fields import AbstractValueField
@@ -18,6 +16,9 @@ from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
 from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
 from sgchemist.orm.serializer import serialize_condition
 from sgchemist.orm.serializer import serialize_entity
+
+from .classes import Project
+from .classes import Shot
 
 
 @pytest.fixture
@@ -112,6 +113,14 @@ def test_serialize_entity_condition(
     expected_serialize = ("project", "is", {"type": "Project", "id": 101})
     assert serialize_condition(model_cond) == expected_serialize
     assert find_serialize.serialize_filter(model_cond) == [list(expected_serialize)]
+
+
+def test_serialize_summary_field(find_serialize: ShotgunAPIObjectSerializer) -> None:
+    """Test summary field serialization."""
+    summary_field = Project.name.count()
+    assert find_serialize.serialize_filter(summary_field) == [
+        {"field": "name", "type": "count"}
+    ]
 
 
 def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) -> None:

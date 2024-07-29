@@ -7,10 +7,12 @@ import time
 from typing import Any
 
 import pytest
-from classes import Project
 
 from sgchemist.orm import DateField
+from sgchemist.orm import DateTimeField
 from sgchemist.orm import EntityField
+from sgchemist.orm import FloatField
+from sgchemist.orm import NumberField
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import LogicalOperator
 from sgchemist.orm.entity import SgBaseEntity
@@ -41,6 +43,8 @@ from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.queryop import SgFilterOperation
 from sgchemist.orm.queryop import SgNullCondition
+
+from .classes import Project
 
 
 @pytest.fixture
@@ -405,6 +409,158 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.entity.type_is_not(RefEntity)
     assert cond.matches(TestEntity(entity=TestEntity()))
     assert not cond.matches(TestEntity(entity=RefEntity()))
+
+
+def test_summarize_operator() -> None:
+    """Test summarize operators."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+        name: TextField
+        number: NumberField
+        fval: FloatField
+        date: DateField
+
+    # RECORD COUNT
+    cond = TestEntity.id.record_count()
+    assert cond.sum_up([TestEntity(id=0), TestEntity(id=1)]) == 2
+
+    # COUNT
+    cond = TestEntity.number.count()
+    assert cond.sum_up([TestEntity(number=1), TestEntity()]) == 1
+
+    # SUM
+    cond_float = TestEntity.fval.sum()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=2.0)]) == 3.0
+
+    # MAXIMUM
+    cond_float = TestEntity.fval.maximum()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=3.0)]) == 3.0
+
+    # MINIMUM
+    cond_float = TestEntity.fval.minimum()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=3.0)]) == 1.0
+
+    # AVERAGE
+    cond_float = TestEntity.fval.average()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=3.0)]) == 2.0
+
+    # EARLIEST
+    cond_date = TestEntity.date.earliest()
+    assert cond_date.sum_up(
+        [
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=1)),
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=2)),
+        ]
+    ) == datetime.datetime(year=2000, month=1, day=1)
+
+    # LATEST
+    cond_date = TestEntity.date.latest()
+    assert cond_date.sum_up(
+        [
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=1)),
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=2)),
+        ]
+    ) == datetime.datetime(year=2000, month=1, day=2)
+
+
+def test_summarize_group_operator() -> None:
+    """Test summarize group operators."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+        name: TextField
+        number: NumberField
+        fval: FloatField
+        date: DateTimeField
+
+    # EXACT
+    group_exact = TestEntity.id.group_exact()
+    assert group_exact.get_group_key(TestEntity(id=2)) == 2
+
+    # TENS
+    group_tens = TestEntity.number.group_tens()
+    assert group_tens.get_group_key(TestEntity(number=7)) == 0
+    assert group_tens.get_group_key(TestEntity(number=13)) == 10
+    assert group_tens.get_group_key(TestEntity(number=37)) == 30
+    assert group_tens.get_group_key(TestEntity()) is None
+
+    # HUNDREDS
+    group_hundreds = TestEntity.number.group_hundreds()
+    assert group_hundreds.get_group_key(TestEntity(number=7)) == 0
+    assert group_hundreds.get_group_key(TestEntity(number=13)) == 0
+    assert group_hundreds.get_group_key(TestEntity(number=254)) == 200
+    assert group_hundreds.get_group_key(TestEntity()) is None
+
+    # THOUSANDS
+    group_thousands = TestEntity.number.group_thousands()
+    assert group_thousands.get_group_key(TestEntity(number=7)) == 0
+    assert group_thousands.get_group_key(TestEntity(number=254)) == 0
+    assert group_thousands.get_group_key(TestEntity(number=1345)) == 1000
+    assert group_thousands.get_group_key(TestEntity()) is None
+
+    # TEN THOUSANDS
+    group_ten_thousands = TestEntity.number.group_tens_of_thousands()
+    assert group_ten_thousands.get_group_key(TestEntity(number=7)) == 0
+    assert group_ten_thousands.get_group_key(TestEntity(number=1345)) == 0
+    assert group_ten_thousands.get_group_key(TestEntity(number=12457)) == 10000
+    assert group_ten_thousands.get_group_key(TestEntity()) is None
+
+    # HUNDREDS OF THOUSANDS
+    group_hundreds_thousands = TestEntity.number.group_hundreds_of_thousands()
+    assert group_hundreds_thousands.get_group_key(TestEntity(number=7)) == 0
+    assert group_hundreds_thousands.get_group_key(TestEntity(number=12457)) == 0
+    assert group_hundreds_thousands.get_group_key(TestEntity(number=123456)) == 100000
+    assert group_hundreds_thousands.get_group_key(TestEntity()) is None
+
+    # MILLIONS
+    group_millions = TestEntity.number.group_millions()
+    assert group_millions.get_group_key(TestEntity(number=7)) == 0
+    assert group_millions.get_group_key(TestEntity(number=123456)) == 0
+    assert group_millions.get_group_key(TestEntity(number=1234567)) == 1000000
+    assert group_millions.get_group_key(TestEntity()) is None
+
+    # FIRST LETTER
+    group_first_letter = TestEntity.name.group_first_letter()
+    assert group_first_letter.get_group_key(TestEntity(name="abc")) == "a"
+    assert group_first_letter.get_group_key(TestEntity(name="cde")) == "c"
+    assert group_first_letter.get_group_key(TestEntity(name=None)) == ""
+
+    # DAY
+    group_day = TestEntity.date.group_day()
+    assert group_day.get_group_key(
+        TestEntity(date=datetime.datetime(2000, 1, 1, 1, 1, 1))
+    ) == datetime.date(2000, 1, 1)
+
+    # WEEK
+    group_month = TestEntity.date.group_week()
+    assert group_month.get_group_key(
+        TestEntity(date=datetime.datetime(2000, 1, 1, 1, 1, 1))
+    ) == datetime.date(1999, 12, 27)
+
+    # MONTH
+    group_month = TestEntity.date.group_month()
+    assert group_month.get_group_key(
+        TestEntity(date=datetime.datetime(2000, 1, 2, 1, 1, 1))
+    ) == datetime.date(2000, 1, 1)
+
+    # QUARTER
+    group_quarter = TestEntity.date.group_quarter()
+    assert group_quarter.get_group_key(
+        TestEntity(date=datetime.datetime(2000, 2, 2, 1, 1, 1))
+    ) == datetime.date(2000, 1, 1)
+
+    # YEAR
+    group_year = TestEntity.date.group_year()
+    assert group_year.get_group_key(
+        TestEntity(date=datetime.datetime(2000, 2, 2, 1, 1, 1))
+    ) == datetime.date(2000, 1, 1)
 
 
 @pytest.mark.parametrize(

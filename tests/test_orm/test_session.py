@@ -3,18 +3,23 @@
 from __future__ import annotations
 
 import pytest
-from classes import Asset
-from classes import Project
-from classes import Shot
-from classes import Task
 
 from sgchemist.orm import Session
 from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import error
 from sgchemist.orm import select
+from sgchemist.orm import summarize
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
+from sgchemist.orm.session import SgFieldSummary
 from sgchemist.orm.session import SgFindResult
+from sgchemist.orm.session import SgSummarizeGroup
+from sgchemist.orm.session import SgSummarizeResult
+
+from .classes import Asset
+from .classes import Project
+from .classes import Shot
+from .classes import Task
 
 
 @pytest.fixture
@@ -293,3 +298,54 @@ def test_context_manager(engine: SgEngine, test_project: Project) -> None:
 
     assert len(session.pending_queries) == 0
     assert test_project.__state__.is_commited()
+
+
+def test_summarize_field_summary(shot_entity: type[Shot]) -> None:
+    """Tests the field summary."""
+    field_summary = SgFieldSummary(shot_entity.id, 12)
+    assert field_summary.field is shot_entity.id
+    assert field_summary.result == 12
+
+
+def test_summarize_group(shot_entity: type[Shot]) -> None:
+    """Tests the summarize group."""
+    field_summary = SgFieldSummary(shot_entity.id, 12)
+    groups = [SgSummarizeGroup("test", 1, [field_summary])]
+    group = SgSummarizeGroup("group", 10, [field_summary], groups=groups)
+    assert group.name == "group"
+    assert group.value == 10
+    assert group.summaries == [field_summary]
+    assert group.groups == groups
+
+
+def test_summarize_result(shot_entity: type[Shot]) -> None:
+    """Tests the summarize result."""
+    field_summary = SgFieldSummary(shot_entity.id, 12)
+    groups = [SgSummarizeGroup("test", 1, [field_summary])]
+    summarize_result: SgSummarizeResult[Shot] = SgSummarizeResult(
+        groups, [field_summary]
+    )
+    assert summarize_result.summaries == [field_summary]
+    assert summarize_result.groups == groups
+
+
+def test_summarize(
+    filled_engine: SgEngine, session: Session, shot_entity: type[Shot]
+) -> None:
+    """Test session summarize."""
+    query = summarize(shot_entity, shot_entity.id.count())
+    query = query.group_by(shot_entity.project.group_exact())
+    query = query.group_by(shot_entity.id.group_tens())
+    res = session.summarize(query)
+    assert isinstance(res, SgSummarizeResult)
+    assert len(res.summaries) == 1
+    assert res.summaries[0].result == 1
+    assert res.summaries[0].field is shot_entity.id
+    assert len(res.groups) == 1
+    assert isinstance(res.groups[0].value, Project)
+    assert len(res.groups[0].summaries) == 1
+    assert res.groups[0].summaries[0].result == 1
+    assert res.groups[0].summaries[0].field is shot_entity.id
+    assert len(res.groups[0].groups) == 1
+    assert res.groups[0].groups[0].summaries[0].result == 1
+    assert res.groups[0].groups[0].summaries[0].field is shot_entity.id

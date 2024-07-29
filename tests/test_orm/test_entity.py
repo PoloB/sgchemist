@@ -10,10 +10,6 @@ from typing import Optional
 from typing import Union
 
 import pytest
-from classes import Asset
-from classes import Project
-from classes import Shot
-from classes import Task
 
 from sgchemist.orm import error
 from sgchemist.orm.entity import EntityState
@@ -26,6 +22,11 @@ from sgchemist.orm.fields import MultiEntityField
 from sgchemist.orm.fields import NumberField
 from sgchemist.orm.fields import TextField
 from sgchemist.orm.fields import alias
+
+from .classes import Asset
+from .classes import Project
+from .classes import Shot
+from .classes import Task
 
 
 @pytest.fixture
@@ -582,3 +583,18 @@ def test_get_value() -> None:
 
     with pytest.raises(error.SgInvalidFieldError):
         task.get_value(Asset.project)
+
+
+def test_as_dict() -> None:
+    """Test as dict method."""
+    project = Project(name="project")
+    assert project.as_dict() == {"name": "project", "id": None, "type": "Project"}
+    asset = Asset(name="asset", project=project)
+    assert asset.as_dict() == {
+        "code": "asset",
+        "id": None,
+        "project": {"name": "project", "id": None, "type": "Project"},
+        "shots": [],
+        "tasks": [],
+        "type": "Asset",
+    }

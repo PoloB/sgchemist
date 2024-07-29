@@ -3,9 +3,6 @@
 from typing import Type
 
 import pytest
-from classes import Project
-from classes import Shot
-from classes import Task
 
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
@@ -13,6 +10,10 @@ from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
 from sgchemist.orm.session import Session
+
+from .classes import Project
+from .classes import Shot
+from .classes import Task
 
 
 @pytest.fixture

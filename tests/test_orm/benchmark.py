@@ -2,13 +2,13 @@
 
 from typing import Any
 
-from classes import Project
-from classes import Shot
-from classes import Task
-
 from sgchemist.orm import Session
 from sgchemist.orm import select
 from sgchemist.orm.engine import SgEngine
+
+from .classes import Project
+from .classes import Shot
+from .classes import Task
 
 
 def test_project_creation(benchmark: Any) -> None:

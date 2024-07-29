@@ -6,7 +6,7 @@ It keeps tracks of the pending queries and objects to commit to Shotgrid.
 
 from __future__ import annotations
 
-from types import TracebackType
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
 from typing import Iterator
@@ -19,12 +19,17 @@ from .engine import SgEngine
 from .entity import SgBaseEntity
 from .field_info import cast_column
 from .field_info import iter_entities_from_field_value
+from .fields import AbstractField
 from .fields import update_entity_from_value
 from .query import SgBatchQuery
 from .query import SgFindQuery
+from .query import SgSummarizeQuery
 from .typing_alias import EntityHash
 
 T = TypeVar("T", bound=SgBaseEntity)
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 
 class SgFindResult(Generic[T]):
@@ -69,6 +74,89 @@ class SgFindResult(Generic[T]):
             All entities in the result.
         """
         return self._entities
+
+
+class SgFieldSummary:
+    """A summary of a field."""
+
+    __slots__ = ("_field", "_result")
+
+    def __init__(self, field: AbstractField[Any], result: Any) -> None:
+        """Initializes the summary of a field."""
+        self._field = field
+        self._result = result
+
+    @property
+    def field(self) -> AbstractField[Any]:
+        """Return the field concerned by the summary."""
+        return self._field
+
+    @property
+    def result(self) -> Any:
+        """Return the result of the summary."""
+        return self._result
+
+
+class SgSummarizeGroup:
+    """A group of summaries."""
+
+    __slots__ = ("_name", "_value", "_summaries", "_groups")
+
+    def __init__(
+        self,
+        name: str,
+        value: Any,
+        summaries: list[SgFieldSummary],
+        groups: list[SgSummarizeGroup] | None = None,
+    ) -> None:
+        """Initializes the group of summaries."""
+        self._name = name
+        self._value = value
+        self._summaries = summaries
+        self._groups = groups or []
+
+    @property
+    def name(self) -> str:
+        """Return the name of the group."""
+        return self._name
+
+    @property
+    def value(self) -> Any:
+        """Return the value of the group."""
+        return self._value
+
+    @property
+    def summaries(self) -> list[SgFieldSummary]:
+        """Return the summaries of the group."""
+        return self._summaries
+
+    @property
+    def groups(self) -> list[SgSummarizeGroup]:
+        """Return the groups of the group."""
+        return self._groups
+
+
+class SgSummarizeResult(Generic[T]):
+    """Result of a summary query."""
+
+    __slots__ = ("_groups", "_summaries")
+
+    def __init__(
+        self, groups: list[SgSummarizeGroup], summaries: list[SgFieldSummary]
+    ) -> None:
+        """Initializes the result of a query to Shotgrid."""
+        self._groups = groups
+        self._summaries = summaries
+
+    @property
+    def groups(self) -> list[SgSummarizeGroup]:
+        """Return the groups of the query."""
+        return self._groups
+
+    @property
+    def summaries(self) -> list[SgFieldSummary]:
+        """Return the summaries of the query."""
+        return self._summaries
 
 
 class Session:
@@ -205,7 +293,7 @@ class Session:
         """
         query_state = query.get_data()
         rows = self._engine.find(query_state)
-        model = query_state.model
+        model = query_state.entity
 
         # Create the instances
         queried_models = []
@@ -215,6 +303,38 @@ class Session:
             queried_models.append(inst)
 
         return SgFindResult(queried_models)
+
+    def summarize(self, query: SgSummarizeQuery[type[T]]) -> SgSummarizeResult[T]:
+        """Return the result of the query."""
+        query_data = query.get_data()
+        result = self._engine.summarize(query_data)
+        field_by_name = {
+            field_info.get_name(field): field for field in query_data.entity.__fields__
+        }
+
+        def _create_summary_group(group_dict: dict[str, Any]) -> SgSummarizeGroup:
+            summaries = [
+                SgFieldSummary(field_by_name[field_name], value)
+                for field_name, value in group["summaries"].items()
+            ]
+            summary_group = SgSummarizeGroup(
+                group["group_name"],
+                group["group_value"],
+                summaries,
+                list(map(_create_summary_group, group_dict.get("groups", []))),
+            )
+            return summary_group
+
+        summary_groups = []
+        # Unpack th results
+        for group in result.get("groups", []):
+            summary_groups.append(_create_summary_group(group))
+
+        global_summaries = [
+            SgFieldSummary(field_by_name[field_name], value)
+            for field_name, value in result["summaries"].items()
+        ]
+        return SgSummarizeResult(summary_groups, global_summaries)
 
     @staticmethod
     def _check_relationship_commited(entity: SgBaseEntity) -> None:
