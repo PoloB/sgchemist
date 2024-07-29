@@ -47,6 +47,14 @@ class SgEngine:
         """
 
     @abc.abstractmethod
+    def summarize(self, query: SgSummarizeQueryData[Type[T]]) -> dict[str, Any]:
+        """Execute a summary query and return the rows.
+
+        Args:
+            query: the summarize query state to execute.
+        """
+
+    @abc.abstractmethod
     def batch(
         self, batch_queries: list[SgBatchQuery]
     ) -> list[tuple[bool, dict[str, Any]]]:
