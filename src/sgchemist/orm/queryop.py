@@ -15,6 +15,7 @@ from typing_extensions import TypedDict
 
 from .constant import DateType
 from .constant import LogicalOperator
+from .constant import SummaryType
 from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
