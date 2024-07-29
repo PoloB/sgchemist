@@ -1,5 +1,6 @@
 """Tests for entity schema."""
-from typing import List
+
+from __future__ import annotations
 
 from sgchemist.schema.parse import FieldSchema
 from sgchemist.schema.parse import ValueSchema
@@ -33,6 +34,6 @@ def test_field_schema() -> None:
     assert field_schema.properties["prop"].editable is True
 
 
-def test_load_entities(schema_paths: List[str]) -> None:
+def test_load_entities(schema_paths: list[str]) -> None:
     """Tests the load_entities function."""
     load_entities(*schema_paths)

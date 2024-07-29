@@ -17,6 +17,7 @@ from typing import Generic
 from typing import List
 from typing import Optional
 from typing import TypeVar
+from typing import Union
 from typing import overload
 
 from typing_extensions import Self
@@ -177,7 +178,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
 T_field = TypeVar("T_field", bound=AbstractField[Any])
 
 
-class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
+class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
     """Definition of an abstract value field."""
 
     def __init__(
@@ -202,12 +203,16 @@ class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
         )
 
 
-class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
+OptionalIntFloat = Union[int, float, None]
+Tnum = TypeVar("Tnum", bound=OptionalIntFloat)
+
+
+class NumericField(AbstractValueField[Tnum], metaclass=abc.ABCMeta):
     """Definition of an abstract numerical field."""
 
-    cast_type: type[Tcomp]
+    cast_type: type[Tnum]
 
-    def gt(self, other: Tcomp) -> SgFieldCondition:
+    def gt(self, other: Tnum) -> SgFieldCondition:
         """Filter entities where this field is greater than the given value.
 
         This is the equivalent of the "greater_than" filter of Shotgrid.
@@ -220,7 +225,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorGreaterThan(other))
 
-    def lt(self, other: Tcomp) -> SgFieldCondition:
+    def lt(self, other: Tnum) -> SgFieldCondition:
         """Filter entities where this field is less than the given value.
 
         This is the equivalent of the "less_than" filter of Shotgrid.
@@ -233,7 +238,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorLessThan(other))
 
-    def between(self, low: Tcomp, high: Tcomp) -> SgFieldCondition:
+    def between(self, low: Tnum, high: Tnum) -> SgFieldCondition:
         """Filter entities where this field is between the low and high values.
 
         This is the equivalent of the "between" filter of Shotgrid.
@@ -247,7 +252,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorBetween(low, high))
 
-    def is_in(self, others: list[T]) -> SgFieldCondition:
+    def is_in(self, others: list[Tnum]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
         This is the equivalent of the "in" filter of Shotgrid.
@@ -260,7 +265,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorIn(others))
 
-    def is_not_in(self, others: list[T]) -> SgFieldCondition:
+    def is_not_in(self, others: list[Tnum]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
 
         This is the equivalent of the "not_in" filter of Shotgrid.
@@ -293,12 +298,16 @@ class NumberField(NumericField[Optional[int]]):
             """Return the value of the field."""
 
 
-class FloatField(NumericField[Optional[float]]):
+class FloatField(NumericField[float]):
     """A float field."""
 
     cast_type: type[float] = float
     __sg_type__: str = "float"
-    default_value = None
+    default_value = 0.0
+
+    def sum(self) -> SgSummaryField[float, float]:
+        """Return the summary field for summing the values."""
+        return SgSummaryField(self, SumSummaryOperator())
 
     if TYPE_CHECKING:
 
@@ -306,11 +315,9 @@ class FloatField(NumericField[Optional[float]]):
         def __get__(self, instance: None, owner: Any) -> FloatField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> float | None: ...
+        def __get__(self, instance: Any, owner: Any) -> float: ...
 
-        def __get__(
-            self, instance: Any | None, owner: Any
-        ) -> float | None | FloatField:
+        def __get__(self, instance: Any | None, owner: Any) -> float | FloatField:
             """Return the value of the field."""
 
 
@@ -550,7 +557,7 @@ class BooleanField(AbstractValueField[Optional[bool]]):
             """Return the value of the field."""
 
 
-class AbstractDateField(NumericField[Tcomp]):
+class AbstractDateField(AbstractValueField[Tcomp]):
     """Definition an abstract date field."""
 
     def in_last(self, count: int, date_element: DateType) -> SgFieldCondition:
@@ -818,11 +825,9 @@ class PercentField(FloatField):
         def __get__(self, instance: None, owner: Any) -> PercentField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> float | None: ...
+        def __get__(self, instance: Any, owner: Any) -> float: ...
 
-        def __get__(
-            self, instance: Any | None, owner: Any
-        ) -> float | None | PercentField:
+        def __get__(self, instance: Any | None, owner: Any) -> float | PercentField:
             """Return the value of the field."""
 
 

@@ -6,10 +6,6 @@ from typing import Any
 from typing import Callable
 
 import pytest
-from classes import Asset
-from classes import Project
-from classes import Shot
-from classes import Task
 
 from sgchemist.orm import DateTimeField
 from sgchemist.orm import EntityField
@@ -52,6 +48,11 @@ from sgchemist.orm.queryop import FilterOperatorStartsWith
 from sgchemist.orm.queryop import FilterOperatorTypeIs
 from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
+
+from ..classes import Asset
+from ..classes import Project
+from ..classes import Shot
+from ..classes import Task
 
 
 @pytest.fixture(scope="module")

@@ -3,10 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from classes import Asset
-from classes import Project
-from classes import Shot
-from classes import Task
 
 from sgchemist.orm import Session
 from sgchemist.orm import SgBaseEntity
@@ -15,6 +11,11 @@ from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.session import SgFindResult
+
+from ..classes import Asset
+from ..classes import Project
+from ..classes import Shot
+from ..classes import Task
 
 
 @pytest.fixture

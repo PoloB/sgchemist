@@ -7,7 +7,6 @@ import time
 from typing import Any
 
 import pytest
-from classes import Project
 
 from sgchemist.orm import DateField
 from sgchemist.orm import EntityField
@@ -41,6 +40,8 @@ from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.queryop import SgFilterOperation
 from sgchemist.orm.queryop import SgNullCondition
+
+from ..classes import Project
 
 
 @pytest.fixture
