@@ -22,6 +22,7 @@ from .constant import BatchRequestType
 from .entity import SgBaseEntity
 from .query import SgBatchQuery
 from .query import SgFindQueryData
+from .query import SgSummarizeQueryData
 from .serializer import ShotgunAPIBatchQuerySerializer
 from .serializer import ShotgunAPIObjectSerializer
 
