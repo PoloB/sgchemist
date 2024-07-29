@@ -519,14 +519,17 @@ def select(entity: T_meta, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
     return SgFindQuery[T_meta](state)
 
 
-def summarize(entity: T_meta) -> SgSummarizeQuery[T_meta]:
+def summarize(
+    entity: T_meta, *summary_fields: SgSummaryField
+) -> SgSummarizeQuery[T_meta]:
     """Returns a new summarize query for the given entity class.
 
     Args:
         entity: the entity class.
+        summary_fields: summary fields to query
 
     Returns:
         the query for the given entity.
     """
-    state = SgSummarizeQueryData(entity)
+    state = SgSummarizeQueryData(entity, fields=summary_fields)
     return SgSummarizeQuery[T_meta](state)
