@@ -462,11 +462,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         if isinstance(direction, str):
             direction = Order(direction)
         # Concat ordered fields
-        new_state.grouping = (
-            *new_state.grouping,
-            (field, group_type, direction),
-        )
-        return self.__class__(new_state)
+        grouping = (*self._data.grouping_fields, (field, group_type, direction))
         return self.__class__(self._data.copy(grouping_fields=grouping))
 
     def reject_archived_projects(self) -> Self:
