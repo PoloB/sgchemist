@@ -93,7 +93,9 @@ class ShotgunAPIObjectSerializer:
 
     def serialize_filter(
         self, sg_object: SgSerializable | SgBaseEntity
-    ) -> list[SerializedEntity | SerializedOperator | list[Any]]:
+    ) -> list[
+        SerializedEntity | SerializedOperator | SerializedSummaryField | list[Any]
+    ]:
         """Returns filters for shotgun-api3 from the given sgchemist object.
 
         Args:
