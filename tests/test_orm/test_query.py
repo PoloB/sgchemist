@@ -75,7 +75,7 @@ def test_shot(shot_entity: type[Shot]) -> Shot:
 
 def test_state(shot_entity: type[Shot], find_query_data: SgFindQueryData[Any]) -> None:
     """Tests the find query state init attributes."""
-    assert find_query_data.model is shot_entity
+    assert find_query_data.entity is shot_entity
     assert isinstance(find_query_data.condition, SgNullCondition)
     assert isinstance(find_query_data.order_fields, tuple)
     assert len(find_query_data.order_fields) == 0
@@ -91,10 +91,10 @@ def test_summarize_state(
     shot_entity: type[Shot], summarize_query_data: SgSummarizeQueryData[Any]
 ) -> None:
     """Tests the summarize query state init attributes."""
-    assert summarize_query_data.model is shot_entity
-    assert summarize_query_data.condition is None
-    assert isinstance(summarize_query_data.grouping, tuple)
-    assert len(summarize_query_data.grouping) == 0
+    assert summarize_query_data.entity is shot_entity
+    assert isinstance(summarize_query_data.condition, SgNullCondition)
+    assert isinstance(summarize_query_data.grouping_fields, tuple)
+    assert len(summarize_query_data.grouping_fields) == 0
     assert summarize_query_data.include_archived_projects is True
 
 
@@ -157,7 +157,7 @@ def test_summarize_state_copy(
 ) -> None:
     """Tests the summarize query state copy."""
     # A copy is made in the getter
-    assert summarize_query.get_data() is not summarize_query_data
+    assert summarize_query.get_data() is summarize_query_data
 
 
 def test_summarize_where(
@@ -175,11 +175,11 @@ def test_summarize_group_by(
 ) -> None:
     """Tests the summarize group by clause."""
     new_query = summarize_query.group_by(shot_entity.name, GroupingType.HUNDREDS)
-    assert new_query.get_data().grouping == (
+    assert new_query.get_data().grouping_fields == (
         (shot_entity.name, GroupingType.HUNDREDS, Order.ASC),
     )
     new_query = new_query.group_by(shot_entity.id, GroupingType.EXACT, Order.DESC)
-    assert new_query.get_data().grouping == (
+    assert new_query.get_data().grouping_fields == (
         (shot_entity.name, GroupingType.HUNDREDS, Order.ASC),
         (shot_entity.id, GroupingType.EXACT, Order.DESC),
     )

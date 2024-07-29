@@ -11,6 +11,7 @@ from typing import TypeVar
 
 from typing_extensions import Protocol
 from typing_extensions import Self
+from typing_extensions import TypedDict
 
 from .constant import DateType
 from .constant import LogicalOperator
@@ -487,10 +488,19 @@ class FilterOperatorTypeIsNot(FilterOperator[WithSgType]):
         return self.__entity.__sg_type__
 
 
-class SgFilterObject(object):
-    """Defines a generic query object to operate on."""
+class SerializedOperator(TypedDict):
+    """Defines a serialized operator dict."""
 
-    __metaclass__ = abc.ABCMeta
+    filter_operator: str
+    filters: list[Any]
+
+
+class SgSerializable:
+    """A serializable object for building queries."""
+
+
+class SgFilterObject(SgSerializable):
+    """Defines a generic query object to operate on."""
 
     @abc.abstractmethod
     def __and__(self, other: SgFilterObject) -> SgFilterObject:
@@ -649,3 +659,12 @@ class SgFieldCondition(SgFilterObject):
         """Return True if the given entity matches the filter."""
         value: Any = entity.get_value(self.field)
         return self.op.eval(value)
+
+
+class SgSummaryField(SgSerializable):
+    """A summary for a given field."""
+
+    def __init__(self, field: AbstractField[Any], summary_type: SummaryType) -> None:
+        """Initialize the summary field."""
+        self.field = field
+        self.type = summary_type

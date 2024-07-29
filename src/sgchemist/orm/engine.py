@@ -82,7 +82,7 @@ class ShotgunAPIEngine(SgEngine):
         Returns:
             rows returned by the query.
         """
-        model = query.model
+        model = query.entity
         field_by_name = {
             field_info.get_name(field): field
             for field in query.fields + query.loading_fields
@@ -111,6 +111,21 @@ class ShotgunAPIEngine(SgEngine):
             for row in records:
                 row[column_name][target_key] = row.pop(key)
         return records
+
+    def summarize(self, query: SgSummarizeQueryData[Type[T]]) -> dict[str, Any]:
+        """Execute a summary query and return the rows."""
+        entity = query.entity
+        filters = self._query_serializer.serialize_filter(query.condition)
+        fields = [
+            self._query_serializer.serialize_summary_field(field)
+            for field in query.fields
+        ]
+        results: dict[str, Any] = self._sg.summarize(
+            entity_type=entity.__sg_type__,
+            filters=filters,
+            summary_fields=fields,
+        )
+        return results
 
     def batch(
         self, batch_queries: list[SgBatchQuery]

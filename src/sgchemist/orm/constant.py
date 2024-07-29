@@ -37,6 +37,25 @@ class BatchRequestType(str, Enum):
     DELETE = "delete"
 
 
+class SummaryType(str, Enum):
+    """A type of summary for a field."""
+
+    RECORD_COUNT = "record_count"
+    COUNT = "count"
+    SUM = "sum"
+    MAXIMUM = "maximum"
+    MINIMUM = "minimum"
+    AVERAGE = "average"
+    EARLIEST = "earliest"
+    LATEST = "latest"
+    PERCENTAGE = "percentage"
+    STATUS_PERCENTAGE = "status_percentage"
+    STATUS_PERCENTAGE_AS_FLOAT = "status_percentage_as_float"
+    STATUS_LIST = "status_list"
+    CHECKED = "checked"
+    UNCHECKED = "unchecked"
+
+
 class GroupingType(str, Enum):
     """Available grouping types."""
 
