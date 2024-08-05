@@ -151,6 +151,17 @@ def test_filter_preset(find_query: SgFindQuery[Any]) -> None:
     ]
 
 
+def test_summarize_data_attributes(
+    summarize_query_data: SgSummarizeQueryData[Any],
+) -> None:
+    """Test summarize attributes."""
+    assert summarize_query_data.entity is Shot
+    assert summarize_query_data.fields is tuple()
+    assert isinstance(summarize_query_data.condition, SgNullCondition)
+    assert summarize_query_data.grouping_fields == tuple()
+    assert summarize_query_data.include_archived_projects
+
+
 def test_summarize_state_copy(
     summarize_query: SgSummarizeQuery[Any],
     summarize_query_data: SgSummarizeQueryData[Any],

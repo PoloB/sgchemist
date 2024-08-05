@@ -12,6 +12,7 @@ from sgchemist.orm import Session
 from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import error
 from sgchemist.orm import select
+from sgchemist.orm import summarize
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.session import SgFindResult
@@ -293,3 +294,11 @@ def test_context_manager(engine: SgEngine, test_project: Project) -> None:
 
     assert len(session.pending_queries) == 0
     assert test_project.__state__.is_commited()
+
+
+def test_summarize(
+    filled_engine: SgEngine, session: Session, shot_entity: type[Shot]
+) -> None:
+    """Test session summarize."""
+    query = summarize(shot_entity, shot_entity.id.count())
+    res = session.summarize(query)

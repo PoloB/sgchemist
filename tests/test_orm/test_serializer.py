@@ -114,6 +114,14 @@ def test_serialize_entity_condition(
     assert find_serialize.serialize_filter(model_cond) == [list(expected_serialize)]
 
 
+def test_serialize_summary_field(find_serialize: ShotgunAPIObjectSerializer) -> None:
+    """Test summary field serialization."""
+    summary_field = Project.name.count()
+    assert find_serialize.serialize_filter(summary_field) == [
+        {"field": "name", "type": "count"}
+    ]
+
+
 def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) -> None:
     """Tests the serialization of a null condition."""
     assert find_serialize.serialize_filter(SgNullCondition()) == []

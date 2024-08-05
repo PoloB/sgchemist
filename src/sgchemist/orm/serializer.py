@@ -16,13 +16,7 @@ from .queryop import SgFilterOperation
 from .queryop import SgNullCondition
 from .queryop import SgSerializable
 from .queryop import SgSummaryField
-
-
-class SerializedEntity(TypedDict):
-    """Defines a serialized entity dict."""
-
-    id: int
-    type: str
+from .typing_alias import SerializedEntity
 
 
 class SerializedOperator(TypedDict):
@@ -73,7 +67,9 @@ def serialize_condition(
     )
 
 
-def serialize_summary_field(summary_field: SgSummaryField) -> SerializedSummaryField:
+def serialize_summary_field(
+    summary_field: SgSummaryField[Any, Any],
+) -> SerializedSummaryField:
     """Serialize the given sgchemist summary field to shotgun-api3 summary field.
 
     Args:
@@ -84,7 +80,7 @@ def serialize_summary_field(summary_field: SgSummaryField) -> SerializedSummaryF
     """
     return {
         "field": field_info.get_name(summary_field.field),
-        "type": summary_field.type,
+        "type": summary_field.op.__sg_op__,
     }
 
 
@@ -147,22 +143,6 @@ class ShotgunAPIObjectSerializer:
             "filters": [
                 self.serialize_object(obj) for obj in filter_operator.sg_objects
             ],
-        }
-
-    def serialize_summary_field(
-        self, summary_field: SgSummaryField
-    ) -> SerializedSummaryField:
-        """Serialize the given summary field.
-
-        Args:
-            summary_field: sgchemist summary field to serialize
-
-        Returns:
-            serialized summary field
-        """
-        return {
-            "field": field_info.get_name(summary_field.field),
-            "type": summary_field.type.value,
         }
 
 

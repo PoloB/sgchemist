@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import abc
 import datetime
+import statistics
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
 from typing import TypeVar
+from typing import Union
 
 from typing_extensions import Protocol
 from typing_extensions import Self
@@ -15,14 +17,16 @@ from typing_extensions import TypedDict
 
 from .constant import DateType
 from .constant import LogicalOperator
-from .constant import SummaryType
-from .typing_util import OptionalCompare
+from .typing_alias import SerializedEntity
+from .typing_util import Comparable
 
 if TYPE_CHECKING:
     from .entity import SgBaseEntity
     from .fields import AbstractField
 
 T = TypeVar("T")
+Tsumup = TypeVar("Tsumup")
+Tcomp = TypeVar("Tcomp", bound=Comparable)
 
 
 class WithSgType(Protocol):
@@ -45,20 +49,21 @@ class FilterOperator(Generic[T], abc.ABC):
         """Serialize the filter value."""
 
 
-class FilterOperatorBetween(FilterOperator[OptionalCompare]):
+class FilterOperatorBetween(FilterOperator[Tcomp]):
     """A between filter."""
 
     __sg_op__ = "between"
 
-    def __init__(self, low_bound: OptionalCompare, high_bound: OptionalCompare) -> None:
+    def __init__(self, low_bound: Tcomp | None, high_bound: Tcomp | None) -> None:
         """Initialize the filter operator."""
         self.__low_bound = low_bound
         self.__high_bound = high_bound
 
-    def eval(self, value: OptionalCompare) -> bool:
+    def eval(self, value: Tcomp | None) -> bool:
         """Evaluate the filter on the given value."""
         if value is None or self.__low_bound is None or self.__high_bound is None:
             return False
+
         return self.__low_bound <= value <= self.__high_bound
 
     def serialize(self) -> Any:
@@ -102,16 +107,16 @@ class FilterOperatorEndsWith(FilterOperator[str]):
         return self.__string
 
 
-class FilterOperatorGreaterThan(FilterOperator[OptionalCompare]):
+class FilterOperatorGreaterThan(FilterOperator[Tcomp]):
     """A endswith filter."""
 
     __sg_op__ = "greater_than"
 
-    def __init__(self, value: OptionalCompare) -> None:
+    def __init__(self, value: Tcomp) -> None:
         """Initialize the filter operator."""
         self.__value = value
 
-    def eval(self, value: OptionalCompare) -> bool:
+    def eval(self, value: Tcomp) -> bool:
         """Evaluate the filter on the given value."""
         if value is None or self.__value is None:
             return False
@@ -323,16 +328,16 @@ class FilterOperatorIsNot(FilterOperator[T]):
         return self.__value
 
 
-class FilterOperatorLessThan(FilterOperator[OptionalCompare]):
+class FilterOperatorLessThan(FilterOperator[Tcomp]):
     """An in_last filter."""
 
     __sg_op__ = "less_than"
 
-    def __init__(self, value: OptionalCompare) -> None:
+    def __init__(self, value: Tcomp) -> None:
         """Initialize the filter operator."""
         self.__value = value
 
-    def eval(self, value: OptionalCompare) -> bool:
+    def eval(self, value: Tcomp) -> bool:
         """Evaluate the filter on the given value."""
         if value is None or self.__value is None:
             return False
@@ -662,10 +667,304 @@ class SgFieldCondition(SgFilterObject):
         return self.op.eval(value)
 
 
-class SgSummaryField(SgSerializable):
+class SummaryOperator(Generic[T, Tsumup], abc.ABC):
+    """A Shotgrid operator."""
+
+    __sg_op__: str
+
+    @abc.abstractmethod
+    def eval(self, value: list[T]) -> Tsumup:
+        """Evaluate the filter on the given value."""
+
+
+class RecordCountSummaryOperator(SummaryOperator[T, int]):
+    """Return the number of count."""
+
+    __sg_op__ = "record_count"
+
+    def eval(self, value: list[T]) -> int:
+        """Return the number of records in the given value."""
+        return len(value)
+
+
+class CountSummaryOperator(SummaryOperator[T, int]):
+    """Return the number of rows."""
+
+    __sg_op__ = "count"
+
+    def eval(self, value: list[T]) -> int:
+        """Return the number of elements."""
+        return len([v for v in value if v is not None])
+
+
+class SumSummaryOperator(SummaryOperator[float, float]):
+    """Sum summary operator."""
+
+    __sg_op__ = "sum"
+
+    def eval(self, value: list[float]) -> float:
+        """Return the sum of elements."""
+        return sum(value)
+
+
+class MaximumSummaryOperator(SummaryOperator[float, float]):
+    """Maximum summary operator."""
+
+    __sg_op__ = "maximum"
+
+    def eval(self, value: list[float]) -> float:
+        """Return the maximum value in the elements."""
+        return max(value)
+
+
+class MinimumSummaryOperator(SummaryOperator[float, float]):
+    """Minimum summary operator."""
+
+    __sg_op__ = "minimum"
+
+    def eval(self, value: list[float]) -> float:
+        """Return the minimum of the elements."""
+        return min(value)
+
+
+class AverageSummaryOperator(SummaryOperator[float, float]):
+    """Sum summary operator."""
+
+    __sg_op__ = "average"
+
+    def eval(self, value: list[float]) -> float:
+        """Return the sum of elements."""
+        return statistics.mean(value)
+
+
+class EarliestSummaryOperator(SummaryOperator[Tcomp, Tcomp]):
+    """Earliest summary operator."""
+
+    __sg_op__ = "earliest"
+
+    def eval(self, value: list[Tcomp]) -> Tcomp:
+        """Return the earliest value in the elements."""
+        return min(value)
+
+
+class LatestSummaryOperator(SummaryOperator[Tcomp, Tcomp]):
+    """Earliest summary operator."""
+
+    __sg_op__ = "latest"
+
+    def eval(self, value: list[Tcomp]) -> Tcomp:
+        """Return the earliest value in the elements."""
+        return max(value)
+
+
+class SummaryGroupOperator(Generic[T, Tsumup], abc.ABC):
+    """A grouping operation."""
+
+    __sg_op__: str
+
+    @abc.abstractmethod
+    def get_grouping_key(self, value: T) -> Tsumup:
+        """Return the grouping key from the given value."""
+
+
+class ExactGroupOperator(SummaryGroupOperator[T, T]):
+    """An exact grouping operator."""
+
+    __sg_op__ = "exact"
+
+    def get_grouping_key(self, value: T) -> T:
+        """Return the value itself."""
+        return value
+
+
+OptionalIntFloat = Union[int, float, None]
+
+
+class TensGroupOperator(SummaryGroupOperator[OptionalIntFloat, OptionalIntFloat]):
+    """Groups by tens."""
+
+    __sg_op__ = "tens"
+
+    def get_grouping_key(self, value: OptionalIntFloat) -> OptionalIntFloat:
+        """Return the integer division by ten."""
+        if value is None:
+            return None
+        return value // 10
+
+
+class HundredsGroupOperator(SummaryGroupOperator[OptionalIntFloat, OptionalIntFloat]):
+    """Groups by hundreds."""
+
+    __sg_op__ = "hundred"
+
+    def get_grouping_key(self, value: OptionalIntFloat) -> OptionalIntFloat:
+        """Return the integer division by hundred."""
+        if value is None:
+            return None
+        return value // 100
+
+
+class ThousandsGroupOperator(SummaryGroupOperator[OptionalIntFloat, OptionalIntFloat]):
+    """Groups by thousands."""
+
+    __sg_op__ = "thousands"
+
+    def get_grouping_key(self, value: OptionalIntFloat) -> OptionalIntFloat:
+        """Return the integer division by a thousand."""
+        if value is None:
+            return None
+        return value // 1000
+
+
+class TensOfThousandsGroupOperator(
+    SummaryGroupOperator[OptionalIntFloat, OptionalIntFloat]
+):
+    """Groups by tens of thousand."""
+
+    __sg_op__ = "tensofthousands"
+
+    def get_grouping_key(self, value: OptionalIntFloat) -> OptionalIntFloat:
+        """Return the integer division by ten thousand."""
+        if value is None:
+            return None
+        return value // 10000
+
+
+class HunderdsOfThousandsGroupOperator(
+    SummaryGroupOperator[OptionalIntFloat, OptionalIntFloat]
+):
+    """Groups by hundreds of thousands."""
+
+    __sg_op__ = "hundredsofthousands"
+
+    def get_grouping_key(self, value: OptionalIntFloat) -> OptionalIntFloat:
+        """Return the integer division by hundred thousand."""
+        if value is None:
+            return None
+        return value // 100000
+
+
+class MillionsGroupOperator(SummaryGroupOperator[OptionalIntFloat, OptionalIntFloat]):
+    """Groups by millions."""
+
+    __sg_op__ = "millions"
+
+    def get_grouping_key(self, value: OptionalIntFloat) -> OptionalIntFloat:
+        """Return the integer division by one million."""
+        if value is None:
+            return None
+        return value // 1000000
+
+
+Tdate = TypeVar("Tdate", datetime.date, datetime.datetime)
+
+
+class DayGroupOperator(SummaryGroupOperator[Tdate, datetime.date]):
+    """Groups by days."""
+
+    __sg_op__ = "day"
+
+    def get_grouping_key(self, value: Tdate) -> datetime.date:
+        """Return the day of the value."""
+        return datetime.date(year=value.year, month=value.month, day=value.day)
+
+
+class WeekGroupOperator(SummaryGroupOperator[Tdate, datetime.date]):
+    """Groups by months."""
+
+    __sg_op__ = "week"
+
+    def get_grouping_key(self, value: Tdate) -> datetime.date:
+        """Return the week of the value."""
+        week = value - datetime.timedelta(days=value.weekday())
+        return datetime.date(year=week.year, month=week.month, day=week.day)
+
+
+class MonthGroupOperator(SummaryGroupOperator[Tdate, datetime.date]):
+    """Groups by months."""
+
+    __sg_op__ = "month"
+
+    def get_grouping_key(self, value: Tdate) -> datetime.date:
+        """Return the month of the value."""
+        return datetime.date(year=value.year, month=value.month, day=1)
+
+
+class QuarterGroupOperator(SummaryGroupOperator[Tdate, datetime.date]):
+    """Groups by quarters."""
+
+    __sg_op__ = "quarter"
+
+    def get_grouping_key(self, value: Tdate) -> datetime.date:
+        """Return the quarter of the value."""
+        quarter = (value.month - 1) // 3
+        return datetime.date(year=value.year, month=quarter, day=1)
+
+
+class YearGroupOperator(SummaryGroupOperator[Tdate, datetime.date]):
+    """Groups by months."""
+
+    __sg_op__ = "year"
+
+    def get_grouping_key(self, value: Tdate) -> datetime.date:
+        """Return the month of the value."""
+        return datetime.date(year=value.year, month=1, day=1)
+
+
+# Avoid implementing clustered date as it is not reliable
+
+# Couldn't find the usage of the oneday or fivedays grouping...
+
+
+class EntityTypeGroupOperator(SummaryGroupOperator[SerializedEntity, str]):
+    """Groups by entity types."""
+
+    __sg_op__ = "entitytype"
+
+    def get_grouping_key(self, value: SerializedEntity) -> str:
+        """Return the entity type of the value."""
+        return value["type"]
+
+
+class FirstLetterGroupOperator(SummaryGroupOperator[str, str]):
+    """Groups by entity types."""
+
+    __sg_op__ = "firstletter"
+
+    def get_grouping_key(self, value: str) -> str:
+        """Return the entity type of the value."""
+        if not value:
+            return ""
+        return value[0]
+
+
+class SgSummaryField(SgSerializable, Generic[T, Tsumup]):
     """A summary for a given field."""
 
-    def __init__(self, field: AbstractField[Any], summary_type: SummaryType) -> None:
+    def __init__(
+        self, field: AbstractField[T], summary_op: SummaryOperator[T, Tsumup]
+    ) -> None:
         """Initialize the summary field."""
         self.field = field
-        self.type = summary_type
+        self.op = summary_op
+
+    def sum_up(self, entities: list[SgBaseEntity]) -> Tsumup:
+        """Summarize the given list of entities."""
+        values = [entity.get_value(self.field) for entity in entities]
+        return self.op.eval(values)
+
+
+class SgGroupingField(SgSerializable, Generic[T, Tsumup]):
+    """A grouping field."""
+
+    def __init__(
+        self, field: AbstractField[T], grouping_op: SummaryGroupOperator[T, Tsumup]
+    ) -> None:
+        """Initialize the grouping field."""
+        self.field = field
+        self.op = grouping_op
+
+    def get_group_key(self, entity: SgBaseEntity) -> Tsumup:
+        """Return the grouping key for the given entity."""
+        value = entity.get_value(self.field)
+        return self.op.get_grouping_key(value)

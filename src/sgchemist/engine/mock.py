@@ -29,7 +29,8 @@ class MockEngine(SgEngine):
         """Register an entity."""
         if not entity.__is_base__:
             raise ValueError(
-                f"Base entity {entity.__name__} is not a subclass of {SgBaseEntity.__name__}"
+                f"Base entity {entity.__name__} is not a subclass of "
+                f"{SgBaseEntity.__name__}"
             )
         for sub_entity in entity.__registry__.values():
             self._entities[sub_entity.__sg_type__] = sub_entity
@@ -50,6 +51,14 @@ class MockEngine(SgEngine):
 
     def summarize(self, query: SgSummarizeQueryData[type[T]]) -> dict[str, Any]:
         """Execute a summary query."""
+        entity = query.entity
+        if entity.__sg_type__ not in self._entities:
+            raise ValueError(f"Entity {entity.__sg_type__} is not registered")
+
+        # Aggregate the results per group
+        for inst in self._db.get(entity.__sg_type__, {}).values():
+            if not query.condition.matches(inst):
+                continue
 
     def batch(
         self, batch_queries: list[SgBatchQuery]
@@ -60,11 +69,16 @@ class MockEngine(SgEngine):
             request_type = batch_query.request_type
             entity = batch_query.entity
             if request_type == BatchRequestType.CREATE:
-                self._db[entity.__sg_type__][entity.id] = entity
-                results.append((True, entity.as_dict()))
+                entity_db = self._db[entity.__sg_type__]
+                entity_id = len(entity_db)
+                entity_db[entity_id] = entity
+                entity_dict = entity.as_dict()
+                entity_dict["id"] = entity_id
+                results.append((True, entity_dict))
             elif request_type == BatchRequestType.UPDATE:
                 results.append((True, entity.as_dict()))
             elif request_type == BatchRequestType.DELETE:
+                assert entity.id is not None
                 self._db[entity.__sg_type__].pop(entity.id)
                 results.append((True, entity.as_dict()))
         return results

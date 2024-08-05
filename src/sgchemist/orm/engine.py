@@ -126,8 +126,7 @@ class ShotgunAPIEngine(SgEngine):
         entity = query.entity
         filters = self._query_serializer.serialize_filter(query.condition)
         fields = [
-            self._query_serializer.serialize_summary_field(field)
-            for field in query.fields
+            self._query_serializer.serialize_filter(field) for field in query.fields
         ]
         results: dict[str, Any] = self._sg.summarize(
             entity_type=entity.__sg_type__,

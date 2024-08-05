@@ -582,3 +582,17 @@ def test_get_value() -> None:
 
     with pytest.raises(error.SgInvalidFieldError):
         task.get_value(Asset.project)
+
+
+def test_as_dict() -> None:
+    """Test as dict method."""
+    project = Project(name="project")
+    assert project.as_dict() == {"name": "project", "id": None}
+    asset = Asset(name="asset", project=project)
+    assert asset.as_dict() == {
+        "code": "asset",
+        "id": None,
+        "project": {"name": "project", "id": None},
+        "shots": [],
+        "tasks": [],
+    }

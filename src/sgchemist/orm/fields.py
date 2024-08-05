@@ -17,14 +17,18 @@ from typing import Generic
 from typing import List
 from typing import Optional
 from typing import TypeVar
+from typing import Union
 from typing import overload
 
 from typing_extensions import Self
 
 from . import error
 from .constant import DateType
-from .constant import SummaryType
 from .field_info import get_types
+from .queryop import AverageSummaryOperator
+from .queryop import CountSummaryOperator
+from .queryop import EarliestSummaryOperator
+from .queryop import ExactGroupOperator
 from .queryop import FilterOperatorBetween
 from .queryop import FilterOperatorContains
 from .queryop import FilterOperatorEndsWith
@@ -46,8 +50,15 @@ from .queryop import FilterOperatorNotInNext
 from .queryop import FilterOperatorStartsWith
 from .queryop import FilterOperatorTypeIs
 from .queryop import FilterOperatorTypeIsNot
+from .queryop import LatestSummaryOperator
+from .queryop import MaximumSummaryOperator
+from .queryop import MinimumSummaryOperator
+from .queryop import RecordCountSummaryOperator
 from .queryop import SgFieldCondition
+from .queryop import SgGroupingField
 from .queryop import SgSummaryField
+from .queryop import SumSummaryOperator
+from .queryop import TensGroupOperator
 from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
@@ -175,19 +186,19 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorIsNot(other))
 
-    def record_count(self) -> SgSummaryField:
+    def record_count(self) -> SgSummaryField[T, int]:
         """Return the summary field for counting the number of records."""
-        return SgSummaryField(self, SummaryType.RECORD_COUNT)
+        return SgSummaryField(self, RecordCountSummaryOperator())
 
-    def count(self) -> SgSummaryField:
-        """Return the summary field for counting the number of rows."""
-        return SgSummaryField(self, SummaryType.COUNT)
+    def group_exact(self) -> SgGroupingField[T, T]:
+        """Return the group exact field."""
+        return SgGroupingField(self, ExactGroupOperator())
 
 
 T_field = TypeVar("T_field", bound=AbstractField[Any])
 
 
-class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
+class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
     """Definition of an abstract value field."""
 
     def __init__(
@@ -211,13 +222,21 @@ class AbstractValueField(AbstractField[Optional[T]], metaclass=abc.ABCMeta):
             as_list=False,
         )
 
+    def count(self) -> SgSummaryField[T, int]:
+        """Return the summary field for counting the number of rows."""
+        return SgSummaryField(self, CountSummaryOperator())
 
-class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
+
+OptionalIntFloat = Union[int, float, None]
+Tnum = TypeVar("Tnum", bound=OptionalIntFloat)
+
+
+class NumericField(AbstractValueField[Tnum], metaclass=abc.ABCMeta):
     """Definition of an abstract numerical field."""
 
-    cast_type: type[Tcomp]
+    cast_type: type[Tnum]
 
-    def gt(self, other: Tcomp) -> SgFieldCondition:
+    def gt(self, other: Tnum) -> SgFieldCondition:
         """Filter entities where this field is greater than the given value.
 
         This is the equivalent of the "greater_than" filter of Shotgrid.
@@ -230,7 +249,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorGreaterThan(other))
 
-    def lt(self, other: Tcomp) -> SgFieldCondition:
+    def lt(self, other: Tnum) -> SgFieldCondition:
         """Filter entities where this field is less than the given value.
 
         This is the equivalent of the "less_than" filter of Shotgrid.
@@ -243,7 +262,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorLessThan(other))
 
-    def between(self, low: Tcomp, high: Tcomp) -> SgFieldCondition:
+    def between(self, low: Tnum, high: Tnum) -> SgFieldCondition:
         """Filter entities where this field is between the low and high values.
 
         This is the equivalent of the "between" filter of Shotgrid.
@@ -257,7 +276,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorBetween(low, high))
 
-    def is_in(self, others: list[T]) -> SgFieldCondition:
+    def is_in(self, others: list[Tnum]) -> SgFieldCondition:
         """Filter entities where this field is within the given list of values.
 
         This is the equivalent of the "in" filter of Shotgrid.
@@ -270,7 +289,7 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorIn(others))
 
-    def is_not_in(self, others: list[T]) -> SgFieldCondition:
+    def is_not_in(self, others: list[Tnum]) -> SgFieldCondition:
         """Filter entities where this field is not within the given list of values.
 
         This is the equivalent of the "not_in" filter of Shotgrid.
@@ -283,21 +302,9 @@ class NumericField(AbstractValueField[Tcomp], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorNotIn(others))
 
-    def sum(self) -> SgSummaryField:
-        """Return the summary field for summing the values."""
-        return SgSummaryField(self, SummaryType.SUM)
-
-    def maximum(self) -> SgSummaryField:
-        """Return the summary field for the maximum value."""
-        return SgSummaryField(self, SummaryType.MAXIMUM)
-
-    def minimum(self) -> SgSummaryField:
-        """Return the summary field for the minimum value."""
-        return SgSummaryField(self, SummaryType.MINIMUM)
-
-    def average(self) -> SgSummaryField:
-        """Return the summary field for the average value."""
-        return SgSummaryField(self, SummaryType.AVERAGE)
+    def group_tens(self) -> SgGroupingField[Tnum, Tnum]:
+        """Return the group tens field."""
+        return SgGroupingField(self, TensGroupOperator())
 
 
 class NumberField(NumericField[Optional[int]]):
@@ -319,12 +326,28 @@ class NumberField(NumericField[Optional[int]]):
             """Return the value of the field."""
 
 
-class FloatField(NumericField[Optional[float]]):
+class FloatField(NumericField[float]):
     """A float field."""
 
     cast_type: type[float] = float
     __sg_type__: str = "float"
-    default_value = None
+    default_value = 0.0
+
+    def sum(self) -> SgSummaryField[float, float]:
+        """Return the summary field for summing the values."""
+        return SgSummaryField(self, SumSummaryOperator())
+
+    def maximum(self) -> SgSummaryField[float, float]:
+        """Return the summary field for the maximum value."""
+        return SgSummaryField(self, MaximumSummaryOperator())
+
+    def minimum(self) -> SgSummaryField[float, float]:
+        """Return the summary field for the minimum value."""
+        return SgSummaryField(self, MinimumSummaryOperator())
+
+    def average(self) -> SgSummaryField[float, float]:
+        """Return the summary field for the average value."""
+        return SgSummaryField(self, AverageSummaryOperator())
 
     if TYPE_CHECKING:
 
@@ -332,11 +355,9 @@ class FloatField(NumericField[Optional[float]]):
         def __get__(self, instance: None, owner: Any) -> FloatField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> float | None: ...
+        def __get__(self, instance: Any, owner: Any) -> float: ...
 
-        def __get__(
-            self, instance: Any | None, owner: Any
-        ) -> float | None | FloatField:
+        def __get__(self, instance: Any | None, owner: Any) -> float | FloatField:
             """Return the value of the field."""
 
 
@@ -575,16 +596,8 @@ class BooleanField(AbstractValueField[Optional[bool]]):
         ) -> bool | None | BooleanField:
             """Return the value of the field."""
 
-    def checked(self) -> SgSummaryField:
-        """Return the summary field for getting checked fields."""
-        return SgSummaryField(self, SummaryType.CHECKED)
 
-    def unchecked(self) -> SgSummaryField:
-        """Return the summary field for getting unchecked fields."""
-        return SgSummaryField(self, SummaryType.UNCHECKED)
-
-
-class AbstractDateField(NumericField[Tcomp]):
+class AbstractDateField(AbstractValueField[Tcomp]):
     """Definition an abstract date field."""
 
     def in_last(self, count: int, date_element: DateType) -> SgFieldCondition:
@@ -695,13 +708,13 @@ class AbstractDateField(NumericField[Tcomp]):
         """
         return SgFieldCondition(self, FilterOperatorInCalendarYear(offset))
 
-    def earliest(self) -> SgSummaryField:
+    def earliest(self) -> SgSummaryField[Tcomp, Tcomp]:
         """Get the summary field for getting the earliest date."""
-        return SgSummaryField(self, SummaryType.EARLIEST)
+        return SgSummaryField(self, EarliestSummaryOperator())
 
-    def latest(self) -> SgSummaryField:
+    def latest(self) -> SgSummaryField[Tcomp, Tcomp]:
         """Get the summary field for getting the latest date."""
-        return SgSummaryField(self, SummaryType.LATEST)
+        return SgSummaryField(self, LatestSummaryOperator())
 
 
 class DateField(AbstractDateField[Optional[date]]):
@@ -860,11 +873,9 @@ class PercentField(FloatField):
         def __get__(self, instance: None, owner: Any) -> PercentField: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> float | None: ...
+        def __get__(self, instance: Any, owner: Any) -> float: ...
 
-        def __get__(
-            self, instance: Any | None, owner: Any
-        ) -> float | None | PercentField:
+        def __get__(self, instance: Any | None, owner: Any) -> float | PercentField:
             """Return the value of the field."""
 
 
@@ -905,19 +916,6 @@ class StatusField(AbstractValueField[str]):
 
         def __get__(self, instance: Any | None, owner: Any) -> str | StatusField:
             """Return the value of the field."""
-
-    def status(self) -> SgSummaryField:
-        """Return the summary field for status."""
-        return SgSummaryField(self, SummaryType.STATUS_LIST)
-
-    def status_percentage(self, as_float: bool = False) -> SgSummaryField:
-        """Return the summary field for status."""
-        type_ = (
-            SummaryType.STATUS_PERCENTAGE_AS_FLOAT
-            if as_float
-            else SummaryType.STATUS_PERCENTAGE
-        )
-        return SgSummaryField(self, type_)
 
 
 class UrlField(AbstractValueField[Optional[str]]):

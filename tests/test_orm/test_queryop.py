@@ -11,6 +11,8 @@ from classes import Project
 
 from sgchemist.orm import DateField
 from sgchemist.orm import EntityField
+from sgchemist.orm import FloatField
+from sgchemist.orm import NumberField
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import LogicalOperator
 from sgchemist.orm.entity import SgBaseEntity
@@ -405,6 +407,62 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.entity.type_is_not(RefEntity)
     assert cond.matches(TestEntity(entity=TestEntity()))
     assert not cond.matches(TestEntity(entity=RefEntity()))
+
+
+def test_summarize_operator() -> None:
+    """Test summarize operators."""
+
+    class SgEntity(SgBaseEntity):
+        pass
+
+    class TestEntity(SgEntity):
+        __sg_type__ = "test"
+        name: TextField
+        number: NumberField
+        fval: FloatField
+        date: DateField
+
+    # RECORD COUNT
+    cond = TestEntity.id.record_count()
+    assert cond.sum_up([TestEntity(id=0), TestEntity(id=1)]) == 2
+
+    # COUNT
+    cond = TestEntity.number.count()
+    assert cond.sum_up([TestEntity(number=1), TestEntity()]) == 1
+
+    # SUM
+    cond_float = TestEntity.fval.sum()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=2.0)]) == 3.0
+
+    # MAXIMUM
+    cond_float = TestEntity.fval.maximum()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=3.0)]) == 3.0
+
+    # MINIMUM
+    cond_float = TestEntity.fval.minimum()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=3.0)]) == 1.0
+
+    # AVERAGE
+    cond_float = TestEntity.fval.average()
+    assert cond_float.sum_up([TestEntity(fval=1.0), TestEntity(fval=3.0)]) == 2.0
+
+    # EARLIEST
+    cond_date = TestEntity.date.earliest()
+    assert cond_date.sum_up(
+        [
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=1)),
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=2)),
+        ]
+    ) == datetime.datetime(year=2000, month=1, day=1)
+
+    # LATEST
+    cond_date = TestEntity.date.latest()
+    assert cond_date.sum_up(
+        [
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=1)),
+            TestEntity(date=datetime.datetime(year=2000, month=1, day=2)),
+        ]
+    ) == datetime.datetime(year=2000, month=1, day=2)
 
 
 @pytest.mark.parametrize(

@@ -339,7 +339,7 @@ class SgSummarizeQueryData(Generic[T_meta]):
     def __init__(
         self,
         entity: T_meta,
-        fields: tuple[SgSummaryField, ...] = tuple(),
+        fields: tuple[SgSummaryField[Any, Any], ...] = tuple(),
         condition: SgFilterObject | None = None,
         grouping_fields: tuple[GroupingField, ...] = tuple(),
         include_archived_projects: bool = True,
@@ -354,7 +354,7 @@ class SgSummarizeQueryData(Generic[T_meta]):
     def copy(
         self,
         entity: T_meta | None = None,
-        fields: tuple[SgSummaryField, ...] | None = None,
+        fields: tuple[SgSummaryField[Any, Any], ...] | None = None,
         condition: SgFilterObject | None = None,
         grouping_fields: tuple[GroupingField, ...] | None = None,
         include_archived_projects: bool | None = None,
@@ -385,7 +385,7 @@ class SgSummarizeQueryData(Generic[T_meta]):
         return self._entity
 
     @property
-    def fields(self) -> tuple[SgSummaryField, ...]:
+    def fields(self) -> tuple[SgSummaryField[Any, Any], ...]:
         """Return the fields of the query."""
         return self._fields
 
@@ -436,10 +436,7 @@ class SgSummarizeQuery(Generic[T_meta]):
         Returns:
             a new query with the condition added.
         """
-        if self._data.condition is None:
-            new_condition = condition
-        else:
-            new_condition = self._data.condition & condition
+        new_condition = self._data.condition & condition
         new_state = self._data.copy(condition=new_condition)
         return self.__class__(new_state)
 
@@ -520,7 +517,7 @@ def select(entity: T_meta, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
 
 
 def summarize(
-    entity: T_meta, *summary_fields: SgSummaryField
+    entity: T_meta, *summary_fields: SgSummaryField[Any, Any]
 ) -> SgSummarizeQuery[T_meta]:
     """Returns a new summarize query for the given entity class.
 
