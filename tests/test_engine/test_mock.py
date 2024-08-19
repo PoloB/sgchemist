@@ -28,6 +28,20 @@ def test_mock_engine_registry() -> None:
     mock_engine.register_base(SgEntity)
 
 
+def test_mock_find_unregistered_entity() -> None:
+    """Test querying an unregistered entity."""
+
+    class TestBase(SgBaseEntity):
+        pass
+
+    mock_engine = MockEngine()
+    mock_engine.register_base(TestBase)
+    query = select(Project)
+
+    with pytest.raises(ValueError):
+        mock_engine.find(query.get_data())
+
+
 @pytest.fixture
 def engine() -> MockEngine:
     """Returns a test engine instance."""
