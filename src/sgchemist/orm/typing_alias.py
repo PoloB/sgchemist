@@ -4,7 +4,8 @@ from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import Tuple
-from typing import TypedDict
+
+from typing_extensions import TypedDict
 
 EntityHash = Tuple[str, int]
 
