@@ -305,10 +305,6 @@ class FloatField(NumericField[float]):
     __sg_type__: str = "float"
     default_value = 0.0
 
-    def sum(self) -> SgSummaryField[float, float]:
-        """Return the summary field for summing the values."""
-        return SgSummaryField(self, SumSummaryOperator())
-
     if TYPE_CHECKING:
 
         @overload
