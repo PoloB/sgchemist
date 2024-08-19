@@ -2,69 +2,72 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Any
 
 import pytest
 
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.fields import AbstractValueField
-from sgchemist.orm.fields import EntityField
-from sgchemist.orm.fields import TextField
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.queryop import SgNullCondition
 from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
 from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
 from sgchemist.orm.serializer import serialize_condition
 from sgchemist.orm.serializer import serialize_entity
+from tests.classes import Project
+from tests.classes import Shot
 
-from ..classes import Project
-from ..classes import Shot
+if TYPE_CHECKING:
+    from sgchemist.orm.fields import AbstractValueField
+    from sgchemist.orm.fields import EntityField
+    from sgchemist.orm.fields import TextField
 
 
-@pytest.fixture
+@pytest.fixture()
 def project_entity() -> type[Project]:
     """Returns the project entity."""
     return Project
 
 
-@pytest.fixture
+@pytest.fixture()
 def shot_entity() -> type[Shot]:
     """Returns the shot entity."""
     return Shot
 
 
-@pytest.fixture
+@pytest.fixture()
 def find_serialize() -> ShotgunAPIObjectSerializer:
     """Returns the shotgun api serializer object."""
     return ShotgunAPIObjectSerializer()
 
 
-@pytest.fixture
+@pytest.fixture()
 def batch_serialize() -> ShotgunAPIBatchQuerySerializer:
     """Returns the shotgun api batch serializer object."""
     return ShotgunAPIBatchQuerySerializer()
 
 
-@pytest.fixture
+@pytest.fixture()
 def simple_field(shot_entity: type[Shot]) -> AbstractValueField[Any]:
     """Returns a simple test field."""
     return shot_entity.name
 
 
-@pytest.fixture
+@pytest.fixture()
 def relation_field(shot_entity: type[Shot]) -> EntityField[Any]:
     """Returns a relation field."""
     return shot_entity.project
 
 
-@pytest.fixture
+@pytest.fixture()
 def project_inst(project_entity: type[Project]) -> Project:
     """Returns a project instance."""
     return project_entity(id=101)
 
 
 def test_serialize_entity(
-    find_serialize: ShotgunAPIObjectSerializer, shot_entity: type[Shot]
+    find_serialize: ShotgunAPIObjectSerializer,
+    shot_entity: type[Shot],
 ) -> None:
     """Tests the serialization of an entity instance."""
     inst = shot_entity(name="foo", id=42)
@@ -94,7 +97,8 @@ def test_serialize_operator(
 
 
 def test_serialize_simple_condition(
-    find_serialize: ShotgunAPIObjectSerializer, simple_field: TextField
+    find_serialize: ShotgunAPIObjectSerializer,
+    simple_field: TextField,
 ) -> None:
     """Tests the serialization of a simple condition."""
     condition = simple_field.eq("foo")
@@ -121,14 +125,14 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
 
 
 @pytest.mark.parametrize(
-    "batch_queries, expected_serialization",
+    ("batch_queries", "expected_serialization"),
     [
         (
             [
                 SgBatchQuery(
                     BatchRequestType.CREATE,
                     Shot(name="foo", project=Project(id=2)),
-                )
+                ),
             ],
             [
                 {
@@ -142,7 +146,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                         "tasks": [],
                         "assets": [],
                     },
-                }
+                },
             ],
         ),
         (
@@ -150,7 +154,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                 SgBatchQuery(
                     BatchRequestType.UPDATE,
                     Shot(id=1, name="bar", project=Project(id=3)),
-                )
+                ),
             ],
             [
                 {
@@ -161,7 +165,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                         "code": "bar",
                         "project": {"id": 3, "type": "Project"},
                     },
-                }
+                },
             ],
         ),
         (
@@ -169,14 +173,14 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                 SgBatchQuery(
                     BatchRequestType.DELETE,
                     Shot(id=1, name="foo", project=Project(id=3)),
-                )
+                ),
             ],
             [
                 {
                     "request_type": "delete",
                     "entity_type": "Shot",
                     "entity_id": 1,
-                }
+                },
             ],
         ),
     ],

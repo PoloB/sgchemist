@@ -17,13 +17,13 @@ def test_get_annotations() -> None:
 
     class Test:
         t_int: int
-        t_int_str: "int"
+        t_int_str: "int"  # noqa: UP037
         t_tup_int: tuple[int]
-        t_tup_int_str: "tuple[int]"
-        t_tup_int_str_part: tuple["int"]
-        t_tup_old_int: Tuple[int]
-        t_tup_old_int_str: "Tuple[int]"
-        t_tup_old_int_str_part: Tuple["int"]
+        t_tup_int_str: "tuple[int]"  # noqa: UP037
+        t_tup_int_str_part: tuple["int"]  # noqa: UP037
+        t_tup_old_int: Tuple[int]  # noqa: UP006
+        t_tup_old_int_str: "Tuple[int]"  # noqa: UP037, UP006
+        t_tup_old_int_str_part: Tuple["int"]  # noqa: UP037, UP006
         t = 0
 
     annotation = typing_util.get_annotations(Test)
@@ -66,7 +66,7 @@ def test_eval_name_only() -> None:
 
 
 @pytest.mark.parametrize(
-    "annotation, result",
+    ("annotation", "result"),
     [
         ("int", (int, "int")),
         ("'int'", (int, "int")),

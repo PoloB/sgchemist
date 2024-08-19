@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 from typing import Callable
+from typing import TypeVar
 
 import pytest
 
@@ -48,11 +49,12 @@ from sgchemist.orm.queryop import FilterOperatorStartsWith
 from sgchemist.orm.queryop import FilterOperatorTypeIs
 from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
+from tests.classes import Asset
+from tests.classes import Project
+from tests.classes import Shot
+from tests.classes import Task
 
-from ..classes import Asset
-from ..classes import Project
-from ..classes import Shot
-from ..classes import Task
+T = TypeVar("T")
 
 
 @pytest.fixture(scope="module")
@@ -61,13 +63,13 @@ def entity_class() -> type[Shot]:
     return Shot
 
 
-@pytest.fixture
+@pytest.fixture()
 def lazy_class_eval(entity_class: type[Shot]) -> LazyEntityClassEval:
     """The test lazy entity."""
     return LazyEntityClassEval(entity_class.__name__, entity_class.__registry__)
 
 
-@pytest.fixture
+@pytest.fixture()
 def lazy_collection_eval(
     lazy_class_eval: LazyEntityClassEval,
 ) -> LazyEntityCollectionClassEval:
@@ -76,7 +78,8 @@ def lazy_collection_eval(
 
 
 def test_lazy_entity_class_eval(
-    lazy_class_eval: LazyEntityClassEval, entity_class: type[SgBaseEntity]
+    lazy_class_eval: LazyEntityClassEval,
+    entity_class: type[SgBaseEntity],
 ) -> None:
     """Test the lazy entity getter."""
     assert lazy_class_eval.get() is entity_class
@@ -92,30 +95,34 @@ def test_lazy_entity_collection_eval(
 
 
 @pytest.mark.parametrize(
-    "field, exp_name, exp_class, exp_default, exp_primary, "
-    "exp_name_in_rel, exp_types",
+    (
+        "field",
+        "exp_name",
+        "exp_class",
+        "exp_default",
+        "exp_name_in_rel",
+        "exp_types",
+    ),
     [
-        (Shot.name, "code", Shot, None, False, "name", tuple()),
-        (Shot.id, "id", Shot, None, True, "id", tuple()),
-        (Shot.project, "project", Shot, None, False, "project", (Project,)),
+        (Shot.name, "code", Shot, None, "name", ()),
+        (Shot.id, "id", Shot, None, "id", ()),
+        (Shot.project, "project", Shot, None, "project", (Project,)),
         (
             Shot.parent_shots,
             "parent_shots",
             Shot,
             [],
-            False,
             "parent_shots",
             (Shot,),
         ),
-        (Task.entity, "entity", Task, None, False, "entity", (Asset, Shot)),
+        (Task.entity, "entity", Task, None, "entity", (Asset, Shot)),
     ],
 )
 def test_field_attributes(
-    field: AbstractField[Any],
+    field: AbstractField[T],
     exp_name: str,
     exp_class: type[SgBaseEntity],
-    exp_default: Any,
-    exp_primary: bool,
+    exp_default: T,
     exp_name_in_rel: str,
     exp_types: tuple[type[SgBaseEntity], ...],
 ) -> None:
@@ -131,7 +138,7 @@ def test_field_attributes(
 
 
 @pytest.mark.parametrize(
-    "field, exp_field_name",
+    ("field", "exp_field_name"),
     [
         (Shot.project.f(Project.id), "project.Project.id"),
         (Shot.assets.f(Asset.id), "assets.Asset.id"),
@@ -166,7 +173,7 @@ def test_field_casting_error() -> None:
 
 
 @pytest.mark.parametrize(
-    "field, value_to_set, exp_value",
+    ("field", "value_to_set", "exp_value"),
     [
         (Shot.id, 5, 5),
         (Shot.project, Project(), None),
@@ -174,7 +181,9 @@ def test_field_casting_error() -> None:
     ],
 )
 def test_update_entity_from_row_value(
-    field: AbstractField[Any], value_to_set: Any, exp_value: Any
+    field: AbstractField[T],
+    value_to_set: T,
+    exp_value: T,
 ) -> None:
     """Tests the update entity from row attribute."""
     inst = field.__info__["entity"]()
@@ -183,7 +192,7 @@ def test_update_entity_from_row_value(
 
 
 @pytest.mark.parametrize(
-    "field, value, exp_value",
+    ("field", "value", "exp_value"),
     [
         (Shot.id, None, []),
         (Shot.id, 5, []),
@@ -195,41 +204,43 @@ def test_update_entity_from_row_value(
     ],
 )
 def test_entities_iter_entities_from_field_values(
-    field: AbstractField[Any], value: Any, exp_value: Any
+    field: AbstractField[T],
+    value: T,
+    exp_value: T,
 ) -> None:
     """Tests the entity iterator."""
     assert list(iter_entities_from_field_value(field.__info__, value)) == exp_value
 
 
 @pytest.mark.parametrize(
-    "field, func, value, exp_value",
+    ("field", "func", "value", "exp_value"),
     [
-        (Shot.id, lambda x, y: x, 5, 5),
-        (Shot.project, lambda x, y: x, None, None),
-        (Shot.project, lambda x, y: x, {"type": "Project", "id": 1}, Project),
+        (Shot.id, lambda x, _: x, 5, 5),
+        (Shot.project, lambda x, _: x, None, None),
+        (Shot.project, lambda x, _: x, {"type": "Project", "id": 1}, Project),
         (
             Shot.parent_shots,
             lambda x, y: (x, y["id"]),
             [{"type": "Shot", "id": 5}, {"type": "Shot", "id": 3}],
             [(Shot, 5), (Shot, 3)],
         ),
-        (Task.entity, lambda x, y: x, None, None),
-        (Task.entity, lambda x, y: x, {"type": "Asset", "id": 1}, Asset),
-        (Task.entity, lambda x, y: x, {"type": "Shot", "id": 1}, Shot),
+        (Task.entity, lambda x, _: x, None, None),
+        (Task.entity, lambda x, _: x, {"type": "Asset", "id": 1}, Asset),
+        (Task.entity, lambda x, _: x, {"type": "Shot", "id": 1}, Shot),
     ],
 )
 def test_cast_column(
-    field: AbstractField[Any],
-    func: Callable[[type[SgBaseEntity], dict[str, Any]], Any],
-    value: Any,
-    exp_value: Any,
+    field: AbstractField[T],
+    func: Callable[[type[SgBaseEntity], dict[str, T]], T],
+    value: T,
+    exp_value: T,
 ) -> None:
     """Tests the cast column method."""
     assert cast_column(field.__info__, value, func) == exp_value
 
 
 @pytest.mark.parametrize(
-    "field_condition, exp_op",
+    ("field_condition", "exp_op"),
     [
         (NumberField().eq(5), FilterOperatorIs),
         (NumberField().neq(5), FilterOperatorIsNot),
@@ -263,14 +274,15 @@ def test_cast_column(
     ],
 )
 def test_condition(
-    field_condition: SgFieldCondition, exp_op: type[FilterOperator[Any]]
+    field_condition: SgFieldCondition,
+    exp_op: type[FilterOperator[Any]],
 ) -> None:
     """Tests the filter methods."""
     assert isinstance(field_condition.op, exp_op)
 
 
 @pytest.mark.parametrize(
-    "field, expected",
+    ("field", "expected"),
     [
         (Project.id, [Project.id]),
         (Asset.id, [Asset.id]),
@@ -283,7 +295,8 @@ def test_condition(
     ],
 )
 def test_get_field_hierarchy(
-    field: AbstractField[Any], expected: list[AbstractField[Any]]
+    field: AbstractField[Any],
+    expected: list[AbstractField[Any]],
 ) -> None:
     """Test the field hierarchy."""
     assert field_info.get_field_hierarchy(field) == expected

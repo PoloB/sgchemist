@@ -22,26 +22,25 @@ from sgchemist.orm.fields import MultiEntityField
 from sgchemist.orm.fields import NumberField
 from sgchemist.orm.fields import TextField
 from sgchemist.orm.fields import alias
+from tests.classes import Asset
+from tests.classes import Project
+from tests.classes import Shot
+from tests.classes import Task
 
-from ..classes import Asset
-from ..classes import Project
-from ..classes import Shot
-from ..classes import Task
 
-
-@pytest.fixture
+@pytest.fixture()
 def shot_entity() -> type[Shot]:
     """Returns the TestShot entity."""
     return Shot
 
 
-@pytest.fixture
+@pytest.fixture()
 def shot_not_commited(shot_entity: type[Shot]) -> Shot:
     """Returns a non commited TestShot instance."""
     return shot_entity(name="foo")
 
 
-@pytest.fixture
+@pytest.fixture()
 def shot_commited(shot_entity: type[Shot]) -> Shot:
     """Returns a commited TestShot instance."""
     return shot_entity(name="foo", id=42)
@@ -94,7 +93,7 @@ def test_model_creation_reserved_attributes() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            __fields_by_attr__ = "test"  # type: ignore
+            __fields_by_attr__ = "test"
 
 
 def test_model_duplicate_field() -> None:
@@ -126,7 +125,7 @@ def test_model_entity_field_has_no_container() -> None:
 
         class TestEntityListOld(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[List[SgBaseEntity]]
+            entity_with_container: EntityField[List[SgBaseEntity]]  # noqa: UP006
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
@@ -138,7 +137,7 @@ def test_model_entity_field_has_no_container() -> None:
 
         class TestEntityDictOld(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[Dict[str, SgBaseEntity]]
+            entity_with_container: EntityField[Dict[str, SgBaseEntity]]  # noqa: UP006
 
 
 def test_model_multi_entity_field_has_no_container() -> None:
@@ -193,21 +192,21 @@ def test_cannot_create_twice_the_same_entity() -> None:
     class SgEntity(SgBaseEntity):
         pass
 
-    class TestEntity(SgEntity):
+    class TestEntity1(SgEntity):
         __sg_type__ = "test"
 
-    class TestEntity(SgEntity):  # type: ignore  # noqa
+    class TestEntity2(SgEntity):
         __sg_type__ = "test1"
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class TestEntity1(SgEntity):
+        class TestEntity3(SgEntity):
             __sg_type__ = "test1"
 
     class OtherSgEntity(SgBaseEntity):
         pass
 
-    class TestEntity2(OtherSgEntity):
+    class TestEntity4(OtherSgEntity):
         __sg_type__ = "test"
 
 
@@ -229,7 +228,7 @@ def test_union_entity_in_entity() -> None:
 
     class TestWithUnionOld(SgEntity):
         __sg_type__ = "test_with_union_old"
-        entity: EntityField[Union[TestWithUnion, TestEntity]]
+        entity: EntityField[Union[TestWithUnion, TestEntity]]  # noqa: UP007
 
     assert isinstance(TestWithUnionOld.entity, EntityField)
     assert set(get_types(TestWithUnionOld.entity)) == {TestEntity, TestWithUnion}
@@ -244,21 +243,21 @@ def test_union_entity_in_entity() -> None:
 
     class TestWithUnionOptionalOld(SgEntity):
         __sg_type__ = "test_with_union_optional_old"
-        entity: EntityField[Optional[Union[TestWithUnion, TestEntity]]]
+        entity: EntityField[Optional[Union[TestWithUnion, TestEntity]]]  # noqa: UP007
 
     assert isinstance(TestWithUnionOptionalOld.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
 
     class TestWithUnionOptionalMixedUnion(SgEntity):
         __sg_type__ = "test_with_union_optional_mixed"
-        entity: EntityField[Optional[TestWithUnion | TestEntity]]
+        entity: EntityField[Optional[TestWithUnion | TestEntity]]  # noqa: UP007
 
     assert isinstance(TestWithUnionOptionalMixedUnion.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
 
     class TestWithUnionOptionalMixedNone(SgEntity):
         __sg_type__ = "test_with_union_optional_mixed_none"
-        entity: EntityField[Union[TestWithUnion, TestEntity] | None]
+        entity: EntityField[Union[TestWithUnion, TestEntity] | None]  # noqa: UP007
 
     assert isinstance(TestWithUnionOptionalMixedNone.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
@@ -357,19 +356,19 @@ def test_string_annotation() -> None:
     # String annotation
     class TestEntity1(SgEntity):
         __sg_type__ = "test1"
-        test: "TextField"
+        test: TextField
 
     class TestEntity2(SgEntity):
         __sg_type__ = "test2"
-        test: "EntityField[TestEntity1]"
+        test: EntityField[TestEntity1]
 
     class TestEntity3(SgEntity):
         __sg_type__ = "test3"
-        test: EntityField["TestEntity1"]
+        test: EntityField[TestEntity1]
 
     class TestEntity4(SgEntity):
         __sg_type__ = "test4"
-        test: EntityField["TestEntity1" | None]
+        test: EntityField[TestEntity1 | None]
 
 
 def test_targeting_invalid_entity_fails_lazily() -> None:
@@ -406,13 +405,13 @@ def test_field_uses_field_as_initializer() -> None:
 
         class TestEntity10(SgEntity):
             __sg_type__ = "test10"
-            test: TextField = 5  # type: ignore
+            test: TextField = 5
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity11(SgEntity):
             __sg_type__ = "test11"
-            test: EntityField  # type: ignore
+            test: EntityField
 
 
 def test_misc_annotations() -> None:
@@ -425,19 +424,19 @@ def test_misc_annotations() -> None:
 
         class TestEntity12(SgEntity):
             __sg_type__ = "test12"
-            test: "weird[UnknownField]"  # type: ignore # noqa: F821
+            test: weird[UnknownField]  # noqa: F821
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity13(SgEntity):
             __sg_type__ = "test13"
-            test: MultiEntityField  # type: ignore
+            test: MultiEntityField
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity14(SgEntity):
             __sg_type__ = "test15"
-            test: ""  # type: ignore # noqa: F722
+            test: ""  # noqa: F722
 
 
 def test_invalid_expression_in_annotations() -> None:
@@ -450,7 +449,7 @@ def test_invalid_expression_in_annotations() -> None:
 
         class TestEntity14(SgEntity):
             __sg_type__ = "test14"
-            test: "EntityField[1 & 5]"  # type: ignore
+            test: EntityField[1 & 5]
 
 
 def test_explicit_target_is_entity() -> None:
@@ -514,7 +513,7 @@ def test_instance_with_primary_key_is_committed(shot_commited: Shot) -> None:
 
 
 @pytest.mark.parametrize(
-    "entity, expected_modified_fields",
+    ("entity", "expected_modified_fields"),
     [
         (Project(name="test"), [Project.name]),
         (Project(id=1, name="test"), [Project.name]),
@@ -522,7 +521,8 @@ def test_instance_with_primary_key_is_committed(shot_commited: Shot) -> None:
     ],
 )
 def test_entity_modified_fields(
-    entity: SgBaseEntity, expected_modified_fields: list[AbstractField[Any]]
+    entity: SgBaseEntity,
+    expected_modified_fields: list[AbstractField[Any]],
 ) -> None:
     """Tests that initialized fields are considered modified expect id."""
     assert entity.__state__.modified_fields == expected_modified_fields

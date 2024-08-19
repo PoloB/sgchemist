@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from sgchemist.orm import Session
@@ -9,52 +11,53 @@ from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import error
 from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.session import SgFindResult
+from tests.classes import Asset
+from tests.classes import Project
+from tests.classes import Shot
+from tests.classes import Task
 
-from ..classes import Asset
-from ..classes import Project
-from ..classes import Shot
-from ..classes import Task
+if TYPE_CHECKING:
+    from sgchemist.orm.engine import SgEngine
 
 
-@pytest.fixture
+@pytest.fixture()
 def shot_entity() -> type[Shot]:
     """Returns the Shot entity."""
     return Shot
 
 
-@pytest.fixture
+@pytest.fixture()
 def session(engine: SgEngine) -> Session:
     """Returns a session object."""
     return Session(engine)
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_project() -> Project:
     """Returns a project object."""
     return Project(name="project")
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_asset(test_project: Project) -> Asset:
     """Returns an asset object."""
     return Asset(name="asset1", project=test_project)
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_shot(test_project: Project) -> Shot:
     """Returns a shot object."""
     return Shot(name="shot1", project=test_project)
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_task_shot(test_shot: Shot) -> Task:
     """Returns a task associated to a shot."""
     return Task(name="task1", entity=test_shot)
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_task_asset(test_asset: Asset) -> Task:
     """Returns a task associated to an asset."""
     return Task(name="task1", entity=test_asset)
@@ -72,9 +75,11 @@ def test_db(
     return [test_project, test_shot, test_asset, test_task_shot, test_task_asset]
 
 
-@pytest.fixture
+@pytest.fixture()
 def filled_engine(
-    session: Session, engine: SgEngine, test_db: list[SgBaseEntity]
+    session: Session,
+    engine: SgEngine,
+    test_db: list[SgBaseEntity],
 ) -> SgEngine:
     """Returns an engine filled with database content."""
     for inst in test_db:
@@ -83,7 +88,7 @@ def filled_engine(
     return engine
 
 
-def test_find_result(session: Session, shot_entity: type[Shot]) -> None:
+def test_find_result(shot_entity: type[Shot]) -> None:
     """Tests the find result object."""
     test_shot1 = shot_entity()
     test_shot2 = shot_entity()
@@ -212,11 +217,11 @@ def test_delete_already_deleted(session: Session, test_project: Project) -> None
 
 
 @pytest.mark.parametrize(
-    "model, expected_count",
+    ("model", "expected_count"),
     [(Shot, 1), (Asset, 1), (Project, 1), (Task, 2)],
 )
 def test_execute_query_find(
-    filled_engine: SgEngine,
+    filled_engine: SgEngine,  # noqa: ARG001
     session: Session,
     model: type[SgBaseEntity],
     expected_count: int,
@@ -227,12 +232,15 @@ def test_execute_query_find(
 
 
 def test_execute_query_find_shot_entity(
-    filled_engine: SgEngine, session: Session, test_task_shot: Task, test_shot: Shot
+    filled_engine: SgEngine,  # noqa: ARG001
+    session: Session,
+    test_task_shot: Task,
+    test_shot: Shot,
 ) -> None:
     """Tests that the session fills the multi target objects correctly."""
     task_entity = test_task_shot.__class__
     task = session.exec(
-        select(task_entity).where(task_entity.id.eq(test_task_shot.id))
+        select(task_entity).where(task_entity.id.eq(test_task_shot.id)),
     ).first()
     assert task.entity is not None
     assert task.entity.id == test_shot.id
@@ -247,7 +255,10 @@ def test_execute_query_find_shot_entity(
 
 
 def test_execute_query_find_loading(
-    filled_engine: SgEngine, session: Session, shot_entity: type[Shot], test_shot: Shot
+    filled_engine: SgEngine,  # noqa: ARG001
+    session: Session,
+    shot_entity: type[Shot],
+    test_shot: Shot,
 ) -> None:
     """Test querying with loading option."""
     shot_fields = (shot_entity.id, shot_entity.project)
@@ -277,7 +288,10 @@ def test_execute_query_find_loading(
 
 
 def test_execute_query_select_any_fields(
-    filled_engine: SgEngine, session: Session, shot_entity: type[Shot], test_shot: Shot
+    filled_engine: SgEngine,  # noqa: ARG001
+    session: Session,
+    shot_entity: type[Shot],
+    test_shot: Shot,
 ) -> None:
     """Test querying only some fields."""
     shot = session.exec(select(shot_entity, shot_entity.id, shot_entity.name)).first()
