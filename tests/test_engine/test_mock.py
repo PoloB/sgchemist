@@ -18,9 +18,19 @@ from ..classes import Shot
 from ..classes import Task
 
 
+def test_mock_engine_registry() -> None:
+    """Test the mock engine registry."""
+    mock_engine = MockEngine()
+
+    with pytest.raises(ValueError):
+        mock_engine.register_base(Project)
+
+    mock_engine.register_base(SgEntity)
+
+
 @pytest.fixture
 def engine() -> MockEngine:
-    """Returns a ShotgunAPIEngine instance."""
+    """Returns a test engine instance."""
     engine = MockEngine()
     engine.register_base(SgEntity)
     return engine

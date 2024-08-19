@@ -86,7 +86,7 @@ src = ["src", "tests"]
 
 
 [tool.coverage]
-run.omit = ["test/*"]
+run.omit = ["tests/*"]
 report.exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
