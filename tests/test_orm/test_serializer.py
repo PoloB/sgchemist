@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from classes import Project
-from classes import Shot
 
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.fields import AbstractValueField
@@ -18,6 +16,9 @@ from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
 from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
 from sgchemist.orm.serializer import serialize_condition
 from sgchemist.orm.serializer import serialize_entity
+
+from ..classes import Project
+from ..classes import Shot
 
 
 @pytest.fixture

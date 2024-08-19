@@ -428,6 +428,18 @@ class SgBaseEntity(metaclass=SgEntityMeta):
             )
         return value
 
+    def as_dict(self) -> dict[str, Any]:
+        """Return the entity as dict."""
+        data = {"id": self.id, "type": self.__sg_type__}
+
+        for field in self.__fields__:
+            value = self.__state__.get_value(field)
+            if isinstance(value, SgBaseEntity):
+                value = value.as_dict()
+            data[field_info.get_name(field)] = value
+
+        return data
+
 
 def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnnotation:
     """Attempt to extract information from the given annotation.

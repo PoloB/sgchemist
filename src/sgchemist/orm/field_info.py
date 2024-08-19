@@ -137,10 +137,24 @@ def iter_entities_from_field_value(
     yield field_value
 
 
+def cast_value_over(
+    info: FieldInfo[Any],
+    func: Callable[[Any], Any],
+    value: Any,
+) -> Any:
+    """Cast the value according to the given field info."""
+    if not info["is_relationship"]:
+        return value
+    if info["is_list"]:
+        return [func(v) for v in value]
+    else:
+        return func(value)
+
+
 def cast_column(
     info: FieldInfo[Any],
     column_value: Any,
-    model_factory: Callable[[type[SgBaseEntity], dict[str, Any]], Any],
+    func: Callable[[type[SgBaseEntity], dict[str, Any]], Any],
 ) -> Any:
     """Cast the given row value to be used for instancing the entity.
 
@@ -153,27 +167,15 @@ def cast_column(
     Args:
         info: the field info
         column_value: the column value to cast
-        model_factory: the function to call for instantiating an entity from a row.
+        func: the function to call for instantiating an entity from a row.
 
     Returns:
         result of the applied function
     """
-    if not info["is_relationship"]:
-        return column_value
-
     if not info["is_list"] and column_value is None:
         return None
 
     def _cast_column(col: dict[str, Any]) -> Any:
-        return model_factory(info["lazy_collection"].get_by_type(col["type"]), col)
+        return func(info["lazy_collection"].get_by_type(col["type"]), col)
 
-    def _cast_value_over(
-        func: Callable[[Any], Any],
-        value: Any,
-    ) -> Any:
-        if info["is_list"]:
-            return [func(v) for v in value]
-        else:
-            return func(value)
-
-    return _cast_value_over(_cast_column, column_value)
+    return cast_value_over(info, _cast_column, column_value)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from .engine import ShotgunAPIEngine as ShotgunAPIEngine
 from .entity import SgBaseEntity as SgBaseEntity
 from .fields import BooleanField as BooleanField
 from .fields import DateField as DateField
@@ -21,5 +20,4 @@ from .fields import TextField as TextField
 from .fields import UrlField as UrlField
 from .fields import alias as alias
 from .query import select as select
-from .query import summarize as summarize
 from .session import Session as Session

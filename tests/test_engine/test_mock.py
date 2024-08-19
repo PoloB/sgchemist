@@ -3,16 +3,51 @@
 from typing import Type
 
 import pytest
-from classes import Project
-from classes import Shot
-from classes import Task
 
+from sgchemist.engine.mock import MockEngine
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
 from sgchemist.orm.session import Session
+
+from ..classes import Project
+from ..classes import SgEntity
+from ..classes import Shot
+from ..classes import Task
+
+
+def test_mock_engine_registry() -> None:
+    """Test the mock engine registry."""
+    mock_engine = MockEngine()
+
+    with pytest.raises(ValueError):
+        mock_engine.register_base(Project)
+
+    mock_engine.register_base(SgEntity)
+
+
+def test_mock_find_unregistered_entity() -> None:
+    """Test querying an unregistered entity."""
+
+    class TestBase(SgBaseEntity):
+        pass
+
+    mock_engine = MockEngine()
+    mock_engine.register_base(TestBase)
+    query = select(Project)
+
+    with pytest.raises(ValueError):
+        mock_engine.find(query.get_data())
+
+
+@pytest.fixture
+def engine() -> MockEngine:
+    """Returns a test engine instance."""
+    engine = MockEngine()
+    engine.register_base(SgEntity)
+    return engine
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ It keeps tracks of the pending queries and objects to commit to Shotgrid.
 
 from __future__ import annotations
 
-from types import TracebackType
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
 from typing import Iterator
@@ -25,6 +25,9 @@ from .query import SgFindQuery
 from .typing_alias import EntityHash
 
 T = TypeVar("T", bound=SgBaseEntity)
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 
 class SgFindResult(Generic[T]):
@@ -205,7 +208,7 @@ class Session:
         """
         query_state = query.get_data()
         rows = self._engine.find(query_state)
-        model = query_state.model
+        model = query_state.entity
 
         # Create the instances
         queried_models = []

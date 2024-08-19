@@ -5,22 +5,19 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from classes import Asset
-from classes import Project
-from classes import Shot
 
 from sgchemist.orm import error
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.constant import GroupingType
 from sgchemist.orm.constant import Order
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import SgFindQuery
 from sgchemist.orm.query import SgFindQueryData
-from sgchemist.orm.query import SgSummarizeQuery
-from sgchemist.orm.query import SgSummarizeQueryData
 from sgchemist.orm.query import select
-from sgchemist.orm.query import summarize
 from sgchemist.orm.queryop import SgNullCondition
+
+from ..classes import Asset
+from ..classes import Project
+from ..classes import Shot
 
 
 @pytest.fixture
@@ -48,23 +45,9 @@ def find_query_data(shot_entity: type[Shot]) -> SgFindQueryData[type[Shot]]:
 
 
 @pytest.fixture
-def summarize_query_data(shot_entity: type[Shot]) -> SgSummarizeQueryData[type[Shot]]:
-    """Returns the summarize query state."""
-    return SgSummarizeQueryData(shot_entity)
-
-
-@pytest.fixture
 def find_query(find_query_data: SgFindQueryData[Any]) -> SgFindQuery[Any]:
     """Returns the find query."""
     return SgFindQuery(find_query_data)
-
-
-@pytest.fixture
-def summarize_query(
-    summarize_query_data: SgSummarizeQueryData[Any],
-) -> SgSummarizeQuery[Any]:
-    """Returns the summarize query."""
-    return SgSummarizeQuery(summarize_query_data)
 
 
 @pytest.fixture
@@ -75,7 +58,7 @@ def test_shot(shot_entity: type[Shot]) -> Shot:
 
 def test_state(shot_entity: type[Shot], find_query_data: SgFindQueryData[Any]) -> None:
     """Tests the find query state init attributes."""
-    assert find_query_data.model is shot_entity
+    assert find_query_data.entity is shot_entity
     assert isinstance(find_query_data.condition, SgNullCondition)
     assert isinstance(find_query_data.order_fields, tuple)
     assert len(find_query_data.order_fields) == 0
@@ -85,17 +68,6 @@ def test_state(shot_entity: type[Shot], find_query_data: SgFindQueryData[Any]) -
     assert find_query_data.page == 0
     assert find_query_data.include_archived_projects is True
     assert find_query_data.additional_filter_presets == []
-
-
-def test_summarize_state(
-    shot_entity: type[Shot], summarize_query_data: SgSummarizeQueryData[Any]
-) -> None:
-    """Tests the summarize query state init attributes."""
-    assert summarize_query_data.model is shot_entity
-    assert summarize_query_data.condition is None
-    assert isinstance(summarize_query_data.grouping, tuple)
-    assert len(summarize_query_data.grouping) == 0
-    assert summarize_query_data.include_archived_projects is True
 
 
 def test_where(shot_entity: type[Shot], find_query: SgFindQuery[Any]) -> None:
@@ -151,48 +123,6 @@ def test_filter_preset(find_query: SgFindQuery[Any]) -> None:
     ]
 
 
-def test_summarize_state_copy(
-    summarize_query: SgSummarizeQuery[Any],
-    summarize_query_data: SgSummarizeQueryData[Any],
-) -> None:
-    """Tests the summarize query state copy."""
-    # A copy is made in the getter
-    assert summarize_query.get_data() is not summarize_query_data
-
-
-def test_summarize_where(
-    shot_entity: type[Shot], summarize_query: SgSummarizeQuery[Any]
-) -> None:
-    """Tests the summarize where clause."""
-    condition = shot_entity.name.eq("foo")
-    new_query = summarize_query.where(condition)
-    assert new_query.get_data().condition is condition
-    new_query.where(shot_entity.id.eq(42))
-
-
-def test_summarize_group_by(
-    shot_entity: type[Shot], summarize_query: SgSummarizeQuery[Any]
-) -> None:
-    """Tests the summarize group by clause."""
-    new_query = summarize_query.group_by(shot_entity.name, GroupingType.HUNDREDS)
-    assert new_query.get_data().grouping == (
-        (shot_entity.name, GroupingType.HUNDREDS, Order.ASC),
-    )
-    new_query = new_query.group_by(shot_entity.id, GroupingType.EXACT, Order.DESC)
-    assert new_query.get_data().grouping == (
-        (shot_entity.name, GroupingType.HUNDREDS, Order.ASC),
-        (shot_entity.id, GroupingType.EXACT, Order.DESC),
-    )
-
-
-def test_summarize_reject_archived_projects(
-    summarize_query: SgSummarizeQuery[Any],
-) -> None:
-    """Tests the summarize reject_archived_projects clause."""
-    new_query = summarize_query.reject_archived_projects()
-    assert new_query.get_data().include_archived_projects is False
-
-
 def test_batch_query(test_shot: Shot) -> None:
     """Tests the batch query."""
     batch_query = SgBatchQuery(BatchRequestType.CREATE, test_shot)
@@ -205,12 +135,6 @@ def test_select(shot_entity: type[Shot]) -> None:
     query = select(shot_entity)
     assert isinstance(query, SgFindQuery)
     assert isinstance(query.get_data().condition, SgNullCondition)
-
-
-def test_summarize(shot_entity: type[Shot]) -> None:
-    """Tests the summarize method."""
-    query = summarize(shot_entity)
-    assert isinstance(query, SgSummarizeQuery)
 
 
 def test_select_any_field(
