@@ -4,7 +4,6 @@ The main function of these fields is to provide the correct type annotations.
 Internally, only the classes inheriting from InstrumentedAttribute are used.
 """
 
-from __future__ import absolute_import
 from __future__ import annotations
 
 import abc
@@ -135,7 +134,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
                 relative_field.__info__["name"],
                 field_info["entity"].__sg_type__,
                 field_info["name"],
-            ]
+            ],
         )
         new_field = self.__class__()
         # Modify the field info according to the new data
@@ -143,6 +142,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         new_field_info["name"] = new_field_name
         new_field_info["field"] = new_field
         new_field_info["parent_field"] = relative_field
+        new_field_info["entity"] = relative_field.__info__["entity"]
         new_field_info["name_in_relation"] = new_field_name
         new_field_info["original_field"] = self
         new_field.__info__ = new_field_info
@@ -426,7 +426,7 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         if info["entity"] not in get_types(self):
             raise error.SgFieldConstructionError(
                 f"Cannot cast {self} as {field.__info__['entity'].__name__}. "
-                f"Expected types are {get_types(field)}"
+                f"Expected types are {get_types(field)}",
             )
         return field._relative_to(self)
 
@@ -493,7 +493,10 @@ class EntityField(AbstractEntityField[Optional[T]]):
     def __init__(self, name: str = ""):
         """Initialise the field."""
         super().__init__(
-            name=name, default_value=None, is_relationship=True, as_list=False
+            name=name,
+            default_value=None,
+            is_relationship=True,
+            as_list=False,
         )
 
     if TYPE_CHECKING:
@@ -505,7 +508,9 @@ class EntityField(AbstractEntityField[Optional[T]]):
         def __get__(self, instance: Any, owner: Any) -> T | None: ...
 
         def __get__(
-            self, instance: Any | None, owner: Any
+            self,
+            instance: Any | None,
+            owner: Any,
         ) -> T | None | EntityField[T]:
             """Return the value of the field."""
 
@@ -518,7 +523,10 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     def __init__(self, name: str = ""):
         """Initialize the field."""
         super().__init__(
-            name=name, default_value=[], as_list=True, is_relationship=True
+            name=name,
+            default_value=[],
+            as_list=True,
+            is_relationship=True,
         )
 
     if TYPE_CHECKING:
@@ -548,7 +556,9 @@ class BooleanField(AbstractValueField[Optional[bool]]):
         def __get__(self, instance: Any, owner: Any) -> bool | None: ...
 
         def __get__(
-            self, instance: Any | None, owner: Any
+            self,
+            instance: Any | None,
+            owner: Any,
         ) -> bool | None | BooleanField:
             """Return the value of the field."""
 
@@ -700,7 +710,9 @@ class DateTimeField(AbstractDateField[Optional[datetime]]):
         def __get__(self, instance: Any, owner: Any) -> datetime | None: ...
 
         def __get__(
-            self, instance: Any | None, owner: Any
+            self,
+            instance: Any | None,
+            owner: Any,
         ) -> datetime | None | DateTimeField:
             """Return the value of the field."""
 
@@ -719,7 +731,9 @@ class DurationField(NumberField):
         def __get__(self, instance: Any, owner: Any) -> int | None: ...
 
         def __get__(
-            self, instance: Any | None, owner: Any
+            self,
+            instance: Any | None,
+            owner: Any,
         ) -> int | None | DurationField:
             """Return the value of the field."""
 
@@ -805,7 +819,9 @@ class ListField(AbstractValueField[Optional[List[str]]]):
         def __get__(self, instance: Any, owner: Any) -> list[str] | None: ...
 
         def __get__(
-            self, instance: Any | None, owner: Any
+            self,
+            instance: Any | None,
+            owner: Any,
         ) -> list[str] | None | ListField:
             """Return the value of the field."""
 
@@ -843,7 +859,9 @@ class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
         def __get__(self, instance: Any, owner: Any) -> dict[str, Any] | None: ...
 
         def __get__(
-            self, instance: Any | None, owner: Any
+            self,
+            instance: Any | None,
+            owner: Any,
         ) -> dict[str, Any] | None | SerializableField:
             """Return the value of the field."""
 
@@ -931,7 +949,9 @@ def alias(target_relationship: AbstractEntityField[Any]) -> EntityField[Any]:
 
 
 def update_entity_from_value(
-    field: AbstractField[Any], entity: SgBaseEntity, field_value: Any
+    field: AbstractField[Any],
+    entity: SgBaseEntity,
+    field_value: Any,
 ) -> None:
     """Update an entity from a row value.
 

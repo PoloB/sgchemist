@@ -21,8 +21,6 @@ from sgchemist.orm.entity import LazyEntityClassEval
 from sgchemist.orm.entity import LazyEntityCollectionClassEval
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.field_info import cast_column
-from sgchemist.orm.field_info import get_types
-from sgchemist.orm.field_info import is_alias
 from sgchemist.orm.field_info import iter_entities_from_field_value
 from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.fields import update_entity_from_value
@@ -97,44 +95,133 @@ def test_lazy_entity_collection_eval(
 @pytest.mark.parametrize(
     (
         "field",
-        "exp_name",
-        "exp_class",
-        "exp_default",
-        "exp_name_in_rel",
-        "exp_types",
+        "exp_dict",
     ),
     [
-        (Shot.name, "code", Shot, None, "name", ()),
-        (Shot.id, "id", Shot, None, "id", ()),
-        (Shot.project, "project", Shot, None, "project", (Project,)),
+        (
+            Shot.name,
+            {
+                "entity": Shot,
+                "default_value": None,
+                "name": "code",
+                "name_in_relationship": "name",
+                "alias_field": None,
+                "parent_field": None,
+                "original_field": Shot.name,
+                "primary": False,
+                "is_relationship": False,
+                "is_list": False,
+            },
+        ),
+        (
+            Shot.id,
+            {
+                "entity": Shot,
+                "default_value": None,
+                "name": "id",
+                "name_in_relationship": "id",
+                "alias_field": None,
+                "parent_field": None,
+                "original_field": Shot.id,
+                "primary": True,
+                "is_relationship": False,
+                "is_list": False,
+            },
+        ),
+        (
+            Shot.project,
+            {
+                "entity": Shot,
+                "default_value": None,
+                "name": "project",
+                "name_in_relationship": "project",
+                "alias_field": None,
+                "parent_field": None,
+                "original_field": Shot.project,
+                "primary": False,
+                "is_relationship": True,
+                "is_list": False,
+            },
+        ),
         (
             Shot.parent_shots,
-            "parent_shots",
-            Shot,
-            [],
-            "parent_shots",
-            (Shot,),
+            {
+                "entity": Shot,
+                "default_value": [],
+                "name": "parent_shots",
+                "name_in_relationship": "parent_shots",
+                "alias_field": None,
+                "parent_field": None,
+                "original_field": Shot.parent_shots,
+                "primary": False,
+                "is_relationship": True,
+                "is_list": True,
+            },
         ),
-        (Task.entity, "entity", Task, None, "entity", (Asset, Shot)),
+        (
+            Task.entity,
+            {
+                "entity": Task,
+                "default_value": None,
+                "name": "entity",
+                "name_in_relationship": "entity",
+                "alias_field": None,
+                "parent_field": None,
+                "original_field": Task.entity,
+                "primary": False,
+                "is_relationship": True,
+                "is_list": False,
+            },
+        ),
+        (
+            Task.asset,
+            {
+                "entity": Task,
+                "default_value": None,
+                "name": "entity",
+                "name_in_relationship": "entity",
+                "alias_field": Task.entity,
+                "parent_field": None,
+                "original_field": Task.asset,
+                "primary": False,
+                "is_relationship": True,
+                "is_list": False,
+            },
+        ),
+        (
+            Task.asset.f(Asset.project),
+            {
+                "entity": Task,
+                "default_value": None,
+                "name": "entity.Asset.project",
+                "name_in_relationship": "entity.Asset.project",
+                "alias_field": None,
+                "parent_field": Task.asset,
+                "original_field": Asset.project,
+                "primary": False,
+                "is_relationship": True,
+                "is_list": False,
+            },
+        ),
     ],
 )
 def test_field_attributes(
     field: AbstractField[T],
-    exp_name: str,
-    exp_class: type[SgBaseEntity],
-    exp_default: T,
-    exp_name_in_rel: str,
-    exp_types: tuple[type[SgBaseEntity], ...],
+    exp_dict: dict[str, Any],
 ) -> None:
     """Tests the fields attributes."""
     assert isinstance(repr(field), str)
     info = field.__info__
-    assert info["name"] == exp_name
-    assert info["entity"] is exp_class
-    assert info["default_value"] == exp_default
-    assert not is_alias(field)
-    assert info["name_in_relation"] == exp_name_in_rel
-    assert set(get_types(field)) == set(exp_types)
+    assert info["entity"] is exp_dict["entity"]
+    assert info["default_value"] == exp_dict["default_value"]
+    assert info["name"] == exp_dict["name"]
+    assert info["name_in_relation"] == exp_dict["name_in_relationship"]
+    assert info["alias_field"] is exp_dict["alias_field"]
+    assert info["parent_field"] is exp_dict["parent_field"]
+    assert info["original_field"] is exp_dict["original_field"]
+    assert info["primary"] is exp_dict["primary"]
+    assert info["is_relationship"] is exp_dict["is_relationship"]
+    assert info["is_list"] is exp_dict["is_list"]
 
 
 @pytest.mark.parametrize(

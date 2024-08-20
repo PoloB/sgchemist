@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from typing import Any
+
+if TYPE_CHECKING:
+    from sgchemist.orm.fields import AbstractField
+
 
 class SgError(Exception):
     """Base class for exceptions in orm package."""
@@ -45,3 +51,12 @@ class SgInvalidFieldError(SgError):
 
 class SgMissingFieldError(SgError):
     """Raised when trying to get a field that was not queried."""
+
+
+class SgFieldNotSettableError(SgError):
+    """Raised when trying to set a field that is not settable."""
+
+    def __init__(self, field: AbstractField[Any]) -> None:
+        """Initialize the exception."""
+        super().__init__(f"Field {field} is not settable.")
+        self.field = field

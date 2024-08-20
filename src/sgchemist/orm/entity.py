@@ -1,6 +1,5 @@
 """Defines the base entity class."""
 
-from __future__ import absolute_import
 from __future__ import annotations
 
 import inspect
@@ -17,13 +16,14 @@ from . import field_info
 from .annotation import FieldAnnotation
 from .fields import AbstractField
 from .fields import NumberField
+from .fields import field_by_sg_type
 from .typing_util import cleanup_mapped_str_annotation
 from .typing_util import de_optionalize_union_types
 from .typing_util import expand_unions
 from .typing_util import get_annotations
 
 T = TypeVar("T")
-Tcov = TypeVar("Tcov", covariant=True)
+T_co = TypeVar("T_co", covariant=True)
 
 
 class FieldProperty(Generic[T]):
@@ -79,16 +79,15 @@ class FieldProperty(Generic[T]):
             ValueError: raised when the attribute is not settable.
         """
         if not self._settable:
-            raise ValueError(f"Field {self._field} is not settable")
+            raise error.SgFieldNotSettableError(self._field)
         state = instance.__state__
         # Test against current value
         old_value = state.get_original_value(self._field)
         # Register state change
         if value != old_value:
             state.modified_fields.append(self._field)
-        else:
-            if self._field in state.modified_fields:
-                state.modified_fields.remove(self._field)
+        elif self._field in state.modified_fields:
+            state.modified_fields.remove(self._field)
         instance.__state__.values[self._field] = value
 
 
@@ -119,7 +118,7 @@ class AliasFieldProperty(FieldProperty[T]):
         return target_value
 
 
-class EntityState(Generic[Tcov]):
+class EntityState(Generic[T_co]):
     """Defines the internal state of the instance field values."""
 
     __slots__ = (
@@ -134,7 +133,9 @@ class EntityState(Generic[Tcov]):
     )
 
     def __init__(
-        self, instance: SgBaseEntity, values_per_field: dict[AbstractField[Tcov], Tcov]
+        self,
+        instance: SgBaseEntity,
+        values_per_field: dict[AbstractField[T_co], T_co],
     ):
         """Initialize the internal state of the instance.
 
@@ -148,12 +149,12 @@ class EntityState(Generic[Tcov]):
         self.pending_add = False
         self.pending_deletion = False
         self.deleted = False
-        self.values: dict[AbstractField[Tcov], Tcov] = values_per_field
-        self._available: dict[AbstractField[Tcov], bool] = defaultdict(lambda: True)
+        self.values: dict[AbstractField[T_co], T_co] = values_per_field
+        self._available: dict[AbstractField[T_co], bool] = defaultdict(lambda: True)
         self.modified_fields: list[AbstractField[Any]] = list(
-            filter(lambda f: not field_info.is_primary(f), values_per_field)
+            filter(lambda f: not field_info.is_primary(f), values_per_field),
         )
-        self._original_values: dict[AbstractField[Tcov], Tcov] = {}
+        self._original_values: dict[AbstractField[T_co], T_co] = {}
 
     def is_modified(self) -> bool:
         """Return whether the entity is modified for its initial state.
@@ -173,7 +174,7 @@ class EntityState(Generic[Tcov]):
         """
         return self._entity.id is not None
 
-    def get_original_value(self, field: AbstractField[Tcov]) -> Tcov | None:
+    def get_original_value(self, field: AbstractField[T_co]) -> T_co | None:
         """Return the entity initial value of the given attribute.
 
         Args:
@@ -184,7 +185,7 @@ class EntityState(Generic[Tcov]):
         """
         return self._original_values.get(field)
 
-    def get_value(self, field: AbstractField[Tcov]) -> Tcov:
+    def get_value(self, field: AbstractField[T_co]) -> T_co:
         """Return the value of the field."""
         return self.values.get(field, field_info.get_default_value(field))
 
@@ -196,7 +197,7 @@ class EntityState(Generic[Tcov]):
         """Return True if the field is available."""
         return self._available[field]
 
-    def set_available(self, field: AbstractField[Tcov], available: bool) -> None:
+    def set_available(self, field: AbstractField[T_co], available: bool) -> None:
         """Sets the availability of the field value."""
         self._available[field] = available
 
@@ -240,11 +241,11 @@ class SgEntityMeta(type):
                 "__instance_state__",
                 "__attr_per_field_name__",
                 "__registry__",
-            }
+            },
         )
         if field_intersect and bases:
             raise error.SgEntityClassDefinitionError(
-                f"Attributes {field_intersect} are reserved."
+                f"Attributes {field_intersect} are reserved.",
             )
         return type.__new__(cls, class_name, bases, dict_)
 
@@ -270,7 +271,7 @@ class SgEntityMeta(type):
         # We are initializing subclass of base
         if not cls.__sg_type__:
             raise error.SgEntityClassDefinitionError(
-                f"Missing __sg_type__ attribute in {class_name}"
+                f"Missing __sg_type__ attribute in {class_name}",
             )
         other_entity_by_type = {
             entity.__sg_type__: entity for entity in cls.__registry__.values()
@@ -282,7 +283,7 @@ class SgEntityMeta(type):
             raise error.SgEntityClassDefinitionError(
                 f"Entity {class_name} defined at {cls_file} uses "
                 f'__sg_type__ = "{cls.__sg_type__}" which is already used by '
-                f"{other_entity.__name__} defined at {other_file}."
+                f"{other_entity.__name__} defined at {other_file}.",
             )
         # Prepare global variables for evaluating the annotations
         cls_namespace = dict(cls.__dict__)
@@ -290,11 +291,19 @@ class SgEntityMeta(type):
         original_scope = sys.modules[cls.__module__].__dict__.copy()
         original_scope.update(cls_namespace)
         original_scope.update(cls.__registry__)
+        original_scope.update(
+            {
+                field_type.__name__: field_type
+                for field_type in field_by_sg_type.values()
+            },
+        )
 
         # Add the common id field
         field_id = NumberField()
         initialize_from_annotation(
-            field_id, FieldAnnotation(NumberField, tuple()), "id"
+            field_id,
+            FieldAnnotation(NumberField, tuple()),
+            "id",
         )
         field_id.__info__["primary"] = True
         add_field_to_entity(cls, field_id)
@@ -312,7 +321,7 @@ class SgEntityMeta(type):
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
                     f"Cannot extract annotation information for field "
-                    f"{class_name}.{attr_name}"
+                    f"{class_name}.{attr_name}",
                 ) from e
             if not field_annot.is_field():
                 continue
@@ -321,14 +330,14 @@ class SgEntityMeta(type):
             field = dict_.get(attr_name, field_annot.field_type(name=attr_name))
             if not isinstance(field, AbstractField):
                 raise error.SgEntityClassDefinitionError(
-                    f"{class_name}.{attr_name} is not initialized with a field."
+                    f"{class_name}.{attr_name} is not initialized with a field.",
                 )
 
             try:
                 initialize_from_annotation(field, field_annot, attr_name)
             except error.SgInvalidAnnotationError as e:
                 raise error.SgEntityClassDefinitionError(
-                    f"Cannot build instrumentation for field {class_name}.{attr_name}"
+                    f"Cannot build instrumentation for field {class_name}.{attr_name}",
                 ) from e
             add_field_to_entity(cls, field)
             field_name = field_info.get_name(field)
@@ -336,7 +345,7 @@ class SgEntityMeta(type):
             if not field_info.is_alias(field):
                 if field_name in field_names:
                     raise error.SgEntityClassDefinitionError(
-                        f"Field named '{field_name}' is already defined"
+                        f"Field named '{field_name}' is already defined",
                     )
                 field_names.add(field_name)
                 cls.__attr_per_field_name__[field_name] = attr_name
@@ -373,7 +382,7 @@ class SgBaseEntity(metaclass=SgEntityMeta):
             if "__sg_type__" in cls.__dict__:
                 raise error.SgEntityClassDefinitionError(
                     "Cannot subclass SgBaseEntity directly to create an entity. "
-                    "Please subclass SgBaseEntity in your own base class."
+                    "Please subclass SgBaseEntity in your own base class.",
                 )
         cls.__is_base__ = True
         super().__init_subclass__(**kwargs)
@@ -416,15 +425,17 @@ class SgBaseEntity(metaclass=SgEntityMeta):
         all_fields = field_info.get_field_hierarchy(field)
         if all_fields[0].__info__["entity"] is not self.__class__:
             raise error.SgInvalidFieldError(
-                f"{field} is not a field of {self.__class__}"
+                f"{field} is not a field of {self.__class__}",
             )
         # Get the fields in order
         value = getattr(
-            self, self.__attr_per_field_name__[field_info.get_name(all_fields[0])]
+            self,
+            self.__attr_per_field_name__[field_info.get_name(all_fields[0])],
         )
         for ordered_field in all_fields[1:]:
             value = getattr(
-                value, value.__attr_per_field_name__[field_info.get_name(ordered_field)]
+                value,
+                value.__attr_per_field_name__[field_info.get_name(ordered_field)],
             )
         return value
 
@@ -471,7 +482,7 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
         raise error.SgInvalidAnnotationError(
             "sgchemist does not support non string annotations. "
             "If you are using python <3.10, please add "
-            "`from __future__ import annotations` to your imports."
+            "`from __future__ import annotations` to your imports.",
         )
 
     # String un-stringifying the annotation as much as possible.
@@ -480,7 +491,7 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
         outer_type, cleaned_annot = cleanup_mapped_str_annotation(annotation, scope)
     except Exception as e:
         raise error.SgInvalidAnnotationError(
-            f"Cannot evaluate annotation {annotation}"
+            f"Cannot evaluate annotation {annotation}",
         ) from e
     # We never care about anything but AbstractField
     if not isinstance(outer_type, type) or not issubclass(outer_type, AbstractField):
@@ -497,7 +508,7 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
             annot_eval = eval(annotation, scope)
         except Exception as e:
             raise error.SgInvalidAnnotationError(
-                f"Unable to evaluate annotation {annotation}"
+                f"Unable to evaluate annotation {annotation}",
             ) from e
 
     # Extract entity information from the evaluated annotation
@@ -519,19 +530,21 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
 
 
 def initialize_from_annotation(
-    field: AbstractField[Any], annotation: FieldAnnotation, attribute_name: str
+    field: AbstractField[Any],
+    annotation: FieldAnnotation,
+    attribute_name: str,
 ) -> None:
     """Create a field from a descriptor."""
     if annotation.field_type is not field.__class__:
         raise error.SgInvalidAnnotationError(
             f"Cannot initialize field of type {field.__class__.__name__} "
-            f"with a {annotation.field_type.__name__}"
+            f"with a {annotation.field_type.__name__}",
         )
     info = field.__info__
     if info["alias_field"]:
         if len(annotation.entities) != 1:
             raise error.SgInvalidAnnotationError(
-                "A alias field shall target a single entity"
+                "A alias field shall target a single entity",
             )
         # Make sure the entity type in annotation is in the target annotation
         target_entity = annotation.entities[0]
@@ -539,7 +552,7 @@ def initialize_from_annotation(
         if target_entity not in target_annotation.entities:
             raise error.SgInvalidAnnotationError(
                 "An alias field must target a multi target field containing "
-                "its entity"
+                "its entity",
             )
         # An alias field use the same name as its target
         info["name"] = info["alias_field"].__info__["name"]
@@ -592,12 +605,12 @@ class LazyEntityClassEval:
                 entity = eval(self.class_name, {}, self.registry)
             except NameError as e:
                 raise error.SgEntityClassDefinitionError(
-                    f"{self.class_name} is not defined in the registry of base class"
+                    f"{self.class_name} is not defined in the registry of base class",
                 ) from e
             if not issubclass(entity, SgBaseEntity):
                 raise error.SgEntityClassDefinitionError(
                     f"Lazy class {self.class_name} is an entity. "
-                    f"Please check the target of your entities."
+                    f"Please check the target of your entities.",
                 )
             self._entity = entity
             self._resolved = True

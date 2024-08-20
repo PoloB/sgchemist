@@ -1,6 +1,6 @@
 """Tests for the shotgun-api3 engine."""
 
-from typing import Type
+from __future__ import annotations
 
 import pytest
 
@@ -11,11 +11,10 @@ from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
 from sgchemist.orm.session import Session
-
-from ..classes import Project
-from ..classes import SgEntity
-from ..classes import Shot
-from ..classes import Task
+from tests.classes import Project
+from tests.classes import SgEntity
+from tests.classes import Shot
+from tests.classes import Task
 
 
 def test_mock_engine_registry() -> None:
@@ -42,7 +41,7 @@ def test_mock_find_unregistered_entity() -> None:
         mock_engine.find(query.get_data())
 
 
-@pytest.fixture
+@pytest.fixture()
 def engine() -> MockEngine:
     """Returns a test engine instance."""
     engine = MockEngine()
@@ -50,27 +49,30 @@ def engine() -> MockEngine:
     return engine
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_project() -> Project:
     """Return a TestProject instance."""
     return Project()
 
 
-@pytest.fixture
-def test_shot(test_project: Project) -> Shot:
+@pytest.fixture()
+def test_shot() -> Shot:
     """Return a TestShot instance."""
     return Shot(name="shot1")
 
 
-@pytest.fixture
-def test_task(test_shot: Shot) -> Task:
+@pytest.fixture()
+def test_task() -> Task:
     """Return a TestTask instance."""
     return Task(name="task1")
 
 
-@pytest.fixture
+@pytest.fixture()
 def filled_engine(
-    engine: SgEngine, test_project: Project, test_shot: Shot, test_task: Task
+    engine: SgEngine,
+    test_project: Project,
+    test_shot: Shot,
+    test_task: Task,
 ) -> SgEngine:
     """Return a ShotgunAPIEngine instance filled with some data."""
     session = Session(engine)
@@ -85,15 +87,8 @@ def filled_engine(
     return engine
 
 
-@pytest.mark.parametrize(
-    "test_model",
-    (
-        Shot,
-        Project,
-        Task,
-    ),
-)
-def test_engine_find(filled_engine: SgEngine, test_model: Type[SgBaseEntity]) -> None:
+@pytest.mark.parametrize("test_model", [Shot, Project, Task])
+def test_engine_find(filled_engine: SgEngine, test_model: type[SgBaseEntity]) -> None:
     """Test find queries on a filled engine."""
     find_query_state = select(test_model).get_data()
     rows = filled_engine.find(find_query_state)
@@ -105,11 +100,11 @@ def test_engine_find(filled_engine: SgEngine, test_model: Type[SgBaseEntity]) ->
 
 @pytest.mark.parametrize(
     "test_model_inst",
-    (
+    [
         Project(),
         Shot(name="test"),
         Shot(name="test", project=Project(id=1)),
-    ),
+    ],
 )
 def test_engine_create(engine: SgEngine, test_model_inst: SgBaseEntity) -> None:
     """Test create queries."""
@@ -123,15 +118,15 @@ def test_engine_create(engine: SgEngine, test_model_inst: SgBaseEntity) -> None:
 
 
 @pytest.mark.parametrize(
-    "test_model_inst, batch_request_type",
-    (
+    ("test_model_inst", "batch_request_type"),
+    [
         (Project(), BatchRequestType.UPDATE),
         (Shot(name="shot1"), BatchRequestType.UPDATE),
         (Task(name="task1"), BatchRequestType.UPDATE),
         (Project(), BatchRequestType.DELETE),
         (Shot(name="shot1"), BatchRequestType.DELETE),
         (Task(name="task1"), BatchRequestType.DELETE),
-    ),
+    ],
 )
 def test_engine_batch_request(
     engine: SgEngine,
@@ -142,7 +137,7 @@ def test_engine_batch_request(
     session = Session(engine)
     session.add(test_model_inst)
     session.commit()
-    batch_query = SgBatchQuery(BatchRequestType.UPDATE, test_model_inst)
+    batch_query = SgBatchQuery(batch_request_type, test_model_inst)
     rows = engine.batch([batch_query])
     assert len(rows) == 1
     success, row = rows[0]

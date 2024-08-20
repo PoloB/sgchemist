@@ -93,7 +93,7 @@ def test_model_creation_reserved_attributes() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            __fields_by_attr__ = "test"
+            __fields_by_attr__ = "test"  # type: ignore[assignment]
 
 
 def test_model_duplicate_field() -> None:
@@ -405,13 +405,13 @@ def test_field_uses_field_as_initializer() -> None:
 
         class TestEntity10(SgEntity):
             __sg_type__ = "test10"
-            test: TextField = 5
+            test: TextField = 5  # type: ignore[assignment]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity11(SgEntity):
             __sg_type__ = "test11"
-            test: EntityField
+            test: EntityField  # type: ignore[type-arg]
 
 
 def test_misc_annotations() -> None:
@@ -424,19 +424,19 @@ def test_misc_annotations() -> None:
 
         class TestEntity12(SgEntity):
             __sg_type__ = "test12"
-            test: weird[UnknownField]  # noqa: F821
+            test: weird[UnknownField]  # type: ignore[name-defined]  # noqa: F821
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity13(SgEntity):
             __sg_type__ = "test13"
-            test: MultiEntityField
+            test: MultiEntityField  # type: ignore[type-arg]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntity14(SgEntity):
             __sg_type__ = "test15"
-            test: ""  # noqa: F722
+            test: ""  # type: ignore[syntax]  # noqa: F722
 
 
 def test_invalid_expression_in_annotations() -> None:
@@ -449,7 +449,7 @@ def test_invalid_expression_in_annotations() -> None:
 
         class TestEntity14(SgEntity):
             __sg_type__ = "test14"
-            test: EntityField[1 & 5]
+            test: EntityField[1 & 5]  # type: ignore[valid-type]
 
 
 def test_explicit_target_is_entity() -> None:
@@ -543,7 +543,7 @@ def test_field_descriptor(shot_not_commited: Shot) -> None:
 
 def test_cannot_set_primary_key(shot_not_commited: Shot) -> None:
     """Tests the id cannot be modified."""
-    with pytest.raises(ValueError):
+    with pytest.raises(error.SgFieldNotSettableError):
         shot_not_commited.id = 1
 
 
