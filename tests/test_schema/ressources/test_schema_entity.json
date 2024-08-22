@@ -1,0 +1,912 @@
+{
+    "ActionMenuItem": {
+        "name": {
+            "value": "Action Menu Item",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ApiUser": {
+        "name": {
+            "value": "Script",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ApiUserProjectConnection": {
+        "name": {
+            "value": "Api User Project Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AppWelcomeUserConnection": {
+        "name": {
+            "value": "App Welcome User Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Asset": {
+        "name": {
+            "value": "Asset",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetAssetConnection": {
+        "name": {
+            "value": "Asset Asset Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetBlendshapeConnection": {
+        "name": {
+            "value": "Asset Blendshape Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetElementConnection": {
+        "name": {
+            "value": "Asset Element Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetEpisodeConnection": {
+        "name": {
+            "value": "Asset Episode Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetLevelConnection": {
+        "name": {
+            "value": "Asset Level Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetMocapTakeConnection": {
+        "name": {
+            "value": "Asset Mocap Take Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetSceneConnection": {
+        "name": {
+            "value": "Asset Scene Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetSequenceConnection": {
+        "name": {
+            "value": "Asset Sequence Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetShootDayConnection": {
+        "name": {
+            "value": "Asset Shoot Day Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "AssetShotConnection": {
+        "name": {
+            "value": "Asset Shot Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Asset_linked_projects_Connection": {
+        "name": {
+            "value": "Asset Linked Projects Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Asset_sg_vendor_groups_Connection": {
+        "name": {
+            "value": "Asset Sg Vendor Groups Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Attachment": {
+        "name": {
+            "value": "File",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "BannerUserConnection": {
+        "name": {
+            "value": "Banner User Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Booking": {
+        "name": {
+            "value": "Booking",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "CameraMocapTakeConnection": {
+        "name": {
+            "value": "Camera Mocap Take Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ClientUser": {
+        "name": {
+            "value": "Client User",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Composition": {
+        "name": {
+            "value": "Composition",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "CustomEntity01": {
+        "name": {
+            "value": "TestEntity01",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Cut": {
+        "name": {
+            "value": "Cut",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "CutItem": {
+        "name": {
+            "value": "Cut Item",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "CutVersionConnection": {
+        "name": {
+            "value": "Cut Version Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Department": {
+        "name": {
+            "value": "Department",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ElementShotConnection": {
+        "name": {
+            "value": "Element Shot Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Episode": {
+        "name": {
+            "value": "Episode",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "EventLogEntry": {
+        "name": {
+            "value": "Event Log Entry",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "FilesystemLocation": {
+        "name": {
+            "value": "Filesystem Location",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Group": {
+        "name": {
+            "value": "Group",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "GroupUserConnection": {
+        "name": {
+            "value": "Group User Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "HumanUser": {
+        "name": {
+            "value": "Person",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Icon": {
+        "name": {
+            "value": "Icon",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "LaunchSceneConnection": {
+        "name": {
+            "value": "Launch Scene Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "LaunchShotConnection": {
+        "name": {
+            "value": "Launch Shot Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Launch_sg_vendor_groups_Connection": {
+        "name": {
+            "value": "Launch Sg Vendor Groups Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Level": {
+        "name": {
+            "value": "Level",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "LocalStorage": {
+        "name": {
+            "value": "Local Storage",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "MocapPass": {
+        "name": {
+            "value": "Mocap Pass",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "MocapSetup": {
+        "name": {
+            "value": "Mocap Setup",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "MocapTake": {
+        "name": {
+            "value": "Mocap Take",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "MocapTakeRange": {
+        "name": {
+            "value": "Mocap Take Range",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "MocapTakeRangeShotConnection": {
+        "name": {
+            "value": "Mocap Take Range Shot Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Note": {
+        "name": {
+            "value": "Note",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Page": {
+        "name": {
+            "value": "Page",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PageHit": {
+        "name": {
+            "value": "Page Hit",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PageSetting": {
+        "name": {
+            "value": "Page Setting",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Performer": {
+        "name": {
+            "value": "Performer",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PerformerMocapTakeConnection": {
+        "name": {
+            "value": "Performer Mocap Take Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PerformerRoutineConnection": {
+        "name": {
+            "value": "Performer Routine Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PerformerShootDayConnection": {
+        "name": {
+            "value": "Performer Shoot Day Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PermissionRuleSet": {
+        "name": {
+            "value": "Permission Rule Set",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PhysicalAssetMocapTakeConnection": {
+        "name": {
+            "value": "Physical Asset Mocap Take Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PipelineConfiguration": {
+        "name": {
+            "value": "Pipeline Configuration",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PipelineConfigurationUserConnection": {
+        "name": {
+            "value": "Pipeline Configuration User Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Playlist": {
+        "name": {
+            "value": "Playlist",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PlaylistShare": {
+        "name": {
+            "value": "Playlist Share",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PlaylistVersionConnection": {
+        "name": {
+            "value": "Playlist Version Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Project": {
+        "name": {
+            "value": "Project",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ProjectTaskTemplateConnection": {
+        "name": {
+            "value": "Project Task Template Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ProjectUserConnection": {
+        "name": {
+            "value": "Project User Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PublishedFile": {
+        "name": {
+            "value": "Published File",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PublishedFileDependency": {
+        "name": {
+            "value": "Published File Dependency",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "PublishedFileType": {
+        "name": {
+            "value": "Published File Type",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ReleaseTicketConnection": {
+        "name": {
+            "value": "Release Ticket Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Reply": {
+        "name": {
+            "value": "Reply",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "RevisionRevisionConnection": {
+        "name": {
+            "value": "Revision Revision Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "RevisionTicketConnection": {
+        "name": {
+            "value": "Revision Ticket Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Routine": {
+        "name": {
+            "value": "Mocap Routine",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "RvLicense": {
+        "name": {
+            "value": "Rv License",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Sequence": {
+        "name": {
+            "value": "Sequence",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Sequence_sg_vendor_groups_Connection": {
+        "name": {
+            "value": "Sequence Sg Vendor Groups Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ShootDaySceneConnection": {
+        "name": {
+            "value": "Shoot Day Scene Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Shot": {
+        "name": {
+            "value": "Shot",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "ShotShotConnection": {
+        "name": {
+            "value": "Shot Shot Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Shot_sg_vendor_groups_Connection": {
+        "name": {
+            "value": "Shot Sg Vendor Groups Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Software": {
+        "name": {
+            "value": "Software",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Status": {
+        "name": {
+            "value": "Status",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Step": {
+        "name": {
+            "value": "Step",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Tag": {
+        "name": {
+            "value": "Tag",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Task": {
+        "name": {
+            "value": "Task",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "TaskDependency": {
+        "name": {
+            "value": "Task Dependency",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "TaskTemplate": {
+        "name": {
+            "value": "Task Template",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "TicketTicketConnection": {
+        "name": {
+            "value": "Ticket Ticket Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "TimeLog": {
+        "name": {
+            "value": "Time Log",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Version": {
+        "name": {
+            "value": "Version",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "Version_sg_deliveries_Connection": {
+        "name": {
+            "value": "Version Sg Deliveries Connection",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    },
+    "WorkDayRule": {
+        "name": {
+            "value": "Work Day Rule",
+            "editable": false
+        },
+        "visible": {
+            "value": true,
+            "editable": false
+        }
+    }
+}

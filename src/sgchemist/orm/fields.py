@@ -22,7 +22,6 @@ from typing import overload
 from typing_extensions import Self
 
 from . import error
-from .constant import DateType
 from .field_info import get_types
 from .queryop import FilterOperatorBetween
 from .queryop import FilterOperatorContains
@@ -49,7 +48,9 @@ from .queryop import SgFieldCondition
 from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
+    from .constant import DateType
     from .entity import SgBaseEntity
+    from .entity import SgEntityMeta
     from .field_info import FieldInfo
 
 T = TypeVar("T")
@@ -71,16 +72,16 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         "cast_type",
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         name: str = "",
         default_value: T | None = None,
         name_in_relation: str = "",
         alias_field: AbstractField[Any] | None = None,
         parent_field: AbstractField[Any] | None = None,
-        primary: bool = False,
-        as_list: bool = False,
-        is_relationship: bool = False,
+        primary: bool = False,  # noqa: FBT001, FBT002
+        as_list: bool = False,  # noqa: FBT001, FBT002
+        is_relationship: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize an instrumented attribute.
 
@@ -119,35 +120,6 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
             f"({self.__info__['entity'].__name__}.{self.__info__['name']})"
         )
 
-    def _relative_to(self, relative_field: AbstractField[Any]) -> Self:
-        """Build a new instrumented field relative to the given attribute.
-
-        Args:
-            relative_field: the relative attribute
-
-        Returns:
-            the attribute relative to the given attribute
-        """
-        field_info = self.__info__
-        new_field_name = ".".join(
-            [
-                relative_field.__info__["name"],
-                field_info["entity"].__sg_type__,
-                field_info["name"],
-            ],
-        )
-        new_field = self.__class__()
-        # Modify the field info according to the new data
-        new_field_info = field_info.copy()
-        new_field_info["name"] = new_field_name
-        new_field_info["field"] = new_field
-        new_field_info["parent_field"] = relative_field
-        new_field_info["entity"] = relative_field.__info__["entity"]
-        new_field_info["name_in_relation"] = new_field_name
-        new_field_info["original_field"] = self
-        new_field.__info__ = new_field_info
-        return new_field
-
     def eq(self, other: T) -> SgFieldCondition:
         """Filter entities where this field is equal to the given value.
 
@@ -174,6 +146,21 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
         """
         return SgFieldCondition(self, FilterOperatorIsNot(other))
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
+
+        @overload
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> T: ...
+
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> Self | T:
+            """Return field from class and value from instance."""
+
 
 T_field = TypeVar("T_field", bound=AbstractField[Any])
 
@@ -186,7 +173,7 @@ class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
         name: str = "",
         default_value: T | None = None,
         name_in_relation: str = "",
-    ):
+    ) -> None:
         """Initialize an instrumented field.
 
         Args:
@@ -289,12 +276,20 @@ class NumberField(NumericField[Optional[int]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> NumberField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> int | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> int | None: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> int | None | NumberField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> int | None | Self:
             """Return the value of the field."""
 
 
@@ -308,12 +303,16 @@ class FloatField(NumericField[float]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> FloatField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> float: ...
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> float: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> float | FloatField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> float | Self:
             """Return the value of the field."""
 
 
@@ -405,13 +404,54 @@ class TextField(AbstractValueField[Optional[str]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> TextField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> str | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> str | None: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> str | None | TextField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> str | None | Self:
             """Return the value of the field."""
+
+
+Tfield = TypeVar("Tfield", bound=AbstractField[Any])
+
+
+def _build_field_relative_to(
+    field: Tfield,
+    relative_field: AbstractField[Any],
+) -> Tfield:
+    """Build a new instrumented field relative to the given attribute.
+
+    Returns:
+        the attribute relative to the given attribute
+    """
+    field_info = field.__info__
+    new_field_name = ".".join(
+        [
+            relative_field.__info__["name"],
+            field_info["entity"].__sg_type__,
+            field_info["name"],
+        ],
+    )
+    new_field = field.__class__()
+    # Modify the field info according to the new data
+    new_field_info = field_info.copy()
+    new_field_info["name"] = new_field_name
+    new_field_info["field"] = new_field
+    new_field_info["parent_field"] = relative_field
+    new_field_info["entity"] = relative_field.__info__["entity"]
+    new_field_info["name_in_relation"] = new_field_name
+    new_field_info["original_field"] = field
+    new_field.__info__ = new_field_info
+    return new_field
 
 
 class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
@@ -424,11 +464,12 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         """Return the given field in relation to the given field."""
         info = field.__info__
         if info["entity"] not in get_types(self):
-            raise error.SgFieldConstructionError(
+            error_message = (
                 f"Cannot cast {self} as {field.__info__['entity'].__name__}. "
-                f"Expected types are {get_types(field)}",
+                f"Expected types are {get_types(field)}"
             )
-        return field._relative_to(self)
+            raise error.SgFieldConstructionError(error_message)
+        return _build_field_relative_to(field, self)
 
     def type_is(self, entity_cls: type[SgBaseEntity]) -> SgFieldCondition:
         """Filter entities where this entity is of the given type.
@@ -490,7 +531,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
     cast_type: type[T]
     default_value = None
 
-    def __init__(self, name: str = ""):
+    def __init__(self, name: str = "") -> None:
         """Initialise the field."""
         super().__init__(
             name=name,
@@ -502,16 +543,16 @@ class EntityField(AbstractEntityField[Optional[T]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> EntityField[T]: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> T | None: ...
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> T | None: ...
 
         def __get__(
             self,
-            instance: Any | None,
-            owner: Any,
-        ) -> T | None | EntityField[T]:
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> T | None | Self:
             """Return the value of the field."""
 
 
@@ -520,7 +561,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
 
     __sg_type__: str = "multi_entity"
 
-    def __init__(self, name: str = ""):
+    def __init__(self, name: str = "") -> None:
         """Initialize the field."""
         super().__init__(
             name=name,
@@ -532,12 +573,16 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> MultiEntityField[T]: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> T: ...
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> list[T]: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> T | MultiEntityField[T]:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> list[T] | Self:
             """Return the value of the field."""
 
 
@@ -550,16 +595,20 @@ class BooleanField(AbstractValueField[Optional[bool]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> BooleanField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> bool | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> bool | None: ...
 
         def __get__(
             self,
-            instance: Any | None,
-            owner: Any,
-        ) -> bool | None | BooleanField:
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> bool | None | Self:
             """Return the value of the field."""
 
 
@@ -685,12 +734,20 @@ class DateField(AbstractDateField[Optional[date]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> DateField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> date | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> date | None: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> date | None | DateField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> date | None | Self:
             """Return the value of the field."""
 
 
@@ -704,16 +761,20 @@ class DateTimeField(AbstractDateField[Optional[datetime]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> DateTimeField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> datetime | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> datetime | None: ...
 
         def __get__(
             self,
-            instance: Any | None,
-            owner: Any,
-        ) -> datetime | None | DateTimeField:
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> datetime | None | Self:
             """Return the value of the field."""
 
 
@@ -725,16 +786,20 @@ class DurationField(NumberField):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> DurationField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> int | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> int | None: ...
 
         def __get__(
             self,
-            instance: Any | None,
-            owner: Any,
-        ) -> int | None | DurationField:
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> int | None | Self:
             """Return the value of the field."""
 
 
@@ -768,12 +833,20 @@ class ImageField(AbstractValueField[Optional[str]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> ImageField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> str | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> str | None: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> str | None | ImageField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> str | None | Self:
             """Return the value of the field."""
 
 
@@ -813,16 +886,20 @@ class ListField(AbstractValueField[Optional[List[str]]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> ListField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> list[str] | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> list[str] | None: ...
 
         def __get__(
             self,
-            instance: Any | None,
-            owner: Any,
-        ) -> list[str] | None | ListField:
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> list[str] | None | Self:
             """Return the value of the field."""
 
 
@@ -834,12 +911,16 @@ class PercentField(FloatField):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> PercentField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> float: ...
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> float: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> float | PercentField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> float | Self:
             """Return the value of the field."""
 
 
@@ -853,16 +934,20 @@ class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> SerializableField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> dict[str, Any] | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> dict[str, Any] | None: ...
 
         def __get__(
             self,
-            instance: Any | None,
-            owner: Any,
-        ) -> dict[str, Any] | None | SerializableField:
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> dict[str, Any] | None | Self:
             """Return the value of the field."""
 
 
@@ -875,12 +960,16 @@ class StatusField(AbstractValueField[str]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> StatusField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> str: ...
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> str: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> str | StatusField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> str | Self:
             """Return the value of the field."""
 
 
@@ -894,12 +983,20 @@ class UrlField(AbstractValueField[Optional[str]]):
     if TYPE_CHECKING:
 
         @overload
-        def __get__(self, instance: None, owner: Any) -> UrlField: ...
+        def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: Any, owner: Any) -> str | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> str | None: ...
 
-        def __get__(self, instance: Any | None, owner: Any) -> str | None | UrlField:
+        def __get__(
+            self,
+            instance: SgBaseEntity | None,
+            owner: SgEntityMeta,
+        ) -> str | None | Self:
             """Return the value of the field."""
 
 
@@ -949,9 +1046,9 @@ def alias(target_relationship: AbstractEntityField[Any]) -> EntityField[Any]:
 
 
 def update_entity_from_value(
-    field: AbstractField[Any],
+    field: AbstractField[T],
     entity: SgBaseEntity,
-    field_value: Any,
+    field_value: T,
 ) -> None:
     """Update an entity from a row value.
 

@@ -12,6 +12,6 @@ def schema_paths() -> tuple[str, str]:
     """Returns the test schema paths."""
     current_directory = Path(Path(__file__).resolve()).parent
     return (
-        str(current_directory / "ressources/test_schema"),
-        str(current_directory / "ressources/test_schema_entity"),
+        str(current_directory / "ressources/test_schema.json"),
+        str(current_directory / "ressources/test_schema_entity.json"),
     )

@@ -46,19 +46,19 @@ class SgFindQueryData(Generic[T_meta]):
         "_loading_fields",
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         entity: T_meta,
         fields: tuple[AbstractField[Any], ...],
         condition: SgFilterObject | None = None,
-        order_fields: tuple[OrderField, ...] = tuple(),
+        order_fields: tuple[OrderField, ...] = (),
         limit: int = 0,
-        retired_only: bool = False,
+        retired_only: bool = False,  # noqa: FBT001, FBT002
         page: int = 0,
-        include_archived_projects: bool = True,
+        include_archived_projects: bool = True,  # noqa: FBT001, FBT002
         additional_filter_presets: list[dict[str, Any]] | None = None,
-        loading_fields: tuple[AbstractField[Any], ...] = tuple(),
-    ):
+        loading_fields: tuple[AbstractField[Any], ...] = (),
+    ) -> None:
         """Initializes a find query data object."""
         self._entity = entity
         self._fields = fields
@@ -71,7 +71,7 @@ class SgFindQueryData(Generic[T_meta]):
         self._additional_filter_presets = additional_filter_presets or []
         self._loading_fields = loading_fields
 
-    def copy(
+    def copy(  # noqa: PLR0913
         self,
         entity: T_meta | None = None,
         fields: tuple[AbstractField[Any], ...] | None = None,
@@ -168,7 +168,7 @@ class SgFindQueryData(Generic[T_meta]):
 class SgFindQuery(Generic[T_meta]):
     """Defines a query."""
 
-    def __init__(self, query_data: SgFindQueryData[T_meta]):
+    def __init__(self, query_data: SgFindQueryData[T_meta]) -> None:
         """Initializes a query transformer.
 
         Args:
@@ -260,7 +260,7 @@ class SgFindQuery(Generic[T_meta]):
         new_state = self._data.copy(include_archived_projects=False)
         return self.__class__(new_state)
 
-    def filter_preset(self, preset_name: str, **preset_kwargs: Any) -> Self:
+    def filter_preset(self, preset_name: str, **preset_kwargs: str | int) -> Self:
         """Filters the query results using the given preset.
 
         Args:
@@ -270,7 +270,7 @@ class SgFindQuery(Generic[T_meta]):
         Returns:
             a new query with the filter preset added.
         """
-        preset = {"preset_name": preset_name}
+        preset: dict[str, str | int] = {"preset_name": preset_name}
         preset.update(preset_kwargs)
         # To avoid side effects we copy the previous presets
         new_preset = [
@@ -295,11 +295,12 @@ class SgFindQuery(Generic[T_meta]):
             if field_info.is_primary(field):
                 continue
             if get_hash(field)[:-1] not in queried_relationship_paths:
-                raise error.SgQueryError(
+                error_message = (
                     f"Cannot load {field} because its entity is not queried."
                 )
+                raise error.SgQueryError(error_message)
         new_state = self._data.copy(
-            loading_fields=(*self._data.loading_fields, *fields)
+            loading_fields=(*self._data.loading_fields, *fields),
         )
         return self.__class__(new_state)
 
@@ -315,15 +316,16 @@ class SgFindQuery(Generic[T_meta]):
         all_fields = []
         for field in relationship_fields:
             for target_type in get_types(field):
-                for target_field in target_type.__fields__:
-                    all_fields.append(field.f(target_field))
+                all_fields += [
+                    field.f(target_field) for target_field in target_type.__fields__
+                ]
         return self.load(*all_fields)
 
 
-class SgBatchQuery(object):
+class SgBatchQuery:
     """Defines a batch query."""
 
-    def __init__(self, request_type: BatchRequestType, entity: SgBaseEntity):
+    def __init__(self, request_type: BatchRequestType, entity: SgBaseEntity) -> None:
         """Initializes the batch query.
 
         Args:
@@ -356,10 +358,13 @@ def select(entity: T_meta, *fields: AbstractField[Any]) -> SgFindQuery[T_meta]:
     """
     if not fields:
         fields = tuple(entity.__fields_by_attr__.values())
+
     # Checking the given fields belong to the given model
     entity_fields = list(entity.__fields_by_attr__.values())
     for field in fields:
         if field not in entity_fields:
-            raise error.SgQueryError(f"{field} is not a field of {entity}")
+            error_message = f"{field} is not a field of {entity}"
+            raise error.SgQueryError(error_message)
+
     state = SgFindQueryData[T_meta](entity, fields=fields, condition=SgNullCondition())
     return SgFindQuery[T_meta](state)

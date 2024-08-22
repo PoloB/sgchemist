@@ -489,7 +489,10 @@ T = TypeVar("T")
         (FilterOperatorTypeIsNot(Project), Project.__sg_type__),
     ],
 )
-def test_operator_serialize(operator: FilterOperator[T], expected_value: T) -> None:
+def test_operator_serialize(
+    operator: FilterOperator[T, Any],
+    expected_value: T,
+) -> None:
     """Test serialization of filter operators."""
     assert operator.serialize() == expected_value
 

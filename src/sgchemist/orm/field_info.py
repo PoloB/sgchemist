@@ -74,6 +74,20 @@ def get_name_in_relation(field: AbstractField[Any]) -> str:
     return field.__info__["name_in_relation"]
 
 
+def get_attribute_by_field_name(entity: SgEntityMeta) -> dict[str, str]:
+    """Return entity attribute name per field name for the given entity."""
+    return entity.__attr_per_field_name__
+
+
+def get_attribute_by_relationship_name(entity: SgEntityMeta) -> dict[str, str]:
+    """Return entity attribute name per field name for the given entity."""
+    field_mapper = entity.__attr_per_field_name__
+    return {
+        get_name_in_relation(field): field_mapper[get_name(field)]
+        for field in entity.__fields__
+    }
+
+
 def get_hash(
     field: AbstractField[Any],
 ) -> tuple[AbstractField[Any], ...]:
@@ -113,7 +127,8 @@ def get_field_hierarchy(field: AbstractField[Any]) -> list[AbstractField[Any]]:
 
 
 def iter_entities_from_field_value(
-    info: FieldInfo[Any], field_value: Any
+    info: FieldInfo[Any],
+    field_value: Any,
 ) -> Iterator[SgBaseEntity]:
     """Iterate entities from a field value.
 

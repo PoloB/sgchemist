@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from sgchemist.engine.mock import MockEngine
+from sgchemist.engine.mock import SgEntityNotRegisteredError
+from sgchemist.engine.mock import SgEntityRegistrationError
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
@@ -16,12 +19,15 @@ from tests.classes import SgEntity
 from tests.classes import Shot
 from tests.classes import Task
 
+if TYPE_CHECKING:
+    from sgchemist.orm.engine import SgEngine
+
 
 def test_mock_engine_registry() -> None:
     """Test the mock engine registry."""
     mock_engine = MockEngine()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SgEntityRegistrationError):
         mock_engine.register_base(Project)
 
     mock_engine.register_base(SgEntity)
@@ -37,7 +43,7 @@ def test_mock_find_unregistered_entity() -> None:
     mock_engine.register_base(TestBase)
     query = select(Project)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SgEntityNotRegisteredError):
         mock_engine.find(query.get_data())
 
 

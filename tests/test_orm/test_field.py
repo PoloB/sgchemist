@@ -362,7 +362,7 @@ def test_cast_column(
 )
 def test_condition(
     field_condition: SgFieldCondition,
-    exp_op: type[FilterOperator[Any]],
+    exp_op: type[FilterOperator[Any, Any]],
 ) -> None:
     """Tests the filter methods."""
     assert isinstance(field_condition.op, exp_op)

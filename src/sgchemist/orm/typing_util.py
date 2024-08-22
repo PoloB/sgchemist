@@ -1,11 +1,11 @@
 """Collections of typing utility functions."""
 
-from __future__ import absolute_import
 from __future__ import annotations
 
 import abc
 import ast
 import builtins
+import contextlib
 import re
 import sys
 from typing import Any
@@ -24,15 +24,18 @@ from typing_extensions import _SpecialForm
 from typing_extensions import get_args
 from typing_extensions import get_origin
 
-_T = TypeVar("_T", bound=Any)
-
 NoneFwd = ForwardRef("None")
 AnnotationScanType = Union[
-    Type[Any], str, ForwardRef, NewType, TypeAliasType, _SpecialForm
+    Type[Any],
+    str,
+    ForwardRef,
+    NewType,
+    TypeAliasType,
+    _SpecialForm,
 ]
 
 
-def get_annotations(obj: Any) -> Mapping[str, Any]:
+def get_annotations(obj: Any) -> Mapping[str, Any]:  # noqa: ANN401
     """Return the annotations of the given object.
 
     Compatibility function to `inspect.get_annotations`.
@@ -45,8 +48,8 @@ def get_annotations(obj: Any) -> Mapping[str, Any]:
     )
     if ann is None:
         return {}
-    else:
-        return cast("Mapping[str, Any]", ann)
+
+    return cast("Mapping[str, Any]", ann)
 
 
 class ArgsTypeProtocol(Protocol):
@@ -58,7 +61,7 @@ class ArgsTypeProtocol(Protocol):
 def eval_name_only(
     name: str,
     scope: dict[str, Any],
-) -> Any:
+) -> Any:  # noqa: ANN401
     """Evaluates the given Python variable and returns the result.
 
     Args:
@@ -73,11 +76,11 @@ def eval_name_only(
             global variables.
     """
     for scope_ in [scope, builtins.__dict__]:
-        try:
+        with contextlib.suppress(KeyError):
             return scope_[name]
-        except KeyError:
-            continue
-    raise NameError(f"{name} is not defined.")
+
+    error = f"{name} is not defined."
+    raise NameError(error)
 
 
 def stringify_ast(
@@ -88,22 +91,33 @@ def stringify_ast(
         left = stringify_ast(exp.left).replace("'", "")
         op = stringify_ast(exp.op)
         right = stringify_ast(exp.right).replace("'", "")
-        return f"'{left} {op} {right}'"
+        result = f"'{left} {op} {right}'"
+
     elif isinstance(exp, ast.BitOr):
-        return "|"
+        result = "|"
+
     elif isinstance(exp, ast.Subscript):
         value = stringify_ast(exp.value).replace("'", "")
-        slice = stringify_ast(exp.slice)
-        return f"{value}[{slice}]"
+        exp_slice = stringify_ast(exp.slice)
+        result = f"{value}[{exp_slice}]"
+
     elif isinstance(exp, ast.Name):
-        return f"{exp.id!r}"
+        result = f"{exp.id!r}"
+
     elif isinstance(exp, (ast.Constant, ast.NameConstant)):
-        return f"{exp.value!r}"
+        result = f"{exp.value!r}"
+
     elif isinstance(exp, ast.Tuple):
-        return ", ".join(map(stringify_ast, exp.elts))
+        result = ", ".join(map(stringify_ast, exp.elts))
+
     elif isinstance(exp, ast.Index):
-        return stringify_ast(exp.value)  # type: ignore # this is for python 3.7 compat
-    raise TypeError(f"Cannot parse element {type(exp)}")
+        result = stringify_ast(exp.value)  # type: ignore[attr-defined] # this is for python 3.7 compat
+
+    else:
+        error = f"Cannot parse element {type(exp)}"
+        raise TypeError(error)
+
+    return result
 
 
 def cleanup_mapped_str_annotation(
@@ -121,19 +135,26 @@ def cleanup_mapped_str_annotation(
     """
     annotation = annotation.replace('"', "").replace("'", "")
     expr_body = ast.parse(annotation).body
+
     if not expr_body:
-        raise TypeError("No annotation found.")
+        error = "No annotation found."
+        raise TypeError(error)
+
     expr = expr_body[0]
     assert isinstance(expr, ast.Expr)
     subscript = expr.value
+
     # We only handle subscript
     if isinstance(subscript, ast.Name):
         return eval_name_only(subscript.id, scope), annotation
+
     if not isinstance(subscript, ast.Subscript):
-        raise TypeError(
-            f"Expected annotation {annotation} to be a subscript of field, "
-            f"but got {type(subscript)}"
+        error = (
+            f"Expected annotation {annotation} to be a subscript of "
+            f"field, but got {type(subscript)}"
         )
+        raise TypeError(error)
+
     subscript_value = subscript.value
     assert isinstance(subscript_value, ast.Name)
     obj = eval_name_only(subscript_value.id, scope)
@@ -153,10 +174,10 @@ def make_union_type(*types: AnnotationScanType) -> type[Any]:
     Returns:
         The union type.
     """
-    return cast(Any, Union).__getitem__(types)  # type: ignore
+    return cast(Any, Union).__getitem__(types)  # type: ignore[no-any-return]
 
 
-def expand_unions(type_: Any) -> tuple[Any, ...]:
+def expand_unions(type_: Any) -> tuple[Any, ...]:  # noqa: ANN401
     """Returns a type as a tuple of individual types, expanding for ``Union`` types.
 
     Args:
@@ -165,7 +186,7 @@ def expand_unions(type_: Any) -> tuple[Any, ...]:
     Returns:
         The types expanded.
     """
-    ret = tuple([type_])
+    ret = (type_,)
     if isinstance(type_, ForwardRef):
         return expand_unions(type_.__forward_arg__)
     if isinstance(type_, str):
@@ -199,11 +220,12 @@ def de_optionalize_union_types(
     if isinstance(type_, ForwardRef):
         # Check for new style union using "|"
         splits = re.split(r"\s*\|\s*", type_.__forward_arg__)
-        try:
+
+        with contextlib.suppress(ValueError):
             splits.remove("None")
-        except ValueError:
-            pass
+
         return " | ".join(splits)
+
     if get_origin(type_) in TYPES_TO_DE_OPTIONALIZE:
         typ = set(get_args(type_))
         typ.discard(NoneFwd)
