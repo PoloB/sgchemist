@@ -21,7 +21,6 @@ from sgchemist.orm.entity import LazyEntityClassEval
 from sgchemist.orm.entity import LazyEntityCollectionClassEval
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.field_info import cast_column
-from sgchemist.orm.field_info import iter_entities_from_field_value
 from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.fields import update_entity_from_value
 from sgchemist.orm.queryop import FilterOperator
@@ -296,7 +295,7 @@ def test_entities_iter_entities_from_field_values(
     exp_value: T,
 ) -> None:
     """Tests the entity iterator."""
-    assert list(iter_entities_from_field_value(field.__info__, value)) == exp_value
+    assert list(field.__entity_iterator__(value)) == exp_value
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,5 @@
 """Annotation utility for sgchemist."""
 
-from __future__ import absolute_import
 from __future__ import annotations
 
 from typing import Any
@@ -31,5 +30,6 @@ class FieldAnnotation:
     def is_field(self) -> bool:
         """Return True if the annotation is a field annotation."""
         return isinstance(self._field_type, type) and issubclass(
-            self._field_type, AbstractField
+            self._field_type,
+            AbstractField,
         )

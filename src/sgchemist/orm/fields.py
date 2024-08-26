@@ -11,8 +11,10 @@ from datetime import date
 from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Generic
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import TypeVar
@@ -22,6 +24,7 @@ from typing import overload
 from typing_extensions import Self
 
 from . import error
+from . import field_info
 from .field_info import get_types
 from .queryop import FilterOperatorBetween
 from .queryop import FilterOperatorContains
@@ -65,6 +68,7 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     default_value: T
     __sg_type__: str = ""
     __info__: FieldInfo[T]
+    __entity_iterator__: Callable[[T], Iterable[SgBaseEntity]]
 
     __slots__ = (
         "__info__",
@@ -167,6 +171,8 @@ T_field = TypeVar("T_field", bound=AbstractField[Any])
 
 class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
     """Definition of an abstract value field."""
+
+    __entity_iterator__ = field_info.iter_no_entity
 
     def __init__(
         self,
@@ -530,6 +536,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
     __sg_type__: str = "entity"
     cast_type: type[T]
     default_value = None
+    __entity_iterator__ = field_info.iter_single_entity
 
     def __init__(self, name: str = "") -> None:
         """Initialise the field."""
@@ -560,6 +567,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
+    __entity_iterator__ = field_info.iter_multiple_entities
 
     def __init__(self, name: str = "") -> None:
         """Initialize the field."""

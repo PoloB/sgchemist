@@ -6,11 +6,12 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Generic
-from typing import Iterator
+from typing import Iterable
 from typing import TypeVar
 
 from typing_extensions import NotRequired
 from typing_extensions import TypedDict
+from typing_extensions import overload
 
 if TYPE_CHECKING:
     from sgchemist.orm import SgBaseEntity
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     from sgchemist.orm.entity import LazyEntityCollectionClassEval
     from sgchemist.orm.entity import SgEntityMeta
     from sgchemist.orm.fields import AbstractField
+
+    T_e = TypeVar("T_e", bound=SgBaseEntity)
 
 T = TypeVar("T")
 
@@ -93,9 +96,8 @@ def get_hash(
 ) -> tuple[AbstractField[Any], ...]:
     """Return the hash of the attribute."""
     parent_field = field.__info__["parent_field"]
-    parent_hash = get_hash(parent_field) if parent_field else tuple()
-    field_hash = (*parent_hash, field)
-    return field_hash
+    parent_hash = get_hash(parent_field) if parent_field else ()
+    return (*parent_hash, field)
 
 
 def get_types(field: AbstractField[Any]) -> tuple[type[SgBaseEntity], ...]:
@@ -126,51 +128,50 @@ def get_field_hierarchy(field: AbstractField[Any]) -> list[AbstractField[Any]]:
     return fields
 
 
-def iter_entities_from_field_value(
-    info: FieldInfo[Any],
-    field_value: Any,
-) -> Iterator[SgBaseEntity]:
-    """Iterate entities from a field value.
+T_col = TypeVar("T_col")
 
-    Used by the Session to get the entities within the field values if any.
 
-    Args:
-        info: the field info
-        field_value: the value to iter entities from
+@overload
+def cast_value_over(
+    info: FieldInfo[T],
+    func: Callable[[dict[str, Any]], T],
+    value: dict[str, Any],
+) -> T: ...
 
-    Returns:
-        the entities within the field value
-    """
-    if not info["is_relationship"]:
-        return
-    if info["is_list"]:
-        for value in field_value:
-            yield value
-        return
-    if field_value is None:
-        return
-    yield field_value
+
+@overload
+def cast_value_over(info: FieldInfo[T], func: Callable[[Any], T], value: T) -> T: ...
+
+
+@overload
+def cast_value_over(
+    info: FieldInfo[T],
+    func: Callable[[dict[str, Any]], T],
+    value: list[dict[str, Any]],
+) -> T: ...
 
 
 def cast_value_over(
-    info: FieldInfo[Any],
-    func: Callable[[Any], Any],
-    value: Any,
-) -> Any:
+    info: FieldInfo[T],
+    func: Callable[[Any], T],
+    value: T | dict[str, Any] | list[dict[str, Any]],
+) -> T | list[T]:
     """Cast the value according to the given field info."""
     if not info["is_relationship"]:
+        assert not isinstance(value, dict)
+        assert not isinstance(value, list)
         return value
     if info["is_list"]:
+        assert isinstance(value, list)
         return [func(v) for v in value]
-    else:
-        return func(value)
+    return func(value)
 
 
 def cast_column(
-    info: FieldInfo[Any],
-    column_value: Any,
-    func: Callable[[type[SgBaseEntity], dict[str, Any]], Any],
-) -> Any:
+    info: FieldInfo[T],
+    column_value: T | dict[str, Any] | list[dict[str, Any]],
+    func: Callable[[type[SgBaseEntity], dict[str, Any]], T],
+) -> T:
     """Cast the given row value to be used for instancing the entity.
 
     Used by the session to convert the column value to a value for instantiating
@@ -190,7 +191,25 @@ def cast_column(
     if not info["is_list"] and column_value is None:
         return None
 
-    def _cast_column(col: dict[str, Any]) -> Any:
+    def _cast_column(col: dict[str, Any]) -> T:
         return func(info["lazy_collection"].get_by_type(col["type"]), col)
 
     return cast_value_over(info, _cast_column, column_value)
+
+
+def iter_no_entity(_: T) -> Iterable[SgBaseEntity]:
+    """Return an empty iterator."""
+    return iter([])
+
+
+def iter_single_entity(field_value: T_e) -> Iterable[SgBaseEntity]:
+    """Return an iterator with only the given value."""
+    if field_value is None:
+        return
+
+    yield field_value
+
+
+def iter_multiple_entities(field_value: list[T_e]) -> Iterable[SgBaseEntity]:
+    """Return an iterator with the given entities."""
+    return iter(field_value)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeVar
 
@@ -10,10 +11,12 @@ from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import field_info
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
-from sgchemist.orm.entity import SgEntityMeta
-from sgchemist.orm.query import SgBatchQuery
-from sgchemist.orm.query import SgFindQueryData
 from sgchemist.orm.serializer import serialize_entity
+
+if TYPE_CHECKING:
+    from sgchemist.orm.entity import SgEntityMeta
+    from sgchemist.orm.query import SgBatchQuery
+    from sgchemist.orm.query import SgFindQueryData
 
 T = TypeVar("T", bound=SgBaseEntity)
 

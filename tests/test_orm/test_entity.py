@@ -436,7 +436,7 @@ def test_misc_annotations() -> None:
 
         class TestEntity14(SgEntity):
             __sg_type__ = "test15"
-            test: ""  # type: ignore[syntax]  # noqa: F722
+            test: ""  # type: ignore[valid-type]  # noqa: F722
 
 
 def test_invalid_expression_in_annotations() -> None:

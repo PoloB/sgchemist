@@ -19,7 +19,6 @@ from . import field_info
 from .constant import BatchRequestType
 from .entity import SgBaseEntity
 from .field_info import cast_column
-from .field_info import iter_entities_from_field_value
 from .fields import update_entity_from_value
 from .query import SgBatchQuery
 from .query import SgFindQuery
@@ -263,10 +262,7 @@ class Session:
         # Add modified relationships in cascade
         for field in entity.__fields__:
             rel_value = state.get_value(field)
-            for field_entity in iter_entities_from_field_value(
-                field.__info__,
-                rel_value,
-            ):
+            for field_entity in field.__entity_iterator__(rel_value):
                 self._check_relationship_commited(field_entity)
 
         query = SgBatchQuery(request_type, entity)
