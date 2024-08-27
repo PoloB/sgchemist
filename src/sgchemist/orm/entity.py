@@ -206,10 +206,6 @@ class EntityState(Generic[T_co]):
         """Sets the field as unavailable."""
         self._available[field] = False
 
-    def set_available(self, field: AbstractField[T_co]) -> None:
-        """Sets the availability of the field value."""
-        self._available[field] = True
-
     def set_as_original(self) -> None:
         """Set the current state of the entity as its original state."""
         self._original_values = self.values.copy()
