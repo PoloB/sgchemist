@@ -186,7 +186,7 @@ def expand_unions(type_: Any) -> tuple[Any, ...]:  # noqa: ANN401
     Returns:
         The types expanded.
     """
-    ret = (type_,)
+    ret: tuple[Any, ...] = (type_,)
     if isinstance(type_, ForwardRef):
         return expand_unions(type_.__forward_arg__)
     if isinstance(type_, str):

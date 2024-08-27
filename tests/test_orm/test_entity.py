@@ -277,7 +277,7 @@ def test_alias_field_construction() -> None:
 
         class TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[TestWithAlias | TestEntity | None] = EntityField()  # type: ignore[type-var]
+            entity: EntityField[TestWithAlias | TestEntity] = EntityField()
             alias: MultiEntityField[TestEntity] = alias(entity)  # type: ignore[assignment]
 
     # An alias relationship cannot target multiple entities
