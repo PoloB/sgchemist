@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import os
+from pathlib import Path
 
 import pytest
 
@@ -10,8 +10,8 @@ import pytest
 @pytest.fixture(scope="session")
 def schema_paths() -> tuple[str, str]:
     """Returns the test schema paths."""
-    current_directory = os.path.dirname(os.path.abspath(__file__))
+    current_directory = Path(Path(__file__).resolve()).parent
     return (
-        os.path.join(current_directory, "ressources/test_schema"),
-        os.path.join(current_directory, "ressources/test_schema_entity"),
+        str(current_directory / "ressources/test_schema.json"),
+        str(current_directory / "ressources/test_schema_entity.json"),
     )

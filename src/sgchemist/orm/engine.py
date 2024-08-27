@@ -11,13 +11,15 @@ SgEngine abstract class.
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 from typing import Any
-from typing import Type
 from typing import TypeVar
 
 from .entity import SgBaseEntity
-from .query import SgBatchQuery
-from .query import SgFindQueryData
+
+if TYPE_CHECKING:
+    from .query import SgBatchQuery
+    from .query import SgFindQueryData
 
 T = TypeVar("T", bound=SgBaseEntity)
 
@@ -28,7 +30,7 @@ class SgEngine:
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def find(self, query: SgFindQueryData[Type[T]]) -> list[dict[str, Any]]:
+    def find(self, query: SgFindQueryData[type[T]]) -> list[dict[str, Any]]:
         """Execute a find query and return the rows.
 
         Each row is referring to a single Shotgrid entity.
@@ -41,7 +43,8 @@ class SgEngine:
 
     @abc.abstractmethod
     def batch(
-        self, batch_queries: list[SgBatchQuery]
+        self,
+        batch_queries: list[SgBatchQuery],
     ) -> list[tuple[bool, dict[str, Any]]]:
         """Execute a batch query and return the rows.
 

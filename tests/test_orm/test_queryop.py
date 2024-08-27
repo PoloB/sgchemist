@@ -4,17 +4,15 @@ from __future__ import annotations
 
 import datetime
 import time
+from typing import TYPE_CHECKING
 from typing import Any
+from typing import TypeVar
 
 import pytest
 
-from sgchemist.orm import DateField
-from sgchemist.orm import EntityField
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.constant import LogicalOperator
 from sgchemist.orm.entity import SgBaseEntity
-from sgchemist.orm.fields import AbstractValueField
-from sgchemist.orm.fields import TextField
 from sgchemist.orm.queryop import FilterOperator
 from sgchemist.orm.queryop import FilterOperatorBetween
 from sgchemist.orm.queryop import FilterOperatorContains
@@ -40,8 +38,13 @@ from sgchemist.orm.queryop import FilterOperatorTypeIsNot
 from sgchemist.orm.queryop import SgFieldCondition
 from sgchemist.orm.queryop import SgFilterOperation
 from sgchemist.orm.queryop import SgNullCondition
+from tests.classes import Project
 
-from ..classes import Project
+if TYPE_CHECKING:
+    from sgchemist.orm import DateField
+    from sgchemist.orm import EntityField
+    from sgchemist.orm.fields import AbstractValueField
+    from sgchemist.orm.fields import TextField
 
 
 @pytest.fixture
@@ -120,22 +123,27 @@ def test_null_condition(field: AbstractValueField[Any]) -> None:
     assert cond_null is cond1
 
 
-def test_field_condition_matches() -> None:
-    """Test the field condition matches method."""
+class SgEntity(SgBaseEntity):
+    """Base entity for testing."""
 
-    class SgEntity(SgBaseEntity):
-        pass
 
-    class RefEntity(SgEntity):
-        __sg_type__ = "ref"
+class RefEntity(SgEntity):
+    """Reference entity for testing."""
 
-    class TestEntity(SgEntity):
-        __sg_type__ = "test"
-        name: TextField
-        date: DateField
-        entity: EntityField[TestEntity | RefEntity]
+    __sg_type__ = "ref"
 
-    # BETWEEN
+
+class TestEntity(SgEntity):
+    """Entity for testing."""
+
+    __sg_type__ = "test"
+    name: TextField
+    date: DateField
+    entity: EntityField[TestEntity | RefEntity]
+
+
+def test_between_matches() -> None:
+    """Test between matches method."""
     cond = TestEntity.id.between(0, 10)
     assert cond.matches(TestEntity(id=0))
     assert cond.matches(TestEntity(id=10))
@@ -144,39 +152,54 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(id=11))
     assert not cond.matches(TestEntity())
 
-    # CONTAINS
+
+def test_contains_matches() -> None:
+    """Test contains matches method."""
     cond = TestEntity.name.contains("foo")
     assert cond.matches(TestEntity(name="foo"))
     assert cond.matches(TestEntity(name="foobar"))
     assert cond.matches(TestEntity(name="barfoo"))
     assert not cond.matches(TestEntity(name="barfo"))
 
-    # ENDS_WITH
+
+def test_ends_with_matches() -> None:
+    """Test between matches method."""
     cond = TestEntity.name.endswith("foo")
     assert cond.matches(TestEntity(name="foo"))
     assert cond.matches(TestEntity(name="barfoo"))
     assert not cond.matches(TestEntity(name="foobar"))
     assert not cond.matches(TestEntity(name="barfo"))
 
-    # GREATER_THAN
+
+def test_greater_than_matches() -> None:
+    """Test greater than matches method."""
     cond = TestEntity.id.gt(5)
     assert cond.matches(TestEntity(id=6))
     assert not cond.matches(TestEntity(id=5))
     assert not cond.matches(TestEntity(id=0))
     assert not cond.matches(TestEntity())
 
-    # IN
+
+def test_in_matches() -> None:
+    """Test in matches method."""
     cond = TestEntity.id.is_in([1, 4])
     assert cond.matches(TestEntity(id=1))
     assert cond.matches(TestEntity(id=4))
     assert not cond.matches(TestEntity(id=0))
     assert not cond.matches(TestEntity(id=3))
 
+
+@pytest.fixture
+def now() -> datetime.datetime:
+    """Return the time now."""
     now = datetime.datetime.now(datetime.timezone.utc)
     # Add a small delay to avoid clock issues between windows and linux
     time.sleep(0.01)
+    return now
 
-    # IN_CALENDAR_DAY
+
+def test_in_calendar_day_matches(now: datetime.datetime) -> None:
+    """Test calendar day matches method."""
     cond = TestEntity.date.in_calendar_day(1)
     assert cond.matches(TestEntity(date=now + datetime.timedelta(days=1)))
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(days=2)))
@@ -187,33 +210,37 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(days=1)))
     assert cond.matches(TestEntity(date=now))
 
-    # IN_CALENDAR_MONTH
+
+def test_in_calendar_month_matches(now: datetime.datetime) -> None:
+    """Test calendar month matches method."""
     cond = TestEntity.date.in_calendar_month(1)
     year_offset, month = divmod(now.month + 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month + 2, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month - 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.in_calendar_month(-1)
     year_offset, month = divmod(now.month - 2, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month + 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     assert cond.matches(TestEntity(date=now))
 
-    # IN_CALENDAR_WEEK
+
+def test_in_calendar_week_matches(now: datetime.datetime) -> None:
+    """Test calendar week matches method."""
     cond = TestEntity.date.in_calendar_week(1)
     assert cond.matches(TestEntity(date=now + datetime.timedelta(weeks=1)))
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(weeks=2)))
@@ -224,7 +251,9 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(weeks=1)))
     assert cond.matches(TestEntity(date=now))
 
-    # IN_CALENDAR_YEAR
+
+def test_in_calendar_year_matches(now: datetime.datetime) -> None:
+    """Test calendar year matches method."""
     cond = TestEntity.date.in_calendar_year(1)
     assert cond.matches(TestEntity(date=now.replace(year=now.year + 1)))
     assert not cond.matches(TestEntity(date=now.replace(year=now.year + 2)))
@@ -235,7 +264,9 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(date=now.replace(year=now.year + 1)))
     assert cond.matches(TestEntity(date=now))
 
-    # IN_LAST
+
+def test_in_last_day_matches(now: datetime.datetime) -> None:
+    """Test in last matches method."""
     cond = TestEntity.date.in_last(2, DateType.DAY)
     assert cond.matches(TestEntity(date=now - datetime.timedelta(days=1)))
     assert not cond.matches(TestEntity(date=now - datetime.timedelta(days=3)))
@@ -249,15 +280,15 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.date.in_last(2, DateType.MONTH)
     year_offset, month = divmod(now.month - 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month - 3, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month + 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     assert cond.matches(TestEntity(date=now))
     cond = TestEntity.date.in_last(2, DateType.YEAR)
@@ -266,7 +297,9 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(date=now.replace(year=now.year + 1)))
     assert cond.matches(TestEntity(date=now))
 
-    # IN_NEXT
+
+def test_in_next_matches(now: datetime.datetime) -> None:
+    """Test in next matches method."""
     cond = TestEntity.date.in_next(2, DateType.DAY)
     assert cond.matches(TestEntity(date=now + datetime.timedelta(days=1)))
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(days=3)))
@@ -280,15 +313,15 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.date.in_next(2, DateType.MONTH)
     year_offset, month = divmod(now.month + 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month + 3, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month - 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.in_next(2, DateType.YEAR)
@@ -297,6 +330,9 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(date=now.replace(year=now.year - 1)))
     assert not cond.matches(TestEntity(date=now))
 
+
+def test_is_matches() -> None:
+    """Test is matches method."""
     # IS
     cond = TestEntity.id.eq(0)
     assert cond.matches(TestEntity(id=0))
@@ -307,28 +343,36 @@ def test_field_condition_matches() -> None:
     assert not cond.matches(TestEntity(id=0))
     assert cond.matches(TestEntity(id=1))
 
-    # LESS_THAN
+
+def test_less_than_matches() -> None:
+    """Test less than matches method."""
     cond = TestEntity.id.lt(5)
     assert not cond.matches(TestEntity(id=6))
     assert not cond.matches(TestEntity(id=5))
     assert cond.matches(TestEntity(id=0))
     assert not cond.matches(TestEntity())
 
-    # NOT_CONTAINS
+
+def test_not_contains_matches() -> None:
+    """Test not contains matches method."""
     cond = TestEntity.name.not_contains("foo")
     assert not cond.matches(TestEntity(name="foo"))
     assert not cond.matches(TestEntity(name="foobar"))
     assert not cond.matches(TestEntity(name="barfoo"))
     assert cond.matches(TestEntity(name="barfo"))
 
-    # NOT_IN
+
+def test_not_in_matches() -> None:
+    """Test not in matches method."""
     cond = TestEntity.id.is_not_in([1, 4])
     assert not cond.matches(TestEntity(id=1))
     assert not cond.matches(TestEntity(id=4))
     assert cond.matches(TestEntity(id=0))
     assert cond.matches(TestEntity(id=3))
 
-    # NOT_IN_LAST
+
+def test_not_in_last_matches(now: datetime.datetime) -> None:
+    """Test not in last matches method."""
     cond = TestEntity.date.not_in_last(2, DateType.DAY)
     assert not cond.matches(TestEntity(date=now - datetime.timedelta(days=1)))
     assert cond.matches(TestEntity(date=now - datetime.timedelta(days=3)))
@@ -342,15 +386,15 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.date.not_in_last(2, DateType.MONTH)
     year_offset, month = divmod(now.month - 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month - 3, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month + 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.not_in_last(2, DateType.YEAR)
@@ -359,7 +403,9 @@ def test_field_condition_matches() -> None:
     assert cond.matches(TestEntity(date=now.replace(year=now.year + 1)))
     assert not cond.matches(TestEntity(date=now))
 
-    # NOT_IN_NEXT
+
+def test_not_in_next_matches(now: datetime.datetime) -> None:
+    """Test not in next matches method."""
     cond = TestEntity.date.not_in_next(2, DateType.DAY)
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(days=1)))
     assert cond.matches(TestEntity(date=now + datetime.timedelta(days=3)))
@@ -373,15 +419,15 @@ def test_field_condition_matches() -> None:
     cond = TestEntity.date.not_in_next(2, DateType.MONTH)
     year_offset, month = divmod(now.month + 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month + 3, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     year_offset, month = divmod(now.month - 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month))
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
     )
     assert cond.matches(TestEntity(date=now))
     cond = TestEntity.date.not_in_next(2, DateType.YEAR)
@@ -390,26 +436,35 @@ def test_field_condition_matches() -> None:
     assert cond.matches(TestEntity(date=now.replace(year=now.year - 1)))
     assert cond.matches(TestEntity(date=now))
 
-    # STARTS_WITH
+
+def test_starts_with_matches() -> None:
+    """Test starts_with matches method."""
     cond = TestEntity.name.startswith("foo")
     assert cond.matches(TestEntity(name="foo"))
     assert not cond.matches(TestEntity(name="barfoo"))
     assert cond.matches(TestEntity(name="foobar"))
     assert not cond.matches(TestEntity(name="barfo"))
 
-    # TYPE_IS
+
+def test_type_is_matches() -> None:
+    """Test type is matches method."""
     cond = TestEntity.entity.type_is(RefEntity)
     assert not cond.matches(TestEntity(entity=TestEntity()))
     assert cond.matches(TestEntity(entity=RefEntity()))
 
-    # TYPE_IS_NOT
+
+def test_type_is_not_matches() -> None:
+    """Test type is not matches method."""
     cond = TestEntity.entity.type_is_not(RefEntity)
     assert cond.matches(TestEntity(entity=TestEntity()))
     assert not cond.matches(TestEntity(entity=RefEntity()))
 
 
+T = TypeVar("T")
+
+
 @pytest.mark.parametrize(
-    "operator, expected_value",
+    ("operator", "expected_value"),
     [
         (FilterOperatorBetween(0, 2), [0, 2]),
         (FilterOperatorContains("foo"), "foo"),
@@ -434,7 +489,10 @@ def test_field_condition_matches() -> None:
         (FilterOperatorTypeIsNot(Project), Project.__sg_type__),
     ],
 )
-def test_operator_serialize(operator: FilterOperator[Any], expected_value: Any) -> None:
+def test_operator_serialize(
+    operator: FilterOperator[T, Any],
+    expected_value: T,
+) -> None:
     """Test serialization of filter operators."""
     assert operator.serialize() == expected_value
 

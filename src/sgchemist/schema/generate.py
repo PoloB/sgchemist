@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import sys
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
+from pathlib import Path
 from typing import Any
 from typing import Iterable
 
-from ..orm.fields import AbstractEntityField
-from ..orm.fields import EntityField
-from ..orm.fields import field_by_sg_type
+from sgchemist.orm.fields import AbstractEntityField
+from sgchemist.orm.fields import EntityField
+from sgchemist.orm.fields import field_by_sg_type
+
 from .parse import EntitySchema
 from .parse import FieldSchema
 from .parse import ValueSchema
@@ -25,7 +28,7 @@ def _generate_python_script_field(
     entity_schema: EntitySchema,
     field_schema: FieldSchema,
     skip_entities: list[str],
-    create_aliases: bool = False,
+    create_aliases: bool = False,  # noqa: FBT001, FBT002
 ) -> list[str]:
     """Generate python script for a given field for the given entity schema.
 
@@ -45,24 +48,27 @@ def _generate_python_script_field(
 
     if field_type is None:
         logger.warning(
-            f'Cannot generate python field for "{pretty_field_name}": '
-            f"type {field_data_type} is not supported yet"
+            "Cannot generate python field for '%s': type %s is not supported yet",
+            pretty_field_name,
+            field_data_type,
         )
         return []
 
     valid_types = field_schema.properties.get(
-        "valid_types", ValueSchema([], False)
+        "valid_types",
+        ValueSchema([], False),  # noqa: FBT003
     ).value
 
     if issubclass(field_type, AbstractEntityField):
         remaining_types = set(valid_types).difference(set(skip_entities))
         if len(remaining_types) == 0:
             logger.warning(
-                f'Field "{pretty_field_name}" will not be generated: '
-                f"its target(s) {skip_entities} were skipped."
+                "Field '%s' will not be generated: its target(s) %s were skipped.",
+                pretty_field_name,
+                skip_entities,
             )
             return []
-        valid_types = list(sorted(remaining_types))
+        valid_types = sorted(remaining_types)
     annotation = f"{field_type.__name__}"
 
     if valid_types:
@@ -70,7 +76,8 @@ def _generate_python_script_field(
 
     field_args.append(f'name="{field_schema.field_name}"')
     default = field_schema.properties.get(
-        "default_value", ValueSchema(None, False)
+        "default_value",
+        ValueSchema(None, False),  # noqa: FBT003
     ).value
 
     if default is not None:
@@ -78,17 +85,17 @@ def _generate_python_script_field(
         field_args.append(f"default_value={default_str}")
     fields_instructions = [
         f"{field_schema.field_name}: {annotation} = "
-        f"{field_type.__name__}({', '.join(field_args)})"
+        f"{field_type.__name__}({', '.join(field_args)})",
     ]
 
     # Append alias relationship
     if create_aliases:
-        for valid_type in valid_types:
-            fields_instructions.append(
-                f"{field_schema.field_name}_{valid_type.lower()}:"
-                f"{EntityField.__name__}[{valid_type}] = "
-                f"alias({field_schema.field_name})"
-            )
+        fields_instructions += [
+            f"{field_schema.field_name}_{valid_type.lower()}:"
+            f"{EntityField.__name__}[{valid_type}] = "
+            f"alias({field_schema.field_name})"
+            for valid_type in valid_types
+        ]
 
     return fields_instructions
 
@@ -107,32 +114,10 @@ def _generate_entity_script_from_schema(schema: EntitySchema) -> str:
     return model_def
 
 
-def generate_python_script_models(
+def _generate_header(
     entity_schemas: Iterable[EntitySchema],
-    skip_entities: list[str] | None = None,
-    skip_field_patterns: list[str] | None = None,
-    include_connections: bool = False,
-    create_field_aliases: bool = False,
+    create_field_aliases: bool = False,  # noqa: FBT001, FBT002
 ) -> str:
-    """Generate python scripts for the given entity schemas.
-
-    Args:
-        entity_schemas (list[schema_entity.EntitySchema]): list of entity schemas to
-            generate classes for
-        skip_entities: list of entities to skip
-        skip_field_patterns: list of field patterns to skip
-        include_connections: create the connection classes
-        create_field_aliases: create aliases for multi target fields
-
-    Returns:
-        str: the python script creating the entity classes
-    """
-    if not skip_field_patterns:
-        skip_field_patterns = []
-
-    if not skip_entities:
-        skip_entities = []
-
     # Create the python header
     header = """
 \"\"\"
@@ -159,19 +144,45 @@ Any changes made to this file may be lost.
             field_types.add(field.data_type.value)
 
     for field_type in sorted(field_types):
-        try:
+        with contextlib.suppress(KeyError):
             imports.append(
-                f"from sgchemist.orm import {field_by_sg_type[field_type].__name__}"
+                f"from sgchemist.orm import {field_by_sg_type[field_type].__name__}",
             )
-        except KeyError:
-            continue
 
     # Add all the imports to the header
     header += "\n".join(sorted(imports))
     header += "\n\n\n"
+    return header
+
+
+def generate_python_script_models(
+    entity_schemas: Iterable[EntitySchema],
+    skip_entities: list[str] | None = None,
+    skip_field_patterns: list[str] | None = None,
+    include_connections: bool = False,  # noqa: FBT001, FBT002
+    create_field_aliases: bool = False,  # noqa: FBT001, FBT002
+) -> str:
+    """Generate python scripts for the given entity schemas.
+
+    Args:
+        entity_schemas (list[schema_entity.EntitySchema]): list of entity schemas to
+            generate classes for
+        skip_entities: list of entities to skip
+        skip_field_patterns: list of field patterns to skip
+        include_connections: create the connection classes
+        create_field_aliases: create aliases for multi target fields
+
+    Returns:
+        str: the python script creating the entity classes
+    """
+    if not skip_field_patterns:
+        skip_field_patterns = []
+
+    if not skip_entities:
+        skip_entities = []
 
     entity_scripts = [
-        'class SgEntity(SgBaseEntity):\n\t"""Base class for all the entities."""'
+        'class SgEntity(SgBaseEntity):\n\t"""Base class for all the entities."""',
     ]
     # Start generating the script for each entity
     for entity_schema in sorted(entity_schemas, key=lambda x: x.entity_name.value):
@@ -185,25 +196,32 @@ Any changes made to this file may be lost.
         entity_script += "\n\n"
         # Add a fields
         field_defs = []
+
         for field in sorted(entity_schema.fields, key=lambda x: x.field_name):
             if field.field_name == "id":
                 continue
+
             field_pattern_test = f"{entity_schema.entity_type}.{field.field_name}"
+
             if any(
                 re.match(pattern, field_pattern_test) for pattern in skip_field_patterns
             ):
                 continue
-            for field_def in _generate_python_script_field(
-                entity_schema, field, skip_entities, create_field_aliases
-            ):
-                field_defs.append("\t" + field_def)
+            fields = _generate_python_script_field(
+                entity_schema,
+                field,
+                skip_entities,
+                create_field_aliases,
+            )
+            field_defs += [f"\t{field_def}" for field_def in fields]
+
         entity_script += "\n".join(field_defs)
         entity_scripts.append(entity_script)
 
     # Finalize the script
+    header = _generate_header(entity_schemas, create_field_aliases)
     python_script = header + "\n\n\n".join(entity_scripts) + "\n"
-    python_script = python_script.replace("\t", "    ")
-    return python_script
+    return python_script.replace("\t", "    ")
 
 
 def get_cli_parser() -> ArgumentParser:
@@ -293,7 +311,7 @@ def main(argv: list[Any]) -> None:
         skip_field_patterns=args.skip_field_patterns,
         include_connections=args.include_connections,
     )
-    with open(args.out, "w") as f:
+    with Path(args.out).open("w") as f:
         f.write(python_script)
 
 

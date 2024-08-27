@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeVar
 
@@ -10,12 +11,33 @@ from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import field_info
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
-from sgchemist.orm.entity import SgEntityMeta
-from sgchemist.orm.query import SgBatchQuery
-from sgchemist.orm.query import SgFindQueryData
 from sgchemist.orm.serializer import serialize_entity
 
+if TYPE_CHECKING:
+    from sgchemist.orm.entity import SgEntityMeta
+    from sgchemist.orm.query import SgBatchQuery
+    from sgchemist.orm.query import SgFindQueryData
+
 T = TypeVar("T", bound=SgBaseEntity)
+
+
+class SgEntityNotRegisteredError(Exception):
+    """Raised when an entity is not registered in the engine."""
+
+    def __init__(self, entity: SgEntityMeta) -> None:
+        """Initialize the exception."""
+        super().__init__(f"Entity {entity} not registered in the engine.")
+
+
+class SgEntityRegistrationError(Exception):
+    """Raised when an entity cannot be registered in the engine."""
+
+    def __init__(self, entity: SgEntityMeta) -> None:
+        """Initialize the exception."""
+        super().__init__(
+            f"Base entity {entity.__name__} is not a subclass of "
+            f"{SgBaseEntity.__name__}",
+        )
 
 
 class MockEngine(SgEngine):
@@ -29,10 +51,8 @@ class MockEngine(SgEngine):
     def register_base(self, entity: SgEntityMeta) -> None:
         """Register an entity."""
         if not entity.__is_base__:
-            raise ValueError(
-                f"Base entity {entity.__name__} is not a subclass of "
-                f"{SgBaseEntity.__name__}"
-            )
+            raise SgEntityRegistrationError(entity)
+
         for sub_entity in entity.__registry__.values():
             self._entities[sub_entity.__sg_type__] = sub_entity
 
@@ -40,7 +60,7 @@ class MockEngine(SgEngine):
         self,
         entity: SgBaseEntity,
         query: SgFindQueryData[Any],
-        as_relationship: bool = False,
+        as_relationship: bool = False,  # noqa: FBT001, FBT002
     ) -> dict[str, Any]:
         data: dict[str, Any] = {"type": entity.__sg_type__}
 
@@ -66,7 +86,7 @@ class MockEngine(SgEngine):
         # Make sure the entity is registered
         entity = query.entity
         if entity.__sg_type__ not in self._entities:
-            raise ValueError(f"Entity {entity.__sg_type__} is not registered")
+            raise SgEntityNotRegisteredError(entity)
 
         # Filter all the entities
         filter_entities = []
@@ -80,7 +100,8 @@ class MockEngine(SgEngine):
         return filter_entities
 
     def batch(
-        self, batch_queries: list[SgBatchQuery]
+        self,
+        batch_queries: list[SgBatchQuery],
     ) -> list[tuple[bool, dict[str, Any]]]:
         """Execute a batch query."""
         results = []

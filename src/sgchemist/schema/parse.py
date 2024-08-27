@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import dataclasses
-import pickle
+import json
+from pathlib import Path
 from typing import Any
 from typing import Generic
 from typing import TypeVar
@@ -84,7 +85,7 @@ class FieldSchema:
 
 
 @dataclasses.dataclass
-class EntitySchema(object):
+class EntitySchema:
     """Defines an entity within a schema."""
 
     entity_type: str
@@ -116,10 +117,12 @@ def load_entities(schema_path: str, schema_entity_path: str) -> list[EntitySchem
     entities = []
 
     # Load all the entity data
-    field_data = pickle.load(open(schema_path, "rb"))
+    with Path(schema_path).open() as schema_file:
+        field_data = json.load(schema_file)
 
-    # Create the entities first
-    entity_data = pickle.load(open(schema_entity_path, "rb"))
+    with Path(schema_entity_path).open() as schema_entity_file:
+        entity_data = json.load(schema_entity_file)
+
     for entity_type, schema in entity_data.items():
         name_schema = ValueSchema[str].from_schema(schema["name"])
         visible_schema = ValueSchema[bool].from_schema(schema["visible"])

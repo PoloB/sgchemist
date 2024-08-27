@@ -1,28 +1,33 @@
 """Tests for the shotgun-api3 engine."""
 
-from typing import Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
 from sgchemist.engine.mock import MockEngine
+from sgchemist.engine.mock import SgEntityNotRegisteredError
+from sgchemist.engine.mock import SgEntityRegistrationError
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.engine import SgEngine
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.query import select
 from sgchemist.orm.session import Session
+from tests.classes import Project
+from tests.classes import SgEntity
+from tests.classes import Shot
+from tests.classes import Task
 
-from ..classes import Project
-from ..classes import SgEntity
-from ..classes import Shot
-from ..classes import Task
+if TYPE_CHECKING:
+    from sgchemist.orm.engine import SgEngine
 
 
 def test_mock_engine_registry() -> None:
     """Test the mock engine registry."""
     mock_engine = MockEngine()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SgEntityRegistrationError):
         mock_engine.register_base(Project)
 
     mock_engine.register_base(SgEntity)
@@ -38,7 +43,7 @@ def test_mock_find_unregistered_entity() -> None:
     mock_engine.register_base(TestBase)
     query = select(Project)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SgEntityNotRegisteredError):
         mock_engine.find(query.get_data())
 
 
@@ -57,20 +62,23 @@ def test_project() -> Project:
 
 
 @pytest.fixture
-def test_shot(test_project: Project) -> Shot:
+def test_shot() -> Shot:
     """Return a TestShot instance."""
     return Shot(name="shot1")
 
 
 @pytest.fixture
-def test_task(test_shot: Shot) -> Task:
+def test_task() -> Task:
     """Return a TestTask instance."""
     return Task(name="task1")
 
 
 @pytest.fixture
 def filled_engine(
-    engine: SgEngine, test_project: Project, test_shot: Shot, test_task: Task
+    engine: SgEngine,
+    test_project: Project,
+    test_shot: Shot,
+    test_task: Task,
 ) -> SgEngine:
     """Return a ShotgunAPIEngine instance filled with some data."""
     session = Session(engine)
@@ -85,15 +93,8 @@ def filled_engine(
     return engine
 
 
-@pytest.mark.parametrize(
-    "test_model",
-    (
-        Shot,
-        Project,
-        Task,
-    ),
-)
-def test_engine_find(filled_engine: SgEngine, test_model: Type[SgBaseEntity]) -> None:
+@pytest.mark.parametrize("test_model", [Shot, Project, Task])
+def test_engine_find(filled_engine: SgEngine, test_model: type[SgBaseEntity]) -> None:
     """Test find queries on a filled engine."""
     find_query_state = select(test_model).get_data()
     rows = filled_engine.find(find_query_state)
@@ -105,11 +106,11 @@ def test_engine_find(filled_engine: SgEngine, test_model: Type[SgBaseEntity]) ->
 
 @pytest.mark.parametrize(
     "test_model_inst",
-    (
+    [
         Project(),
         Shot(name="test"),
         Shot(name="test", project=Project(id=1)),
-    ),
+    ],
 )
 def test_engine_create(engine: SgEngine, test_model_inst: SgBaseEntity) -> None:
     """Test create queries."""
@@ -123,15 +124,15 @@ def test_engine_create(engine: SgEngine, test_model_inst: SgBaseEntity) -> None:
 
 
 @pytest.mark.parametrize(
-    "test_model_inst, batch_request_type",
-    (
+    ("test_model_inst", "batch_request_type"),
+    [
         (Project(), BatchRequestType.UPDATE),
         (Shot(name="shot1"), BatchRequestType.UPDATE),
         (Task(name="task1"), BatchRequestType.UPDATE),
         (Project(), BatchRequestType.DELETE),
         (Shot(name="shot1"), BatchRequestType.DELETE),
         (Task(name="task1"), BatchRequestType.DELETE),
-    ),
+    ],
 )
 def test_engine_batch_request(
     engine: SgEngine,
@@ -142,7 +143,7 @@ def test_engine_batch_request(
     session = Session(engine)
     session.add(test_model_inst)
     session.commit()
-    batch_query = SgBatchQuery(BatchRequestType.UPDATE, test_model_inst)
+    batch_query = SgBatchQuery(batch_request_type, test_model_inst)
     rows = engine.batch([batch_query])
     assert len(rows) == 1
     success, row = rows[0]

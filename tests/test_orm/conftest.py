@@ -5,8 +5,7 @@ from __future__ import annotations
 import pytest
 
 from sgchemist.engine.mock import MockEngine
-
-from ..classes import SgEntity
+from tests.classes import SgEntity
 
 
 @pytest.fixture

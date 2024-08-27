@@ -2,23 +2,25 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Any
 
 import pytest
 
 from sgchemist.orm.constant import BatchRequestType
-from sgchemist.orm.fields import AbstractValueField
-from sgchemist.orm.fields import EntityField
-from sgchemist.orm.fields import TextField
 from sgchemist.orm.query import SgBatchQuery
 from sgchemist.orm.queryop import SgNullCondition
 from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
 from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
 from sgchemist.orm.serializer import serialize_condition
 from sgchemist.orm.serializer import serialize_entity
+from tests.classes import Project
+from tests.classes import Shot
 
-from ..classes import Project
-from ..classes import Shot
+if TYPE_CHECKING:
+    from sgchemist.orm.fields import AbstractValueField
+    from sgchemist.orm.fields import EntityField
+    from sgchemist.orm.fields import TextField
 
 
 @pytest.fixture
@@ -64,7 +66,8 @@ def project_inst(project_entity: type[Project]) -> Project:
 
 
 def test_serialize_entity(
-    find_serialize: ShotgunAPIObjectSerializer, shot_entity: type[Shot]
+    find_serialize: ShotgunAPIObjectSerializer,
+    shot_entity: type[Shot],
 ) -> None:
     """Tests the serialization of an entity instance."""
     inst = shot_entity(name="foo", id=42)
@@ -94,7 +97,8 @@ def test_serialize_operator(
 
 
 def test_serialize_simple_condition(
-    find_serialize: ShotgunAPIObjectSerializer, simple_field: TextField
+    find_serialize: ShotgunAPIObjectSerializer,
+    simple_field: TextField,
 ) -> None:
     """Tests the serialization of a simple condition."""
     condition = simple_field.eq("foo")
@@ -121,14 +125,14 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
 
 
 @pytest.mark.parametrize(
-    "batch_queries, expected_serialization",
+    ("batch_queries", "expected_serialization"),
     [
         (
             [
                 SgBatchQuery(
                     BatchRequestType.CREATE,
                     Shot(name="foo", project=Project(id=2)),
-                )
+                ),
             ],
             [
                 {
@@ -142,7 +146,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                         "tasks": [],
                         "assets": [],
                     },
-                }
+                },
             ],
         ),
         (
@@ -150,7 +154,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                 SgBatchQuery(
                     BatchRequestType.UPDATE,
                     Shot(id=1, name="bar", project=Project(id=3)),
-                )
+                ),
             ],
             [
                 {
@@ -161,7 +165,7 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                         "code": "bar",
                         "project": {"id": 3, "type": "Project"},
                     },
-                }
+                },
             ],
         ),
         (
@@ -169,14 +173,14 @@ def test_serialize_null_condition(find_serialize: ShotgunAPIObjectSerializer) ->
                 SgBatchQuery(
                     BatchRequestType.DELETE,
                     Shot(id=1, name="foo", project=Project(id=3)),
-                )
+                ),
             ],
             [
                 {
                     "request_type": "delete",
                     "entity_type": "Shot",
                     "entity_id": 1,
-                }
+                },
             ],
         ),
     ],

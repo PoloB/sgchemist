@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Any
-from typing import Type
 from typing import TypeVar
-
-import shotgun_api3
 
 from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import field_info
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.engine import SgEngine
-from sgchemist.orm.query import SgBatchQuery
-from sgchemist.orm.query import SgFindQueryData
 from sgchemist.orm.serializer import ShotgunAPIBatchQuerySerializer
 from sgchemist.orm.serializer import ShotgunAPIObjectSerializer
+
+if TYPE_CHECKING:
+    import shotgun_api3
+
+    from sgchemist.orm.query import SgBatchQuery
+    from sgchemist.orm.query import SgFindQueryData
 
 T = TypeVar("T", bound=SgBaseEntity)
 
@@ -33,7 +35,7 @@ class ShotgunAPIEngine(SgEngine):
         self._query_serializer = ShotgunAPIObjectSerializer()
         self._batch_serializer = ShotgunAPIBatchQuerySerializer()
 
-    def find(self, query: SgFindQueryData[Type[T]]) -> list[dict[str, Any]]:
+    def find(self, query: SgFindQueryData[type[T]]) -> list[dict[str, Any]]:
         """Execute a find query and return the rows.
 
         Args:
@@ -73,7 +75,8 @@ class ShotgunAPIEngine(SgEngine):
         return records
 
     def batch(
-        self, batch_queries: list[SgBatchQuery]
+        self,
+        batch_queries: list[SgBatchQuery],
     ) -> list[tuple[bool, dict[str, Any]]]:
         """Execute a batch query and return the rows.
 

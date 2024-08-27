@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Any
 
 from typing_extensions import TypedDict
@@ -9,13 +10,15 @@ from typing_extensions import TypedDict
 from . import field_info
 from .constant import BatchRequestType
 from .entity import SgBaseEntity
-from .fields import AbstractField
-from .query import SgBatchQuery
 from .queryop import SgFieldCondition
 from .queryop import SgFilterOperation
 from .queryop import SgNullCondition
 from .queryop import SgSerializable
-from .typing_alias import SerializedEntity
+
+if TYPE_CHECKING:
+    from .fields import AbstractField
+    from .query import SgBatchQuery
+    from .typing_alias import SerializedEntity
 
 
 class SerializedOperator(TypedDict):
@@ -70,7 +73,8 @@ class ShotgunAPIObjectSerializer:
     """Defines a serializer converting sgchemist objects to shotgun-api3 components."""
 
     def serialize_filter(
-        self, sg_object: SgSerializable | SgBaseEntity
+        self,
+        sg_object: SgSerializable | SgBaseEntity,
     ) -> list[
         SerializedEntity | SerializedOperator | SerializedSummaryField | list[Any]
     ]:
@@ -87,7 +91,8 @@ class ShotgunAPIObjectSerializer:
         return [self.serialize_object(sg_object)]
 
     def serialize_object(
-        self, sg_object: SgSerializable | SgBaseEntity
+        self,
+        sg_object: SgSerializable | SgBaseEntity,
     ) -> SerializedEntity | SerializedOperator | SerializedSummaryField | list[Any]:
         """Serialize the given sgchemist object to shotgun-api3 object.
 
@@ -99,16 +104,17 @@ class ShotgunAPIObjectSerializer:
         """
         if isinstance(sg_object, SgFieldCondition):
             return list(serialize_condition(sg_object))
-        elif isinstance(sg_object, SgBaseEntity):
+        if isinstance(sg_object, SgBaseEntity):
             return serialize_entity(sg_object)
-        elif isinstance(sg_object, SgFilterOperation):
+        if isinstance(sg_object, SgFilterOperation):
             return self.serialize_operation(sg_object)
-        raise AssertionError(
-            f"Cannot serialize object of type {type(sg_object)}"
-        )  # pragma: no cover
+
+        error = f"Cannot serialize object of type {type(sg_object)}"  # pragma: no cover
+        raise AssertionError(error)  # pragma: no cover
 
     def serialize_operation(
-        self, filter_operator: SgFilterOperation
+        self,
+        filter_operator: SgFilterOperation,
     ) -> SerializedOperator:
         """Serialize the given sgchemist operation to shotgun-api3 logical operator.
 
@@ -147,7 +153,8 @@ class ShotgunAPIBatchQuerySerializer:
 
     @staticmethod
     def serialize_entity(
-        entity: SgBaseEntity, fields: list[AbstractField[Any]]
+        entity: SgBaseEntity,
+        fields: list[AbstractField[Any]],
     ) -> dict[str, Any]:
         """Serialize the given sgchemist entity to shotgun-api3 batch query.
 
@@ -190,17 +197,20 @@ class ShotgunAPIBatchQuerySerializer:
             if request_type == BatchRequestType.CREATE:
                 model_data = self.serialize_entity(entity, entity.__fields__)
                 batch_data["data"] = model_data
+
             elif request_type == BatchRequestType.UPDATE:
                 model_data = self.serialize_entity(
-                    entity, entity.__state__.modified_fields
+                    entity,
+                    entity.__state__.modified_fields,
                 )
                 batch_data["entity_id"] = entity.id
                 batch_data["data"] = model_data
+
             elif request_type == BatchRequestType.DELETE:
                 batch_data["entity_id"] = entity.id
-            else:
-                raise AssertionError(
-                    f"Request type {request_type} is not supported"
-                )  # pragma: no cover
+
+            else:  # pragma: no cover
+                error = f"Request type {request_type} is not supported"
+                raise AssertionError(error)
             serialized_batch_queries.append(batch_data)
         return serialized_batch_queries

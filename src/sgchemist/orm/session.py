@@ -12,22 +12,25 @@ from typing import Generic
 from typing import Iterator
 from typing import TypeVar
 
+from typing_extensions import Self
+
 from . import error
 from . import field_info
 from .constant import BatchRequestType
-from .engine import SgEngine
 from .entity import SgBaseEntity
 from .field_info import cast_column
-from .field_info import iter_entities_from_field_value
 from .fields import update_entity_from_value
 from .query import SgBatchQuery
 from .query import SgFindQuery
-from .typing_alias import EntityHash
 
 T = TypeVar("T", bound=SgBaseEntity)
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+    from .engine import SgEngine
+    from .typing_alias import EntityHash
+    from .typing_alias import EntityProtocol
 
 
 class SgFindResult(Generic[T]):
@@ -77,7 +80,7 @@ class SgFindResult(Generic[T]):
 class Session:
     """Defines the session object."""
 
-    def __init__(self, engine: SgEngine):
+    def __init__(self, engine: SgEngine) -> None:
         """Initializes the session object from an engine.
 
         Args:
@@ -87,7 +90,7 @@ class Session:
         self._pending_queries: dict[SgBaseEntity, SgBatchQuery] = {}
         self._entity_map: dict[EntityHash, SgBaseEntity] = {}
 
-    def __enter__(self) -> Session:
+    def __enter__(self) -> Self:
         """Starts the session context.
 
         Returns:
@@ -139,39 +142,17 @@ class Session:
         try:
             column_value = self._entity_map[(entity_cls.__sg_type__, row["id"])]
         except KeyError:
-            column_value = self._build_instance_from_row(entity_cls, row, True)
+            column_value = self._build_relationship_from_row(entity_cls, row)
         return column_value
 
-    def _build_instance_from_row(
+    def _build_instance(
         self,
         entity_cls: type[T],
         row: dict[str, Any],
-        is_relationship: bool = False,
+        field_mapper: dict[str, str],
     ) -> T:
-        """Builds the entity from the given row.
-
-        Args:
-            entity_cls: Type of the entity.
-            row: Row of the entity.
-            is_relationship (bool, optional): Whether the entity part of a relationship.
-
-        Returns:
-            Instance of the entity.
-        """
+        """Build the instance using the given field mapper."""
         inst_data = {}
-        field_mapper = entity_cls.__attr_per_field_name__
-
-        if is_relationship:
-            # Shotgrid uses a different key for the same field when queried
-            # from relationship.
-            # We construct a new field mapper in this case
-            field_mapper = {
-                field_info.get_name_in_relation(field): field_mapper[
-                    field_info.get_name(field)
-                ]
-                for field in entity_cls.__fields__
-            }
-
         column_value_by_attr = {
             field_mapper[column_name]: column_value
             for column_name, column_value in row.items()
@@ -180,22 +161,42 @@ class Session:
         for attr_name, column_value in column_value_by_attr.items():
             field = entity_cls.__fields_by_attr__[attr_name]
             # Cast column value
-            column_value = cast_column(
-                field.__info__, column_value, self._get_or_create_instance
+            casted_column = cast_column(
+                field.__info__,
+                column_value,
+                self._get_or_create_instance,
             )
-            inst_data[attr_name] = column_value
+            inst_data[attr_name] = casted_column
 
         inst = entity_cls(**inst_data)
         state = inst.__state__
         # Mark all the fields that were not queried as not available
         for attr_name in set(entity_cls.__fields_by_attr__).difference(
-            set(column_value_by_attr)
+            set(column_value_by_attr),
         ):
-            state.set_available(entity_cls.__fields_by_attr__[attr_name], False)
+            state.set_unavailable(entity_cls.__fields_by_attr__[attr_name])
 
         inst.__state__.set_as_original()
         self._entity_map[(entity_cls.__sg_type__, row["id"])] = inst
         return inst
+
+    def _build_relationship_from_row(
+        self,
+        entity_cls: type[T],
+        row: dict[str, Any],
+    ) -> T:
+        """Builds a relationship instance from the given row."""
+        field_mapper = field_info.get_attribute_by_relationship_name(entity_cls)
+        return self._build_instance(entity_cls, row, field_mapper)
+
+    def _build_instance_from_row(
+        self,
+        entity_cls: type[T],
+        row: dict[str, Any],
+    ) -> T:
+        """Builds the entity from the given row."""
+        field_mapper = field_info.get_attribute_by_field_name(entity_cls)
+        return self._build_instance(entity_cls, row, field_mapper)
 
     def exec(self, query: SgFindQuery[type[T]]) -> SgFindResult[T]:
         """Executes the find query and returns the results.
@@ -220,7 +221,7 @@ class Session:
         return SgFindResult(queried_models)
 
     @staticmethod
-    def _check_relationship_commited(entity: SgBaseEntity) -> None:
+    def _check_relationship_commited(entity: EntityProtocol) -> None:
         """Asserts that a relationship has been commited.
 
         Raises:
@@ -228,9 +229,8 @@ class Session:
         """
         state = entity.__state__
         if not state.is_commited() or state.is_modified():
-            raise error.SgRelationshipNotCommitedError(
-                f"Cannot add relation {entity} because it is not committed"
-            )
+            error_message = f"Cannot add relation {entity} because it is not committed"
+            raise error.SgRelationshipNotCommitedError(error_message)
 
     def add(self, entity: SgBaseEntity) -> SgBatchQuery:
         """Adds the given entity to the session.
@@ -252,18 +252,20 @@ class Session:
             BatchRequestType.UPDATE if state.is_commited() else BatchRequestType.CREATE
         )
         if state.pending_deletion:
-            raise error.SgAddEntityError(
+            error_message = (
                 f"Cannot add entity {entity} to session: "
                 f"it is already pending for deletion."
             )
+            raise error.SgAddEntityError(error_message)
         if state.pending_add:
             return self._pending_queries[entity]
 
         # Add modified relationships in cascade
         for field in entity.__fields__:
             rel_value = state.get_value(field)
-            for field_entity in iter_entities_from_field_value(
-                field.__info__, rel_value
+            for field_entity in field_info.iter_entities_from_field_value(
+                field.__info__,
+                rel_value,
             ):
                 self._check_relationship_commited(field_entity)
 
@@ -284,11 +286,12 @@ class Session:
         state = entity.__state__
 
         if not state.is_commited():
-            raise error.SgDeleteEntityError(
-                f"Cannot delete {entity}: it is not committed"
-            )
+            error_message = f"Cannot delete {entity}: it is not committed"
+            raise error.SgDeleteEntityError(error_message)
+
         if state.deleted:
-            raise error.SgDeleteEntityError(f"{entity} is already deleted")
+            error_message = f"{entity} is already deleted"
+            raise error.SgDeleteEntityError(error_message)
 
         query = SgBatchQuery(BatchRequestType.DELETE, entity)
         self._pending_queries[entity] = query
@@ -302,7 +305,7 @@ class Session:
         """
         # Add a batch for each
         rows: list[tuple[bool, dict[str, Any]]] = self._engine.batch(
-            list(self._pending_queries.values())
+            list(self._pending_queries.values()),
         )
         assert len(rows) == len(self._pending_queries)
 

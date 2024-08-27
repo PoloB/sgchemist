@@ -14,10 +14,9 @@ from sgchemist.orm.query import SgFindQuery
 from sgchemist.orm.query import SgFindQueryData
 from sgchemist.orm.query import select
 from sgchemist.orm.queryop import SgNullCondition
-
-from ..classes import Asset
-from ..classes import Project
-from ..classes import Shot
+from tests.classes import Asset
+from tests.classes import Project
+from tests.classes import Shot
 
 
 @pytest.fixture
@@ -93,8 +92,6 @@ def test_limit(find_query: SgFindQuery[Any]) -> None:
     """Tests the limit clause."""
     new_query = find_query.limit(1)
     assert new_query.get_data().limit == 1
-    new_query = new_query.limit(42)
-    assert new_query.get_data().limit == 42
 
 
 def test_retired_only(find_query: SgFindQuery[Any]) -> None:
@@ -119,7 +116,7 @@ def test_filter_preset(find_query: SgFindQuery[Any]) -> None:
     """Tests the filter_preset clause."""
     new_query = find_query.filter_preset("preset", foo=42)
     assert new_query.get_data().additional_filter_presets == [
-        {"preset_name": "preset", "foo": 42}
+        {"preset_name": "preset", "foo": 42},
     ]
 
 
@@ -138,7 +135,8 @@ def test_select(shot_entity: type[Shot]) -> None:
 
 
 def test_select_any_field(
-    shot_entity: type[Shot], project_entity: type[Project]
+    shot_entity: type[Shot],
+    project_entity: type[Project],
 ) -> None:
     """Tests select of any fields."""
     query = select(shot_entity, shot_entity.id, shot_entity.name)

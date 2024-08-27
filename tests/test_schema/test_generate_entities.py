@@ -11,13 +11,13 @@ from sgchemist.schema import generate
 from sgchemist.schema import parse
 
 
-@pytest.fixture()
+@pytest.fixture
 def output_script_path(tmp_path: pathlib.Path) -> str:
     """Return a temporary output script path."""
     return str(tmp_path / "models.py")
 
 
-@pytest.fixture()
+@pytest.fixture
 def cli_args(schema_paths: tuple[str, str], output_script_path: str) -> list[str]:
     """Return test cli arguments for the given schema paths and output script path."""
     return [
@@ -42,9 +42,9 @@ def test_generate_python_script_models(schema_paths: tuple[str, str]) -> None:
     """Test the python script generation."""
     entities = parse.load_entities(*schema_paths)
     # Test with standard arguments
-    exec(generate.generate_python_script_models(entities), globals())
+    exec(generate.generate_python_script_models(entities), globals())  # noqa: S102
     # Test skipping entities
-    exec(
+    exec(  # noqa: S102
         generate.generate_python_script_models(
             entities,
             skip_entities=["Asset", "Shot"],
@@ -52,7 +52,7 @@ def test_generate_python_script_models(schema_paths: tuple[str, str]) -> None:
         globals(),
     )
     # Test skipping field pattern
-    exec(
+    exec(  # noqa: S102
         generate.generate_python_script_models(
             entities,
             skip_field_patterns=[".*sg_.*"],
@@ -60,17 +60,17 @@ def test_generate_python_script_models(schema_paths: tuple[str, str]) -> None:
         globals(),
     )
     # Test including connections
-    exec(
+    exec(  # noqa: S102
         generate.generate_python_script_models(entities, include_connections=True),
         globals(),
     )
     # Test creating field aliases
-    exec(
+    exec(  # noqa: S102
         generate.generate_python_script_models(entities, create_field_aliases=True),
         globals(),
     )
     # Test combination
-    exec(
+    exec(  # noqa: S102
         generate.generate_python_script_models(
             entities,
             skip_entities=["Asset", "Shot"],
@@ -87,7 +87,7 @@ def test_main(cli_args: list[str], output_script_path: str) -> None:
     generate.main(cli_args)
     with pathlib.Path(output_script_path).open() as f:
         python_script = f.read()
-    exec(python_script, globals())
+    exec(python_script, globals())  # noqa: S102
 
 
 def test_cli(cli_args: list[str]) -> None:
