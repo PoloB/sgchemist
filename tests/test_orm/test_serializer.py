@@ -23,43 +23,43 @@ if TYPE_CHECKING:
     from sgchemist.orm.fields import TextField
 
 
-@pytest.fixture()
+@pytest.fixture
 def project_entity() -> type[Project]:
     """Returns the project entity."""
     return Project
 
 
-@pytest.fixture()
+@pytest.fixture
 def shot_entity() -> type[Shot]:
     """Returns the shot entity."""
     return Shot
 
 
-@pytest.fixture()
+@pytest.fixture
 def find_serialize() -> ShotgunAPIObjectSerializer:
     """Returns the shotgun api serializer object."""
     return ShotgunAPIObjectSerializer()
 
 
-@pytest.fixture()
+@pytest.fixture
 def batch_serialize() -> ShotgunAPIBatchQuerySerializer:
     """Returns the shotgun api batch serializer object."""
     return ShotgunAPIBatchQuerySerializer()
 
 
-@pytest.fixture()
+@pytest.fixture
 def simple_field(shot_entity: type[Shot]) -> AbstractValueField[Any]:
     """Returns a simple test field."""
     return shot_entity.name
 
 
-@pytest.fixture()
+@pytest.fixture
 def relation_field(shot_entity: type[Shot]) -> EntityField[Any]:
     """Returns a relation field."""
     return shot_entity.project
 
 
-@pytest.fixture()
+@pytest.fixture
 def project_inst(project_entity: type[Project]) -> Project:
     """Returns a project instance."""
     return project_entity(id=101)

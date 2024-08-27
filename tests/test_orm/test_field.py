@@ -60,13 +60,13 @@ def entity_class() -> type[Shot]:
     return Shot
 
 
-@pytest.fixture()
+@pytest.fixture
 def lazy_class_eval(entity_class: type[Shot]) -> LazyEntityClassEval:
     """The test lazy entity."""
     return LazyEntityClassEval(entity_class.__name__, entity_class.__registry__)
 
 
-@pytest.fixture()
+@pytest.fixture
 def lazy_collection_eval(
     lazy_class_eval: LazyEntityClassEval,
 ) -> LazyEntityCollectionClassEval:

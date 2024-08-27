@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from sgchemist.orm.fields import TextField
 
 
-@pytest.fixture()
+@pytest.fixture
 def field() -> AbstractValueField[Any]:
     """Returns the test field."""
 
@@ -189,7 +189,7 @@ def test_in_matches() -> None:
     assert not cond.matches(TestEntity(id=3))
 
 
-@pytest.fixture()
+@pytest.fixture
 def now() -> datetime.datetime:
     """Return the time now."""
     now = datetime.datetime.now(datetime.timezone.utc)

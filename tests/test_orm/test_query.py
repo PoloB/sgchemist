@@ -19,37 +19,37 @@ from tests.classes import Project
 from tests.classes import Shot
 
 
-@pytest.fixture()
+@pytest.fixture
 def project_entity() -> type[Project]:
     """Returns the Project entity."""
     return Project
 
 
-@pytest.fixture()
+@pytest.fixture
 def shot_entity() -> type[Shot]:
     """Returns the Shot entity."""
     return Shot
 
 
-@pytest.fixture()
+@pytest.fixture
 def asset_entity() -> type[Asset]:
     """Returns the Asset entity."""
     return Asset
 
 
-@pytest.fixture()
+@pytest.fixture
 def find_query_data(shot_entity: type[Shot]) -> SgFindQueryData[type[Shot]]:
     """Returns the find query state."""
     return SgFindQueryData(shot_entity, tuple(shot_entity.__fields__))
 
 
-@pytest.fixture()
+@pytest.fixture
 def find_query(find_query_data: SgFindQueryData[Any]) -> SgFindQuery[Any]:
     """Returns the find query."""
     return SgFindQuery(find_query_data)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_shot(shot_entity: type[Shot]) -> Shot:
     """Returns the test shot."""
     return shot_entity(name="test_shot")

@@ -28,19 +28,19 @@ from tests.classes import Shot
 from tests.classes import Task
 
 
-@pytest.fixture()
+@pytest.fixture
 def shot_entity() -> type[Shot]:
     """Returns the TestShot entity."""
     return Shot
 
 
-@pytest.fixture()
+@pytest.fixture
 def shot_not_commited(shot_entity: type[Shot]) -> Shot:
     """Returns a non commited TestShot instance."""
     return shot_entity(name="foo")
 
 
-@pytest.fixture()
+@pytest.fixture
 def shot_commited(shot_entity: type[Shot]) -> Shot:
     """Returns a commited TestShot instance."""
     return shot_entity(name="foo", id=42)

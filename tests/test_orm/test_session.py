@@ -21,49 +21,49 @@ if TYPE_CHECKING:
     from sgchemist.orm.engine import SgEngine
 
 
-@pytest.fixture()
+@pytest.fixture
 def shot_entity() -> type[Shot]:
     """Returns the Shot entity."""
     return Shot
 
 
-@pytest.fixture()
+@pytest.fixture
 def session(engine: SgEngine) -> Session:
     """Returns a session object."""
     return Session(engine)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_project() -> Project:
     """Returns a project object."""
     return Project(name="project")
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_asset(test_project: Project) -> Asset:
     """Returns an asset object."""
     return Asset(name="asset1", project=test_project)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_shot(test_project: Project) -> Shot:
     """Returns a shot object."""
     return Shot(name="shot1", project=test_project)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_task_shot(test_shot: Shot) -> Task:
     """Returns a task associated to a shot."""
     return Task(name="task1", entity=test_shot)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_task_asset(test_asset: Asset) -> Task:
     """Returns a task associated to an asset."""
     return Task(name="task1", entity=test_asset)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_db(
     test_project: Project,
     test_shot: Shot,
@@ -75,7 +75,7 @@ def test_db(
     return [test_project, test_shot, test_asset, test_task_shot, test_task_asset]
 
 
-@pytest.fixture()
+@pytest.fixture
 def filled_engine(
     session: Session,
     engine: SgEngine,

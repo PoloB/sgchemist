@@ -11,13 +11,13 @@ from sgchemist.schema import generate
 from sgchemist.schema import parse
 
 
-@pytest.fixture()
+@pytest.fixture
 def output_script_path(tmp_path: pathlib.Path) -> str:
     """Return a temporary output script path."""
     return str(tmp_path / "models.py")
 
 
-@pytest.fixture()
+@pytest.fixture
 def cli_args(schema_paths: tuple[str, str], output_script_path: str) -> list[str]:
     """Return test cli arguments for the given schema paths and output script path."""
     return [

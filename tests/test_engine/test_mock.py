@@ -47,7 +47,7 @@ def test_mock_find_unregistered_entity() -> None:
         mock_engine.find(query.get_data())
 
 
-@pytest.fixture()
+@pytest.fixture
 def engine() -> MockEngine:
     """Returns a test engine instance."""
     engine = MockEngine()
@@ -55,25 +55,25 @@ def engine() -> MockEngine:
     return engine
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_project() -> Project:
     """Return a TestProject instance."""
     return Project()
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_shot() -> Shot:
     """Return a TestShot instance."""
     return Shot(name="shot1")
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_task() -> Task:
     """Return a TestTask instance."""
     return Task(name="task1")
 
 
-@pytest.fixture()
+@pytest.fixture
 def filled_engine(
     engine: SgEngine,
     test_project: Project,
