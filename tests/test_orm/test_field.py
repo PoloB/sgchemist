@@ -295,7 +295,10 @@ def test_entities_iter_entities_from_field_values(
     exp_value: T,
 ) -> None:
     """Tests the entity iterator."""
-    assert list(field.__entity_iterator__(value)) == exp_value
+    assert (
+        list(field_info.iter_entities_from_field_value(field.__info__, value))
+        == exp_value
+    )
 
 
 @pytest.mark.parametrize(

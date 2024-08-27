@@ -119,25 +119,25 @@ def test_model_entity_field_has_no_container() -> None:
 
         class TestEntityList(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[list[SgBaseEntity]]
+            entity_with_container: EntityField[list[SgBaseEntity]]  # type: ignore[type-var]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityListOld(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[List[SgBaseEntity]]  # noqa: UP006
+            entity_with_container: EntityField[List[SgBaseEntity]]  # type: ignore[type-var]  # noqa: UP006
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityDict(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[dict[str, SgBaseEntity]]
+            entity_with_container: EntityField[dict[str, SgBaseEntity]]  # type: ignore[type-var]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
         class TestEntityDictOld(SgEntity):
             __sg_type__ = "test"
-            entity_with_container: EntityField[Dict[str, SgBaseEntity]]  # noqa: UP006
+            entity_with_container: EntityField[Dict[str, SgBaseEntity]]  # type: ignore[type-var]  # noqa: UP006
 
 
 def test_model_multi_entity_field_has_no_container() -> None:
@@ -150,7 +150,7 @@ def test_model_multi_entity_field_has_no_container() -> None:
 
         class TestEntity1(SgEntity):
             __sg_type__ = "test"
-            multi_entity_container: MultiEntityField[list[SgBaseEntity]]
+            multi_entity_container: MultiEntityField[list[SgBaseEntity]]  # type: ignore[type-var]
 
 
 def test_right_mapped_field_per_annotation() -> None:
@@ -236,28 +236,28 @@ def test_union_entity_in_entity() -> None:
     # Test union and optional
     class TestWithUnionOptional(SgEntity):
         __sg_type__ = "test_with_union_optional"
-        entity: EntityField[TestWithUnion | TestEntity | None]
+        entity: EntityField[TestWithUnion | TestEntity | None]  # type: ignore[type-var]
 
     assert isinstance(TestWithUnionOptional.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
 
     class TestWithUnionOptionalOld(SgEntity):
         __sg_type__ = "test_with_union_optional_old"
-        entity: EntityField[Optional[Union[TestWithUnion, TestEntity]]]  # noqa: UP007
+        entity: EntityField[Optional[Union[TestWithUnion, TestEntity]]]  # type: ignore[type-var]  # noqa: UP007
 
     assert isinstance(TestWithUnionOptionalOld.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
 
     class TestWithUnionOptionalMixedUnion(SgEntity):
         __sg_type__ = "test_with_union_optional_mixed"
-        entity: EntityField[Optional[TestWithUnion | TestEntity]]  # noqa: UP007
+        entity: EntityField[Optional[TestWithUnion | TestEntity]]  # type: ignore[type-var]  # noqa: UP007
 
     assert isinstance(TestWithUnionOptionalMixedUnion.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
 
     class TestWithUnionOptionalMixedNone(SgEntity):
         __sg_type__ = "test_with_union_optional_mixed_none"
-        entity: EntityField[Union[TestWithUnion, TestEntity] | None]  # noqa: UP007
+        entity: EntityField[Union[TestWithUnion, TestEntity] | None]  # type: ignore[type-var]  # noqa: UP007
 
     assert isinstance(TestWithUnionOptionalMixedNone.entity, EntityField)
     assert set(get_types(TestWithUnionOptional.entity)) == {TestWithUnion, TestEntity}
@@ -277,7 +277,7 @@ def test_alias_field_construction() -> None:
 
         class TestWithAlias(SgEntity):
             __sg_type__ = "foo"
-            entity: EntityField[TestWithAlias | TestEntity | None] = EntityField()
+            entity: EntityField[TestWithAlias | TestEntity | None] = EntityField()  # type: ignore[type-var]
             alias: MultiEntityField[TestEntity] = alias(entity)  # type: ignore[assignment]
 
     # An alias relationship cannot target multiple entities
@@ -368,7 +368,7 @@ def test_string_annotation() -> None:
 
     class TestEntity4(SgEntity):
         __sg_type__ = "test4"
-        test: EntityField[TestEntity1 | None]
+        test: EntityField[TestEntity1 | None]  # type: ignore[type-var]
 
 
 def test_targeting_invalid_entity_fails_lazily() -> None:
@@ -389,7 +389,7 @@ def test_targeting_invalid_entity_fails_lazily() -> None:
 
     class TestEntity3(SgEntity):
         __sg_type__ = "test3"
-        test: EntityField[Test]
+        test: EntityField[Test]  # type: ignore[type-var]
 
     class Test:
         pass
@@ -453,14 +453,14 @@ def test_invalid_expression_in_annotations() -> None:
 
 
 def test_explicit_target_is_entity() -> None:
-    """Test that not using an explicit target raises a error during class init."""
+    """Test that not using an explicit target raises an error during class init."""
 
     class SgEntity(SgBaseEntity):
         pass
 
     class TestEntity(SgEntity):
         __sg_type__ = "test"
-        test: EntityField[int]
+        test: EntityField[int]  # type: ignore[type-var]
 
     with pytest.raises(error.SgEntityClassDefinitionError):
         get_types(TestEntity.test)

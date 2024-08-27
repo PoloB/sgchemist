@@ -60,7 +60,7 @@ class MockEngine(SgEngine):
         self,
         entity: SgBaseEntity,
         query: SgFindQueryData[Any],
-        as_relationship: bool = False,
+        as_relationship: bool = False,  # noqa: FBT001, FBT002
     ) -> dict[str, Any]:
         data: dict[str, Any] = {"type": entity.__sg_type__}
 

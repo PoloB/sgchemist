@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
     from .engine import SgEngine
     from .typing_alias import EntityHash
+    from .typing_alias import EntityProtocol
 
 
 class SgFindResult(Generic[T]):
@@ -220,7 +221,7 @@ class Session:
         return SgFindResult(queried_models)
 
     @staticmethod
-    def _check_relationship_commited(entity: SgBaseEntity) -> None:
+    def _check_relationship_commited(entity: EntityProtocol) -> None:
         """Asserts that a relationship has been commited.
 
         Raises:
@@ -262,7 +263,10 @@ class Session:
         # Add modified relationships in cascade
         for field in entity.__fields__:
             rel_value = state.get_value(field)
-            for field_entity in field.__entity_iterator__(rel_value):
+            for field_entity in field_info.iter_entities_from_field_value(
+                field.__info__,
+                rel_value,
+            ):
                 self._check_relationship_commited(field_entity)
 
         query = SgBatchQuery(request_type, entity)

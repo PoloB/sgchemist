@@ -32,7 +32,7 @@ class FieldProperty(Generic[T]):
     def __init__(
         self,
         field: AbstractField[T],
-        settable: bool = True,
+        settable: bool = True,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize the field descriptor.
 
@@ -103,7 +103,7 @@ class AliasFieldProperty(FieldProperty[T]):
         self,
         instance: SgBaseEntity | None,
         owner: SgEntityMeta,
-    ) -> Any:
+    ) -> Any:  # noqa: ANN401
         """Return the value of the targeted field.
 
         Returns:
@@ -194,7 +194,7 @@ class EntityState(Generic[T_co]):
         """Return the value of the field."""
         return self.values.get(field, field_info.get_default_value(field))
 
-    def set_value(self, field: AbstractField[Any], value: Any) -> None:
+    def set_value(self, field: AbstractField[Any], value: Any) -> None:  # noqa: ANN401
         """Sets the value of the field."""
         self.values[field] = value
 
@@ -257,7 +257,7 @@ class SgEntityMeta(type):
             raise error.SgEntityClassDefinitionError(error_message)
         return type.__new__(cls, class_name, bases, dict_)
 
-    def __init__(
+    def __init__(  # noqa: C901, PLR0915
         cls,
         class_name: str,
         bases: tuple[type[Any], ...],
@@ -387,7 +387,7 @@ class SgBaseEntity(metaclass=SgEntityMeta):
     __attr_per_field_name__: ClassVar[dict[str, str]]
     __state__: ClassVar[EntityState[Any]]
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
+    def __init_subclass__(cls, **kwargs: Any) -> None:  # noqa: ANN401
         """Initialize the entity subclass."""
         # If we are directly subclassing, we shall not have any __sg_type__
         if SgBaseEntity in cls.__bases__ and "__sg_type__" in cls.__dict__:
@@ -399,7 +399,7 @@ class SgBaseEntity(metaclass=SgEntityMeta):
         cls.__is_base__ = True
         super().__init_subclass__(**kwargs)
 
-    def __init__(self: Any, **kwargs: Any) -> None:
+    def __init__(self: Any, **kwargs: Any) -> None:  # noqa: ANN401
         """Initializes the entity from keyword arguments.
 
         Args:
@@ -422,7 +422,7 @@ class SgBaseEntity(metaclass=SgEntityMeta):
         """Returns a string representation of the entity."""
         return f"{self.__class__.__name__}(id={self.id})"
 
-    def get_value(self, field: AbstractField[Any]) -> Any:
+    def get_value(self, field: AbstractField[Any]) -> Any:  # noqa: ANN401
         """Return the value of the given field.
 
         Args:
@@ -622,7 +622,7 @@ class LazyEntityClassEval:
                 raise error.SgEntityClassDefinitionError(error_message) from e
             if not issubclass(entity, SgBaseEntity):
                 error_message = (
-                    f"Lazy class {self.class_name} is an entity. "
+                    f"Lazy class {self.class_name} is not an entity. "
                     f"Please check the target of your entities."
                 )
                 raise error.SgEntityClassDefinitionError(error_message)

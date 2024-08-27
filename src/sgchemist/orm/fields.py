@@ -11,7 +11,6 @@ from datetime import date
 from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import Generic
 from typing import Iterable
@@ -24,7 +23,6 @@ from typing import overload
 from typing_extensions import Self
 
 from . import error
-from . import field_info
 from .field_info import get_types
 from .queryop import FilterOperatorBetween
 from .queryop import FilterOperatorContains
@@ -48,6 +46,7 @@ from .queryop import FilterOperatorStartsWith
 from .queryop import FilterOperatorTypeIs
 from .queryop import FilterOperatorTypeIsNot
 from .queryop import SgFieldCondition
+from .typing_alias import EntityProtocol
 from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
@@ -55,6 +54,8 @@ if TYPE_CHECKING:
     from .entity import SgBaseEntity
     from .entity import SgEntityMeta
     from .field_info import FieldInfo
+
+T_e = TypeVar("T_e", bound=EntityProtocol)
 
 T = TypeVar("T")
 Tcomp = TypeVar("Tcomp", bound=OptionalCompare)
@@ -68,7 +69,6 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
     default_value: T
     __sg_type__: str = ""
     __info__: FieldInfo[T]
-    __entity_iterator__: Callable[[T], Iterable[SgBaseEntity]]
 
     __slots__ = (
         "__info__",
@@ -169,10 +169,13 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
 T_field = TypeVar("T_field", bound=AbstractField[Any])
 
 
+def iter_no_entity(_: T) -> Iterable[SgBaseEntity]:
+    """Return an empty iterator."""
+    return iter([])
+
+
 class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
     """Definition of an abstract value field."""
-
-    __entity_iterator__ = field_info.iter_no_entity
 
     def __init__(
         self,
@@ -194,6 +197,7 @@ class AbstractValueField(AbstractField[T], metaclass=abc.ABCMeta):
             is_relationship=False,
             as_list=False,
         )
+        self.__info__["entity_iterator"] = iter_no_entity
 
 
 OptionalIntFloat = Union[int, float, None]
@@ -530,13 +534,20 @@ class AbstractEntityField(AbstractField[T], metaclass=abc.ABCMeta):
         return SgFieldCondition(self, FilterOperatorNotIn(others))
 
 
-class EntityField(AbstractEntityField[Optional[T]]):
+def iter_single_entity(field_value: T_e | None) -> Iterable[EntityProtocol]:
+    """Return an iterator with only the given value."""
+    if field_value is None:
+        return
+
+    yield field_value
+
+
+class EntityField(AbstractEntityField[Optional[T_e]]):
     """Definition a field targeting a single entity."""
 
     __sg_type__: str = "entity"
-    cast_type: type[T]
+    cast_type: type[T_e]
     default_value = None
-    __entity_iterator__ = field_info.iter_single_entity
 
     def __init__(self, name: str = "") -> None:
         """Initialise the field."""
@@ -546,6 +557,7 @@ class EntityField(AbstractEntityField[Optional[T]]):
             is_relationship=True,
             as_list=False,
         )
+        self.__info__["entity_iterator"] = iter_single_entity
 
     if TYPE_CHECKING:
 
@@ -553,21 +565,29 @@ class EntityField(AbstractEntityField[Optional[T]]):
         def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> T | None: ...
+        def __get__(
+            self,
+            instance: SgBaseEntity,
+            owner: SgEntityMeta,
+        ) -> T_e | None: ...
 
         def __get__(
             self,
             instance: SgBaseEntity | None,
             owner: SgEntityMeta,
-        ) -> T | None | Self:
+        ) -> T_e | None | Self:
             """Return the value of the field."""
 
 
-class MultiEntityField(AbstractEntityField[List[T]]):
+def iter_multiple_entities(field_value: list[T_e]) -> Iterable[EntityProtocol]:
+    """Return an iterator with the given entities."""
+    return iter(field_value)
+
+
+class MultiEntityField(AbstractEntityField[List[T_e]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
-    __entity_iterator__ = field_info.iter_multiple_entities
 
     def __init__(self, name: str = "") -> None:
         """Initialize the field."""
@@ -577,6 +597,7 @@ class MultiEntityField(AbstractEntityField[List[T]]):
             as_list=True,
             is_relationship=True,
         )
+        self.__info__["entity_iterator"] = iter_multiple_entities
 
     if TYPE_CHECKING:
 
@@ -584,13 +605,13 @@ class MultiEntityField(AbstractEntityField[List[T]]):
         def __get__(self, instance: None, owner: SgEntityMeta) -> Self: ...
 
         @overload
-        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> list[T]: ...
+        def __get__(self, instance: SgBaseEntity, owner: SgEntityMeta) -> list[T_e]: ...
 
         def __get__(
             self,
             instance: SgBaseEntity | None,
             owner: SgEntityMeta,
-        ) -> list[T] | Self:
+        ) -> list[T_e] | Self:
             """Return the value of the field."""
 
 

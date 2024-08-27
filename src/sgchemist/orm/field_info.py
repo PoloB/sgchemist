@@ -7,6 +7,7 @@ from typing import Any
 from typing import Callable
 from typing import Generic
 from typing import Iterable
+from typing import Iterator
 from typing import TypeVar
 
 from typing_extensions import NotRequired
@@ -19,8 +20,7 @@ if TYPE_CHECKING:
     from sgchemist.orm.entity import LazyEntityCollectionClassEval
     from sgchemist.orm.entity import SgEntityMeta
     from sgchemist.orm.fields import AbstractField
-
-    T_e = TypeVar("T_e", bound=SgBaseEntity)
+    from sgchemist.orm.typing_alias import EntityProtocol
 
 T = TypeVar("T")
 
@@ -41,6 +41,7 @@ class FieldInfo(TypedDict, Generic[T]):
     is_relationship: bool
     is_list: bool
     lazy_collection: NotRequired[LazyEntityCollectionClassEval]
+    entity_iterator: NotRequired[Callable[[T], Iterable[EntityProtocol]]]
 
 
 def get_alias(field: AbstractField[Any]) -> AbstractField[Any] | None:
@@ -128,6 +129,14 @@ def get_field_hierarchy(field: AbstractField[Any]) -> list[AbstractField[Any]]:
     return fields
 
 
+def iter_entities_from_field_value(
+    field_info: FieldInfo[T],
+    field_value: T,
+) -> Iterator[EntityProtocol]:
+    """Iterate the entities from the given field value."""
+    yield from field_info["entity_iterator"](field_value)
+
+
 T_col = TypeVar("T_col")
 
 
@@ -195,21 +204,3 @@ def cast_column(
         return func(info["lazy_collection"].get_by_type(col["type"]), col)
 
     return cast_value_over(info, _cast_column, column_value)
-
-
-def iter_no_entity(_: T) -> Iterable[SgBaseEntity]:
-    """Return an empty iterator."""
-    return iter([])
-
-
-def iter_single_entity(field_value: T_e) -> Iterable[SgBaseEntity]:
-    """Return an iterator with only the given value."""
-    if field_value is None:
-        return
-
-    yield field_value
-
-
-def iter_multiple_entities(field_value: list[T_e]) -> Iterable[SgBaseEntity]:
-    """Return an iterator with the given entities."""
-    return iter(field_value)

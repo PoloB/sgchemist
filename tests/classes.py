@@ -49,8 +49,8 @@ class Task(SgEntity):
 
     __sg_type__ = "Task"
     name: TextField = TextField(name="content")
-    entity: EntityField[Asset | Shot | None] = EntityField()
-    shot: EntityField[Shot | None] = alias(entity)
-    asset: EntityField[Asset | None] = alias(entity)
+    entity: EntityField[Asset | Shot] = EntityField()
+    shot: EntityField[Shot] = alias(entity)
+    asset: EntityField[Asset] = alias(entity)
     created_at: DateTimeField
     image: ImageField = ImageField()
