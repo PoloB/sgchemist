@@ -13,7 +13,8 @@ from typing import TypeVar
 
 from typing_extensions import Self
 
-from . import error
+from sgchemist import error
+
 from . import field_info
 from .constant import BatchRequestType
 from .entity import SgBaseEntity
@@ -303,13 +304,21 @@ class Session:
 
         If any query fails the full transaction is cancelled.
         """
-        # Add a batch for each
-        rows: list[tuple[bool, dict[str, Any]]] = self._engine.batch(
-            list(self._pending_queries.values()),
-        )
-        assert len(rows) == len(self._pending_queries)
+        # Only keep the batch queries that do real work
+        batch_queries = []
+        for entity, query in self._pending_queries.items():
+            if (
+                query.request_type == BatchRequestType.UPDATE
+                and not entity.__state__.modified_fields
+            ):
+                continue
+            batch_queries.append(query)
 
-        for k, query in enumerate(self._pending_queries.values()):
+        # Add a batch for each
+        rows: list[tuple[bool, dict[str, Any]]] = self._engine.batch(batch_queries)
+        assert len(rows) == len(batch_queries)
+
+        for k, query in enumerate(batch_queries):
             success, row = rows[k]
             state = query.entity.__state__
 

@@ -9,7 +9,7 @@ from typing import Union
 
 import pytest
 
-from sgchemist.orm import error
+from sgchemist import error
 from sgchemist.orm.entity import EntityState
 from sgchemist.orm.entity import SgBaseEntity
 from sgchemist.orm.field_info import get_types

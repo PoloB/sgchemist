@@ -60,3 +60,7 @@ class SgFieldNotSettableError(SgError):
         """Initialize the exception."""
         super().__init__(f"Field {field} is not settable.")
         self.field = field
+
+
+class SgEngineError(Exception):
+    """Error occurred when using engine."""

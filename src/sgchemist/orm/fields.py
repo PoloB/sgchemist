@@ -19,7 +19,8 @@ from typing import overload
 
 from typing_extensions import Self
 
-from . import error
+from sgchemist import error
+
 from .field_info import get_types
 from .queryop import FilterOperatorBetween
 from .queryop import FilterOperatorContains

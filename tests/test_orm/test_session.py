@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from sgchemist import error
 from sgchemist.orm import Session
 from sgchemist.orm import SgBaseEntity
-from sgchemist.orm import error
 from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.session import SgFindResult

@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from sgchemist.orm import error
+from sgchemist import error
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.constant import Order
 from sgchemist.orm.query import SgBatchQuery
