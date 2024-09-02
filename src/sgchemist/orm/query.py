@@ -9,7 +9,8 @@ from typing import TypeVar
 
 from typing_extensions import Self
 
-from . import error
+from sgchemist import error
+
 from . import field_info
 from .constant import BatchRequestType
 from .constant import Order

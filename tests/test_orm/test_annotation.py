@@ -2,9 +2,9 @@
 
 import pytest
 
+from sgchemist import error
 from sgchemist.orm import NumberField
 from sgchemist.orm import SgBaseEntity
-from sgchemist.orm import error
 
 
 def test_future_annotation_missing() -> None:

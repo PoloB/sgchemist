@@ -313,15 +313,15 @@ def test_in_next_matches(now: datetime.datetime) -> None:
     cond = TestEntity.date.in_next(2, DateType.MONTH)
     year_offset, month = divmod(now.month + 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     year_offset, month = divmod(now.month + 3, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     year_offset, month = divmod(now.month - 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.in_next(2, DateType.YEAR)
@@ -386,15 +386,15 @@ def test_not_in_last_matches(now: datetime.datetime) -> None:
     cond = TestEntity.date.not_in_last(2, DateType.MONTH)
     year_offset, month = divmod(now.month - 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     year_offset, month = divmod(now.month - 3, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     year_offset, month = divmod(now.month + 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.not_in_last(2, DateType.YEAR)
@@ -419,15 +419,15 @@ def test_not_in_next_matches(now: datetime.datetime) -> None:
     cond = TestEntity.date.not_in_next(2, DateType.MONTH)
     year_offset, month = divmod(now.month + 1, 12)
     assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     year_offset, month = divmod(now.month + 3, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     year_offset, month = divmod(now.month - 1, 12)
     assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
+        TestEntity(date=now.replace(year=now.year + year_offset, month=month or 1)),
     )
     assert cond.matches(TestEntity(date=now))
     cond = TestEntity.date.not_in_next(2, DateType.YEAR)

@@ -8,13 +8,13 @@ from typing import TypeVar
 
 import pytest
 
+from sgchemist import error
 from sgchemist.orm import DateTimeField
 from sgchemist.orm import EntityField
 from sgchemist.orm import ImageField
 from sgchemist.orm import ListField
 from sgchemist.orm import NumberField
 from sgchemist.orm import TextField
-from sgchemist.orm import error
 from sgchemist.orm import field_info
 from sgchemist.orm.constant import DateType
 from sgchemist.orm.entity import LazyEntityClassEval
