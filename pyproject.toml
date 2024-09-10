@@ -11,10 +11,24 @@ authors = [
 ]
 description = "An ORM for Autodesk Shotgrid"
 dependencies = [
-    'shotgun-api3',
     'typing-extensions',
     'requests',
 ]
+
+[project.optional-dependencies]
+
+test = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-benchmark",
+    "pytest-cov",
+    "requests-mock",
+]
+sgapi3 = [
+    "shotgun-api3",
+]
+
 readme = "README.md"
 requires-python = ">=3.9"
 keywords = [
