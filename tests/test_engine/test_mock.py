@@ -1,4 +1,4 @@
-"""Tests for the shotgun-api3 engine."""
+"""Tests for the mock engine."""
 
 from __future__ import annotations
 

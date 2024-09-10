@@ -261,7 +261,7 @@ class RestEngine(SgEngine):
                 timeout=self._timeout,
             )
             result.raise_for_status()
-            json_result = result.json()
+            json_result = result.json()["results"]
 
             if json_result.get("exception"):
                 raise FindQueryRestEngineError(json_result["message"])
