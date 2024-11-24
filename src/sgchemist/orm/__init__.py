@@ -23,7 +23,6 @@ from .query import select
 from .session import Session
 
 __all__ = [
-    "SgBaseEntity",
     "BooleanField",
     "DateField",
     "DateTimeField",
@@ -36,10 +35,11 @@ __all__ = [
     "NumberField",
     "PercentField",
     "SerializableField",
+    "Session",
+    "SgBaseEntity",
     "StatusField",
     "TextField",
     "UrlField",
     "alias",
     "select",
-    "Session",
 ]

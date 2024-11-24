@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import Generic
-from typing import Tuple
 from typing import TypeVar
 
 from typing_extensions import Self
@@ -24,7 +23,7 @@ from .queryop import SgFilterObject
 from .queryop import SgNullCondition
 
 T_meta = TypeVar("T_meta", bound=SgEntityMeta)
-OrderField = Tuple[AbstractField[Any], Order]
+OrderField = tuple[AbstractField[Any], Order]
 
 
 class SgFindQueryData(Generic[T_meta]):
@@ -34,16 +33,16 @@ class SgFindQueryData(Generic[T_meta]):
     """
 
     __slots__ = (
+        "_additional_filter_presets",
+        "_condition",
         "_entity",
         "_fields",
-        "_condition",
-        "_order_fields",
-        "_limit",
-        "_retired_only",
-        "_page",
         "_include_archived_projects",
-        "_additional_filter_presets",
+        "_limit",
         "_loading_fields",
+        "_order_fields",
+        "_page",
+        "_retired_only",
     )
 
     def __init__(  # noqa: PLR0913

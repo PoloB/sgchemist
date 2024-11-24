@@ -127,14 +127,14 @@ class EntityState(Generic[T_co]):
     """Defines the internal state of the instance field values."""
 
     __slots__ = (
+        "_available",
         "_entity",
+        "_original_values",
+        "deleted",
+        "modified_fields",
         "pending_add",
         "pending_deletion",
-        "deleted",
         "values",
-        "_available",
-        "modified_fields",
-        "_original_values",
     )
 
     def __init__(

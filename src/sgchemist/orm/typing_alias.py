@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
-from typing import Tuple
 
 from typing_extensions import Protocol
 from typing_extensions import TypedDict
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
     from sgchemist.orm.entity import EntityState
     from sgchemist.orm.fields import AbstractField
 
-EntityHash = Tuple[str, int]
+EntityHash = tuple[str, int]
 
 
 class SerializedEntity(TypedDict, total=False):

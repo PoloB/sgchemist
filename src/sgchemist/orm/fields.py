@@ -11,10 +11,7 @@ from datetime import date
 from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
 from typing import Generic
-from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import TypeVar
 from typing import Union
@@ -50,6 +47,8 @@ from .typing_alias import EntityProtocol
 from .typing_util import OptionalCompare
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from .constant import DateType
     from .entity import SgBaseEntity
     from .entity import SgEntityMeta
@@ -72,8 +71,8 @@ class AbstractField(Generic[T], metaclass=abc.ABCMeta):
 
     __slots__ = (
         "__info__",
-        "default_value",
         "cast_type",
+        "default_value",
     )
 
     def __init__(  # noqa: PLR0913
@@ -584,7 +583,7 @@ def iter_multiple_entities(field_value: list[T_e]) -> Iterable[EntityProtocol]:
     return iter(field_value)
 
 
-class MultiEntityField(AbstractEntityField[List[T_e]]):
+class MultiEntityField(AbstractEntityField[list[T_e]]):
     """Definition a field targeting multiple entities."""
 
     __sg_type__: str = "multi_entity"
@@ -879,7 +878,7 @@ class ImageField(AbstractValueField[Optional[str]]):
             """Return the value of the field."""
 
 
-class ListField(AbstractValueField[Optional[List[str]]]):
+class ListField(AbstractValueField[Optional[list[str]]]):
     """Definition of a list field."""
 
     cast_type: type[list[str]] = list
@@ -953,7 +952,7 @@ class PercentField(FloatField):
             """Return the value of the field."""
 
 
-class SerializableField(AbstractValueField[Optional[Dict[str, Any]]]):
+class SerializableField(AbstractValueField[Optional[dict[str, Any]]]):
     """Definition of a serializable field."""
 
     cast_type: type[dict[str, Any]] = dict

@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
-from typing import Iterator
 from typing import TypeVar
 
 from typing_extensions import Self
@@ -26,6 +25,7 @@ from .query import SgFindQuery
 T = TypeVar("T", bound=SgBaseEntity)
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from types import TracebackType
 
     from .engine import SgEngine

@@ -9,8 +9,8 @@ import sys
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
-from typing import Iterable
 
 from sgchemist.orm.fields import AbstractEntityField
 from sgchemist.orm.fields import EntityField
@@ -20,6 +20,9 @@ from .parse import EntitySchema
 from .parse import FieldSchema
 from .parse import ValueSchema
 from .parse import load_entities
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 logger = logging.getLogger("model_generate")
 

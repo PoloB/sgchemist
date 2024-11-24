@@ -10,7 +10,10 @@ from .fields import AbstractField
 class FieldAnnotation:
     """A well-defined field annotation."""
 
-    __slots__ = ("_field_type", "_entities")
+    __slots__ = (
+        "_entities",
+        "_field_type",
+    )
 
     def __init__(self, field_type: type[Any], entities: tuple[str, ...]) -> None:
         """Initialize an instance of field annotation."""

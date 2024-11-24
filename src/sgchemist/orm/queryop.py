@@ -7,7 +7,6 @@ import datetime
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
-from typing import List
 from typing import TypeVar
 from typing import Union
 
@@ -49,7 +48,7 @@ class FilterOperator(Generic[T, Tser], abc.ABC):
         """Serialize the filter value."""
 
 
-class FilterOperatorBetween(FilterOperator[Tcomp, List[Union[Tcomp, None]]]):
+class FilterOperatorBetween(FilterOperator[Tcomp, list[Union[Tcomp, None]]]):
     """A between filter."""
 
     __sg_op__ = "between"
@@ -127,7 +126,7 @@ class FilterOperatorGreaterThan(FilterOperator[Tcomp, Tcomp]):
         return self.__value
 
 
-class FilterOperatorIn(FilterOperator[T, List[T]]):
+class FilterOperatorIn(FilterOperator[T, list[T]]):
     """An in filter."""
 
     __sg_op__ = "in"
@@ -236,7 +235,7 @@ class FilterOperatorInCalendarYear(FilterOperator[datetime.datetime, int]):
         return self.__offset
 
 
-class FilterOperatorInLast(FilterOperator[datetime.datetime, List[Union[str, int]]]):
+class FilterOperatorInLast(FilterOperator[datetime.datetime, list[Union[str, int]]]):
     """An in_last filter."""
 
     __sg_op__ = "in_last"
@@ -264,7 +263,7 @@ class FilterOperatorInLast(FilterOperator[datetime.datetime, List[Union[str, int
         return [self.__offset, self.__date_type.value]
 
 
-class FilterOperatorInNext(FilterOperator[datetime.datetime, List[Union[str, int]]]):
+class FilterOperatorInNext(FilterOperator[datetime.datetime, list[Union[str, int]]]):
     """An in_next filter."""
 
     __sg_op__ = "in_next"
@@ -366,7 +365,7 @@ class FilterOperatorNotContains(FilterOperator[str, str]):
         return self.__string
 
 
-class FilterOperatorNotIn(FilterOperator[T, List[T]]):
+class FilterOperatorNotIn(FilterOperator[T, list[T]]):
     """A not_in filter."""
 
     __sg_op__ = "not_in"
@@ -384,7 +383,7 @@ class FilterOperatorNotIn(FilterOperator[T, List[T]]):
         return self.__container
 
 
-class FilterOperatorNotInLast(FilterOperator[datetime.datetime, List[Union[str, int]]]):
+class FilterOperatorNotInLast(FilterOperator[datetime.datetime, list[Union[str, int]]]):
     """A not_in_last filter."""
 
     __sg_op__ = "not_in_last"
@@ -412,7 +411,7 @@ class FilterOperatorNotInLast(FilterOperator[datetime.datetime, List[Union[str, 
         return [self.__offset, self.__date_type.value]
 
 
-class FilterOperatorNotInNext(FilterOperator[datetime.datetime, List[Union[str, int]]]):
+class FilterOperatorNotInNext(FilterOperator[datetime.datetime, list[Union[str, int]]]):
     """A not_in_next filter."""
 
     __sg_op__ = "not_in_next"

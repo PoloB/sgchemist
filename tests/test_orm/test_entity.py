@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import ClassVar
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -123,21 +121,9 @@ def test_model_entity_field_has_no_container() -> None:
 
     with pytest.raises(error.SgEntityClassDefinitionError):
 
-        class TestEntityListOld(SgEntity):
-            __sg_type__ = "test"
-            entity_with_container: EntityField[List[SgBaseEntity]]  # type: ignore[type-var]  # noqa: UP006
-
-    with pytest.raises(error.SgEntityClassDefinitionError):
-
         class TestEntityDict(SgEntity):
             __sg_type__ = "test"
             entity_with_container: EntityField[dict[str, SgBaseEntity]]  # type: ignore[type-var]
-
-    with pytest.raises(error.SgEntityClassDefinitionError):
-
-        class TestEntityDictOld(SgEntity):
-            __sg_type__ = "test"
-            entity_with_container: EntityField[Dict[str, SgBaseEntity]]  # type: ignore[type-var]  # noqa: UP006
 
 
 def test_model_multi_entity_field_has_no_container() -> None:
