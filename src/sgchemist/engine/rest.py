@@ -209,7 +209,6 @@ class RestEngine(SgEngine):
         """Get the result of the given query using the REST API."""
         limit = query.limit
         if query.page:
-            print("set limit")
             limit = self._entities_per_page
         current_page = query.page or 1
         paging = {
