@@ -20,7 +20,6 @@ from sgchemist.orm.queryop import FilterOperatorEndsWith
 from sgchemist.orm.queryop import FilterOperatorGreaterThan
 from sgchemist.orm.queryop import FilterOperatorIn
 from sgchemist.orm.queryop import FilterOperatorInCalendarDay
-from sgchemist.orm.queryop import FilterOperatorInCalendarMonth
 from sgchemist.orm.queryop import FilterOperatorInCalendarWeek
 from sgchemist.orm.queryop import FilterOperatorInCalendarYear
 from sgchemist.orm.queryop import FilterOperatorInLast
@@ -211,34 +210,6 @@ def test_in_calendar_day_matches(now: datetime.datetime) -> None:
     assert cond.matches(TestEntity(date=now))
 
 
-def test_in_calendar_month_matches(now: datetime.datetime) -> None:
-    """Test calendar month matches method."""
-    cond = TestEntity.date.in_calendar_month(1)
-    year_offset, month = divmod(now.month + 1, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month + 2, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month - 1, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    assert not cond.matches(TestEntity(date=now))
-    cond = TestEntity.date.in_calendar_month(-1)
-    year_offset, month = divmod(now.month - 2, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month + 1, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    assert cond.matches(TestEntity(date=now))
-
-
 def test_in_calendar_week_matches(now: datetime.datetime) -> None:
     """Test calendar week matches method."""
     cond = TestEntity.date.in_calendar_week(1)
@@ -277,20 +248,6 @@ def test_in_last_day_matches(now: datetime.datetime) -> None:
     assert not cond.matches(TestEntity(date=now - datetime.timedelta(weeks=3)))
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(weeks=1)))
     assert cond.matches(TestEntity(date=now))
-    cond = TestEntity.date.in_last(2, DateType.MONTH)
-    year_offset, month = divmod(now.month - 1, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month - 3, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month + 1, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    assert cond.matches(TestEntity(date=now))
     cond = TestEntity.date.in_last(2, DateType.YEAR)
     assert cond.matches(TestEntity(date=now.replace(year=now.year - 1)))
     assert not cond.matches(TestEntity(date=now.replace(year=now.year - 3)))
@@ -309,20 +266,6 @@ def test_in_next_matches(now: datetime.datetime) -> None:
     assert cond.matches(TestEntity(date=now + datetime.timedelta(weeks=1)))
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(weeks=3)))
     assert not cond.matches(TestEntity(date=now - datetime.timedelta(weeks=1)))
-    assert not cond.matches(TestEntity(date=now))
-    cond = TestEntity.date.in_next(2, DateType.MONTH)
-    year_offset, month = divmod(now.month + 1, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month + 3, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month - 1, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
     assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.in_next(2, DateType.YEAR)
     assert cond.matches(TestEntity(date=now.replace(year=now.year + 1)))
@@ -383,20 +326,6 @@ def test_not_in_last_matches(now: datetime.datetime) -> None:
     assert cond.matches(TestEntity(date=now - datetime.timedelta(weeks=3)))
     assert cond.matches(TestEntity(date=now + datetime.timedelta(weeks=1)))
     assert not cond.matches(TestEntity(date=now))
-    cond = TestEntity.date.not_in_last(2, DateType.MONTH)
-    year_offset, month = divmod(now.month - 1, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month - 3, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month + 1, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    assert not cond.matches(TestEntity(date=now))
     cond = TestEntity.date.not_in_last(2, DateType.YEAR)
     assert not cond.matches(TestEntity(date=now.replace(year=now.year - 1)))
     assert cond.matches(TestEntity(date=now.replace(year=now.year - 3)))
@@ -415,20 +344,6 @@ def test_not_in_next_matches(now: datetime.datetime) -> None:
     assert not cond.matches(TestEntity(date=now + datetime.timedelta(weeks=1)))
     assert cond.matches(TestEntity(date=now + datetime.timedelta(weeks=3)))
     assert cond.matches(TestEntity(date=now - datetime.timedelta(weeks=1)))
-    assert cond.matches(TestEntity(date=now))
-    cond = TestEntity.date.not_in_next(2, DateType.MONTH)
-    year_offset, month = divmod(now.month + 1, 12)
-    assert not cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month + 3, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
-    year_offset, month = divmod(now.month - 1, 12)
-    assert cond.matches(
-        TestEntity(date=now.replace(year=now.year + year_offset, month=month)),
-    )
     assert cond.matches(TestEntity(date=now))
     cond = TestEntity.date.not_in_next(2, DateType.YEAR)
     assert not cond.matches(TestEntity(date=now.replace(year=now.year + 1)))
@@ -472,11 +387,10 @@ T = TypeVar("T")
         (FilterOperatorGreaterThan(7), 7),
         (FilterOperatorIn(["foo", "bar"]), ["foo", "bar"]),
         (FilterOperatorInCalendarDay(4), 4),
-        (FilterOperatorInCalendarMonth(4), 4),
         (FilterOperatorInCalendarWeek(4), 4),
         (FilterOperatorInCalendarYear(4), 4),
-        (FilterOperatorInLast(4, DateType.MONTH), [4, DateType.MONTH.value]),
-        (FilterOperatorInNext(4, DateType.MONTH), [4, DateType.MONTH.value]),
+        (FilterOperatorInLast(4, DateType.YEAR), [4, DateType.YEAR.value]),
+        (FilterOperatorInNext(4, DateType.YEAR), [4, DateType.YEAR.value]),
         (FilterOperatorIs("foo"), "foo"),
         (FilterOperatorIsNot("foo"), "foo"),
         (FilterOperatorLessThan(5), 5),

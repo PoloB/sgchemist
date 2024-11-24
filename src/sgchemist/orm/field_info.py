@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Generic
-from typing import Iterable
-from typing import Iterator
 from typing import TypeVar
 
 from typing_extensions import NotRequired
@@ -15,6 +13,8 @@ from typing_extensions import TypedDict
 from typing_extensions import overload
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from sgchemist.orm import SgBaseEntity
     from sgchemist.orm.annotation import FieldAnnotation
     from sgchemist.orm.entity import LazyEntityCollectionClassEval
@@ -132,7 +132,7 @@ def get_field_hierarchy(field: AbstractField[Any]) -> list[AbstractField[Any]]:
 def iter_entities_from_field_value(
     field_info: FieldInfo[T],
     field_value: T,
-) -> Iterator[EntityProtocol]:
+) -> Iterable[EntityProtocol]:
     """Iterate the entities from the given field value."""
     yield from field_info["entity_iterator"](field_value)
 

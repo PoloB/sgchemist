@@ -8,11 +8,10 @@ import builtins
 import contextlib
 import re
 import sys
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import ForwardRef
-from typing import Mapping
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import cast
@@ -24,9 +23,12 @@ from typing_extensions import _SpecialForm
 from typing_extensions import get_args
 from typing_extensions import get_origin
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
 NoneFwd = ForwardRef("None")
 AnnotationScanType = Union[
-    Type[Any],
+    type[Any],
     str,
     ForwardRef,
     NewType,
@@ -109,9 +111,6 @@ def stringify_ast(
 
     elif isinstance(exp, ast.Tuple):
         result = ", ".join(map(stringify_ast, exp.elts))
-
-    elif isinstance(exp, ast.Index):
-        result = stringify_ast(exp.value)  # type: ignore[attr-defined] # this is for python 3.7 compat
 
     else:
         error = f"Cannot parse element {type(exp)}"

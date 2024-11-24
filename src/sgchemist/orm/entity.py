@@ -127,14 +127,14 @@ class EntityState(Generic[T_co]):
     """Defines the internal state of the instance field values."""
 
     __slots__ = (
+        "_available",
         "_entity",
+        "_original_values",
+        "deleted",
+        "modified_fields",
         "pending_add",
         "pending_deletion",
-        "deleted",
         "values",
-        "_available",
-        "modified_fields",
-        "_original_values",
     )
 
     def __init__(
@@ -502,15 +502,7 @@ def extract_field_annotation(annotation: str, scope: dict[str, Any]) -> FieldAnn
     # Evaluate full annotation
     # Add ForwardRef in the scope to make sure we can evaluate what was not yet
     # defined in the scope already
-    try:
-        annot_eval = eval(cleaned_annot, scope)  # noqa: S307
-    except TypeError:
-        # As a last resort, try with original annotation
-        try:
-            annot_eval = eval(annotation, scope)  # noqa: S307
-        except TypeError as e:
-            error_message = f"Unable to evaluate annotation {annotation}"
-            raise error.SgInvalidAnnotationError(error_message) from e
+    annot_eval = eval(cleaned_annot, scope)  # noqa: S307
 
     # Extract entity information from the evaluated annotation
     if not hasattr(annot_eval, "__args__"):
