@@ -299,10 +299,13 @@ class Session:
         state.pending_deletion = True
         return query
 
-    def commit(self) -> None:
+    def commit(self) -> list[SgBaseEntity]:
         """Commits the pending queries in one batch.
 
         If any query fails the full transaction is cancelled.
+
+        Returns:
+            modified_entities
         """
         # Only keep the batch queries that do real work
         batch_queries = []
@@ -314,9 +317,14 @@ class Session:
                 continue
             batch_queries.append(query)
 
+        # Avoid any call to engine if there is no work to do
+        if not batch_queries:
+            return []
+
         # Add a batch for each
         rows: list[tuple[bool, dict[str, Any]]] = self._engine.batch(batch_queries)
         assert len(rows) == len(batch_queries)
+        modified_entities: list[SgBaseEntity] = []
 
         for k, query in enumerate(batch_queries):
             success, row = rows[k]
@@ -327,19 +335,21 @@ class Session:
                 state.pending_deletion = False
                 continue
 
-            original_model = query.entity
-            field_mapper = original_model.__attr_per_field_name__
+            original_entity = query.entity
+            field_mapper = original_entity.__attr_per_field_name__
 
             for field_name, field_value in row.items():
                 if field_name == "type":
                     continue
                 # Do not set the relationship field
-                field = original_model.__fields_by_attr__[field_mapper[field_name]]
-                update_entity_from_value(field, original_model, field_value)
+                field = original_entity.__fields_by_attr__[field_mapper[field_name]]
+                update_entity_from_value(field, original_entity, field_value)
             # The entity has now an unmodified state
             state.set_as_original()
             state.pending_add = False
+            modified_entities.append(original_entity)
         self._pending_queries = {}
+        return modified_entities
 
     def rollback(self) -> None:
         """Cancels the pending queries."""
