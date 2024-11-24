@@ -112,9 +112,6 @@ def stringify_ast(
     elif isinstance(exp, ast.Tuple):
         result = ", ".join(map(stringify_ast, exp.elts))
 
-    elif isinstance(exp, ast.Index):
-        result = stringify_ast(exp.value)  # type: ignore[attr-defined] # this is for python 3.7 compat
-
     else:
         error = f"Cannot parse element {type(exp)}"
         raise TypeError(error)
