@@ -4,4 +4,4 @@ mypy
 pytest
 pytest-benchmark
 pytest-cov
-tox
+requests-mock

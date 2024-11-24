@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from sgchemist import error
 from sgchemist.orm import Session
 from sgchemist.orm import SgBaseEntity
-from sgchemist.orm import error
 from sgchemist.orm import select
 from sgchemist.orm.constant import BatchRequestType
 from sgchemist.orm.session import SgFindResult
@@ -172,6 +172,8 @@ def test_update(session: Session, test_project: Project) -> None:
     session.add(test_project)
     assert len(session.pending_queries) == 1
     assert session.pending_queries[0].request_type == BatchRequestType.UPDATE
+    # An entity that is finally not modified should not be commited
+    assert session.commit() == []
 
 
 def test_rollback(session: Session, test_project: Project) -> None:
@@ -197,7 +199,7 @@ def test_delete(session: Session, test_project: Project) -> None:
 
 def test_empty_commit(session: Session) -> None:
     """Tests commiting with an empty session works."""
-    session.commit()
+    assert session.commit() == []
 
 
 def test_delete_uncommitted(session: Session, test_project: Project) -> None:

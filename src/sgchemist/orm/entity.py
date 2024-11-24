@@ -11,7 +11,8 @@ from typing import Generic
 from typing import TypeVar
 from typing import overload
 
-from . import error
+from sgchemist import error
+
 from . import field_info
 from .annotation import FieldAnnotation
 from .fields import AbstractField
