@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 import json
 import random
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeVar
 
@@ -15,12 +16,18 @@ from sgchemist.engine import rest
 from sgchemist.orm import SgBaseEntity
 from sgchemist.orm import field_info
 from sgchemist.orm import select
-from sgchemist.orm.fields import AbstractField
 from sgchemist.orm.query import SgFindQueryData
 from tests.classes import Asset
 from tests.classes import Project
 from tests.classes import SgEntity
 from tests.classes import Task
+
+if TYPE_CHECKING:
+    from requests_mock.request import _RequestObjectProxy
+    from requests_mock.response import _Context
+
+    from sgchemist.orm.fields import AbstractField
+
 
 TEST_URL = "https://sgchemist.shotgrid.autodesk.com"
 TEST_URL_POST = f"{TEST_URL}/api3/json"
@@ -58,11 +65,11 @@ def _build_random_database(
             if entity_field.__info__["is_list"]:
                 choice_entities = random.sample(
                     all_entities,
-                    random.randint(1, int(count_per_entity * connection_ratio)),
+                    random.randint(1, int(count_per_entity * connection_ratio)),  # noqa: S311
                 )
                 entity.__state__.set_value(entity_field, choice_entities)
             else:
-                choice_entity = random.choice(all_entities)
+                choice_entity = random.choice(all_entities)  # noqa: S311
                 entity.__state__.set_value(entity_field, choice_entity)
 
     return store
@@ -76,7 +83,7 @@ def _serialize_entity_like_sg(
     fields: tuple[AbstractField[Any], ...] | None = None,
 ) -> dict[str, Any]:
     if fields is None:
-        fields = tuple()
+        fields = ()
     entity_data = {"id": entity.id, "type": entity.__sg_type__}
     for field in fields:
         field_value = entity.get_value(field)
@@ -132,9 +139,9 @@ def _build_error() -> dict[str, Any]:
 
 def _mock_response(
     test_db: dict[str, list[SgBaseEntity]],
-    query: SgFindQueryData,
-    request: Any,
-    _context: Any,
+    query: SgFindQueryData[Any],
+    request: _RequestObjectProxy,
+    _context: _Context,
 ) -> dict[str, Any]:
     # Get the page requested by the query
     entities = test_db[query.entity.__sg_type__]
@@ -153,10 +160,10 @@ def _mock_response(
 
 def _mock_error(
     test_db: dict[str, list[SgBaseEntity]],
-    query: SgFindQueryData,
+    query: SgFindQueryData[Any],
     on_page: int,
-    request: Any,
-    _context: Any,
+    request: _RequestObjectProxy,
+    _context: _Context,
 ) -> dict[str, Any]:
     # Get the page requested by the query
     requested_page = json.loads(request.text)["params"][1]["paging"]["current_page"]
@@ -219,7 +226,6 @@ def test_engine_find_filter(
 @pytest.mark.parametrize(
     ("query", "indexes"),
     [
-        (select(Asset).page(1).get_data(), [0, ENTITIES_PER_PAGE]),
         (select(Asset).page(1).get_data(), [0, ENTITIES_PER_PAGE]),
         (select(Asset).page(2).get_data(), [ENTITIES_PER_PAGE, ENTITIES_PER_PAGE * 2]),
     ],
@@ -299,53 +305,3 @@ def test_engine_find_error(
         )
         with pytest.raises(rest.FindQueryRestEngineError):
             _ = engine.find(find_query_state)
-
-
-# @pytest.mark.parametrize(
-#     "test_model_inst",
-#     [
-#         Project(),
-#         Shot(name="test"),
-#         Shot(name="test", project=Project(id=1)),
-#     ],
-# )
-# def test_engine_create(engine: SgEngine, test_model_inst: SgBaseEntity) -> None:
-#     """Test create queries."""
-#     batch_query = SgBatchQuery(BatchRequestType.CREATE, test_model_inst)
-#     with requests_mock.Mocker() as mock:
-#         mock.post(TEST_URL_POST, json=functools.partial(_mock_response, entities={}))
-#         rows = engine.batch([batch_query])
-#     assert len(rows) == 1
-#     success, row = rows[0]
-#     assert isinstance(row, dict)
-#     assert success
-#     assert row["id"] == 1
-#
-#
-# @pytest.mark.parametrize(
-#     ("test_model_inst", "batch_request_type"),
-#     [
-#         (Project(), BatchRequestType.UPDATE),
-#         (Shot(name="shot1"), BatchRequestType.UPDATE),
-#         (Task(name="task1"), BatchRequestType.UPDATE),
-#         (Project(), BatchRequestType.DELETE),
-#         (Shot(name="shot1"), BatchRequestType.DELETE),
-#         (Task(name="task1"), BatchRequestType.DELETE),
-#     ],
-# )
-# def test_engine_batch_request(
-#     engine: SgEngine,
-#     test_model_inst: SgBaseEntity,
-#     batch_request_type: BatchRequestType,
-# ) -> None:
-#     """Test update queries."""
-#     session = Session(engine)
-#     session.add(test_model_inst)
-#     session.commit()
-#     batch_query = SgBatchQuery(batch_request_type, test_model_inst)
-#     rows = engine.batch([batch_query])
-#     assert len(rows) == 1
-#     success, row = rows[0]
-#     assert isinstance(row, dict)
-#     assert success
-#     assert row["id"] == 1
