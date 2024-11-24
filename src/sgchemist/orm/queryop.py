@@ -166,30 +166,6 @@ class FilterOperatorInCalendarDay(FilterOperator[datetime.datetime, int]):
         return self.__offset
 
 
-class FilterOperatorInCalendarMonth(FilterOperator[datetime.datetime, int]):
-    """An in_calendar_month filter."""
-
-    __sg_op__ = "in_calendar_month"
-
-    def __init__(self, offset: int) -> None:
-        """Initialize the filter operator."""
-        self.__offset = offset
-
-    def eval(self, value: datetime.datetime) -> bool:
-        """Evaluate the filter on the given value."""
-        # There are not always the same number of days between two months
-        today = datetime.datetime.now(value.tzinfo)
-        year_offset, month = divmod(today.month + self.__offset, 12)
-        calendar_month = today.replace(year=today.year + year_offset, month=month)
-        if self.__offset >= 0:
-            return today < value < calendar_month
-        return today > value > calendar_month
-
-    def serialize(self) -> int:
-        """Serialize the filter value."""
-        return self.__offset
-
-
 class FilterOperatorInCalendarWeek(FilterOperator[datetime.datetime, int]):
     """An in_calendar_week filter."""
 
@@ -250,9 +226,6 @@ class FilterOperatorInLast(FilterOperator[datetime.datetime, list[Union[str, int
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year - self.__offset)
-        elif self.__date_type == DateType.MONTH:
-            year_offset, month = divmod(today.month - self.__offset, 12)
-            compare = today.replace(year=today.year + year_offset, month=month)
         else:
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today - datetime.timedelta(**time_value)
@@ -278,9 +251,6 @@ class FilterOperatorInNext(FilterOperator[datetime.datetime, list[Union[str, int
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year + self.__offset)
-        elif self.__date_type == DateType.MONTH:
-            year_offset, month = divmod(today.month + self.__offset, 12)
-            compare = today.replace(year=today.year + year_offset, month=month)
         else:
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today + datetime.timedelta(**time_value)
@@ -398,9 +368,6 @@ class FilterOperatorNotInLast(FilterOperator[datetime.datetime, list[Union[str, 
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year - self.__offset)
-        elif self.__date_type == DateType.MONTH:
-            year_offset, month = divmod(today.month - self.__offset, 12)
-            compare = today.replace(year=today.year + year_offset, month=month)
         else:
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today - datetime.timedelta(**time_value)
@@ -426,9 +393,6 @@ class FilterOperatorNotInNext(FilterOperator[datetime.datetime, list[Union[str, 
         today = datetime.datetime.now(value.tzinfo)
         if self.__date_type == DateType.YEAR:
             compare = today.replace(year=today.year + self.__offset)
-        elif self.__date_type == DateType.MONTH:
-            year_offset, month = divmod(today.month + self.__offset, 12)
-            compare = today.replace(year=today.year + year_offset, month=month)
         else:
             time_value = {f"{self.__date_type.value.lower()}s": self.__offset}
             compare = today + datetime.timedelta(**time_value)

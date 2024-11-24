@@ -27,7 +27,6 @@ from .queryop import FilterOperatorEndsWith
 from .queryop import FilterOperatorGreaterThan
 from .queryop import FilterOperatorIn
 from .queryop import FilterOperatorInCalendarDay
-from .queryop import FilterOperatorInCalendarMonth
 from .queryop import FilterOperatorInCalendarWeek
 from .queryop import FilterOperatorInCalendarYear
 from .queryop import FilterOperatorInLast
@@ -724,19 +723,6 @@ class AbstractDateField(AbstractValueField[Tcomp]):
             The field condition.
         """
         return SgFieldCondition(self, FilterOperatorInCalendarWeek(offset))
-
-    def in_calendar_month(self, offset: int) -> SgFieldCondition:
-        """Filter entities where this date is equal to the offset current month.
-
-        This is the equivalent of the "in_calendar_month" filter of Shotgrid.
-
-        Args:
-            offset: offset (e.g. 0=this month, 1=next month, -1= last month)
-
-        Returns:
-            The field condition.
-        """
-        return SgFieldCondition(self, FilterOperatorInCalendarMonth(offset))
 
     def in_calendar_year(self, offset: int) -> SgFieldCondition:
         """Filter entities where this date is equal to the offset current year.

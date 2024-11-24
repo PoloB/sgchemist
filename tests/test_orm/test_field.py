@@ -30,7 +30,6 @@ from sgchemist.orm.queryop import FilterOperatorEndsWith
 from sgchemist.orm.queryop import FilterOperatorGreaterThan
 from sgchemist.orm.queryop import FilterOperatorIn
 from sgchemist.orm.queryop import FilterOperatorInCalendarDay
-from sgchemist.orm.queryop import FilterOperatorInCalendarMonth
 from sgchemist.orm.queryop import FilterOperatorInCalendarWeek
 from sgchemist.orm.queryop import FilterOperatorInCalendarYear
 from sgchemist.orm.queryop import FilterOperatorInLast
@@ -354,7 +353,6 @@ def test_cast_column(
         (DateTimeField().not_in_next(2, DateType.DAY), FilterOperatorNotInNext),
         (DateTimeField().in_calendar_day(2), FilterOperatorInCalendarDay),
         (DateTimeField().in_calendar_week(2), FilterOperatorInCalendarWeek),
-        (DateTimeField().in_calendar_month(2), FilterOperatorInCalendarMonth),
         (DateTimeField().in_calendar_year(2), FilterOperatorInCalendarYear),
         (ImageField().exists(), FilterOperatorIsNot),
         (ImageField().not_exists(), FilterOperatorIs),
