@@ -43,7 +43,7 @@ class BatchQueryRestEngineError(RestEngineError):
     """Raises when an error occurs during find queries."""
 
 
-def serialize_entity(entity: SgBaseEntity) -> SerializedEntity:
+def _serialize_entity(entity: SgBaseEntity) -> SerializedEntity:
     """Serialize the given sgchemist entity to shotgun-api3 entity.
 
     Args:
@@ -56,7 +56,7 @@ def serialize_entity(entity: SgBaseEntity) -> SerializedEntity:
     return {"id": entity.id, "type": entity.__sg_type__}
 
 
-def serialize_condition(
+def _serialize_condition(
     condition: SgFieldCondition,
 ) -> dict[str, Any]:
     """Serialize the given sgchemist condition to shotgun-api3 filter condition.
@@ -69,7 +69,7 @@ def serialize_condition(
     """
     right = condition.op.serialize()
     if isinstance(right, SgBaseEntity):
-        right = serialize_entity(right)
+        right = _serialize_entity(right)
     return {
         "path": field_info.get_name(condition.field),
         "relation": condition.op.__sg_op__,
@@ -77,9 +77,9 @@ def serialize_condition(
     }
 
 
-def serialize_filter(
+def _serialize_filter(
     sg_object: SgSerializable | SgBaseEntity,
-) -> SerializedEntity | SerializedOperator | list[Any] | dict[str, Any]:
+) -> SerializedEntity | _SerializedOperator | list[Any] | dict[str, Any]:
     """Returns filters for shotgun-api3 from the given sgchemist object.
 
     Args:
@@ -91,13 +91,13 @@ def serialize_filter(
     if isinstance(sg_object, SgNullCondition):
         return {"logical_operator": "and", "conditions": []}
     if isinstance(sg_object, SgFieldCondition):
-        return {"logical_operator": "and", "conditions": [serialize_object(sg_object)]}
-    return serialize_object(sg_object)
+        return {"logical_operator": "and", "conditions": [_serialize_object(sg_object)]}
+    return _serialize_object(sg_object)
 
 
-def serialize_object(
+def _serialize_object(
     sg_object: SgSerializable | SgBaseEntity,
-) -> SerializedEntity | SerializedOperator | list[Any] | dict[str, Any]:
+) -> SerializedEntity | _SerializedOperator | list[Any] | dict[str, Any]:
     """Serialize the given sgchemist object to shotgun-api3 object.
 
     Args:
@@ -107,26 +107,26 @@ def serialize_object(
         serialized object
     """
     if isinstance(sg_object, SgFieldCondition):
-        return serialize_condition(sg_object)
+        return _serialize_condition(sg_object)
     if isinstance(sg_object, SgBaseEntity):
-        return serialize_entity(sg_object)
+        return _serialize_entity(sg_object)
     if isinstance(sg_object, SgFilterOperation):
-        return serialize_operation(sg_object)
+        return _serialize_operation(sg_object)
 
     error = f"Cannot serialize object of type {type(sg_object)}"  # pragma: no cover
     raise AssertionError(error)  # pragma: no cover
 
 
-class SerializedOperator(TypedDict):
+class _SerializedOperator(TypedDict):
     """Defines a serialized operator dict."""
 
     logical_operator: str
     conditions: list[Any]
 
 
-def serialize_operation(
+def _serialize_operation(
     filter_operator: SgFilterOperation,
-) -> SerializedOperator:
+) -> _SerializedOperator:
     """Serialize the given sgchemist operation to shotgun-api3 logical operator.
 
     Args:
@@ -137,11 +137,11 @@ def serialize_operation(
     """
     return {
         "logical_operator": filter_operator.operator.value,
-        "conditions": [serialize_object(obj) for obj in filter_operator.sg_objects],
+        "conditions": [_serialize_object(obj) for obj in filter_operator.sg_objects],
     }
 
 
-def serialize_entity_for_batch(
+def _serialize_entity_for_batch(
     entity: SgBaseEntity,
     fields: list[AbstractField[Any]],
 ) -> list[dict[str, Any]]:
@@ -209,6 +209,7 @@ class RestEngine(SgEngine):
         """Get the result of the given query using the REST API."""
         limit = query.limit
         if query.page:
+            print("set limit")
             limit = self._entities_per_page
         current_page = query.page or 1
         paging = {
@@ -217,8 +218,11 @@ class RestEngine(SgEngine):
         }
         params = {
             "type": query.entity.__sg_type__,
-            "return_fields": [field_info.get_name(field) for field in query.fields],
-            "filters": serialize_filter(query.condition),
+            "return_fields": [
+                field_info.get_name(field)
+                for field in query.fields + query.loading_fields
+            ],
+            "filters": _serialize_filter(query.condition),
             "return_only": "active",
             "paging": paging,
             "api_return_image_urls": True,
@@ -268,6 +272,13 @@ class RestEngine(SgEngine):
 
             entities = json_result.get("entities")
 
+        # Reorganize the row contents
+        for field in query.loading_fields:
+            key = field_info.get_name(field)
+            column_name, _, target_key = key.split(".")
+            for row in all_records:
+                row[column_name][target_key] = row.pop(key)
+
         return all_records
 
     def batch(
@@ -288,7 +299,7 @@ class RestEngine(SgEngine):
                 continue
 
             state = entity.__state__
-            request_params["fields"] = serialize_entity_for_batch(
+            request_params["fields"] = _serialize_entity_for_batch(
                 entity,
                 state.modified_fields,
             )
