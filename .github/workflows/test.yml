@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"] # shotgun-api3 is not yet compatible with python 3.12 (see https://community.shotgridsoftware.com/t/modulenotfounderror-no-module-named-shotgun-api3-lib-six-moves/18345/4)
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"] # shotgun-api3 is not yet compatible with python 3.12 (see https://community.shotgridsoftware.com/t/modulenotfounderror-no-module-named-shotgun-api3-lib-six-moves/18345/4)
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python }}
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: ["3.9", "3.10", "3.11", "3.12", "3.12", "3.13", "3.14"]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python }}
@@ -76,7 +76,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest ]
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"] # shotgun-api3 is not yet compatible with python 3.12 (see https://community.shotgridsoftware.com/t/modulenotfounderror-no-module-named-shotgun-api3-lib-six-moves/18345/4)
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"] # shotgun-api3 is not yet compatible with python 3.12 (see https://community.shotgridsoftware.com/t/modulenotfounderror-no-module-named-shotgun-api3-lib-six-moves/18345/4)
 
     steps:
       - uses: actions/checkout@v4
